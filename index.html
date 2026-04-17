@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>クッション値×含水率 散布図</title>
+<title>04/19 クッション値×含水率</title>
 <style>
 :root {
-  --bg: #0f172a; --bg-card: #1e293b; --bg-card2: #162032;
-  --border: #334155; --text: #f1f5f9; --text-sub: #94a3b8; --text-muted: #64748b;
+  --bg: #0f172a; --bg-card: #1e293b; --border: #334155;
+  --text: #f1f5f9; --text-sub: #94a3b8; --text-muted: #64748b;
   --accent: #f59e0b; --blue: #38bdf8;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -19,95 +19,132 @@ body {
 .page-header { margin-bottom: 16px; }
 .page-header h1 { font-size: 20px; font-weight: 900; }
 .page-header .sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
-.date-section { margin-bottom: 12px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
-.date-header {
-  padding: 12px 14px; background: var(--bg-card); cursor: pointer;
+.venue-block { margin-bottom: 16px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+.venue-head {
+  padding: 12px 14px; background: var(--bg-card);
   display: flex; justify-content: space-between; align-items: center;
-  font-size: 15px; font-weight: 900; user-select: none;
-  -webkit-tap-highlight-color: transparent;
 }
-.date-header .toggle { font-size: 12px; color: var(--text-muted); transition: transform 0.2s; }
-.date-header.open .toggle { transform: rotate(180deg); }
-.race-list { display: none; }
-.race-list.open { display: block; }
-.venue-header {
-  padding: 9px 14px; background: var(--bg-card2);
-  display: flex; justify-content: space-between; align-items: center;
-  cursor: pointer; border-top: 1px solid var(--border);
-  font-size: 13px; font-weight: 800;
-  -webkit-tap-highlight-color: transparent;
+.venue-head h2 { font-size: 16px; font-weight: 900; }
+.venue-cv {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;
 }
-.venue-cv { font-size: 10px; font-weight: 600; color: var(--text-muted); margin-left: 8px; }
-.venue-header .toggle { font-size: 10px; color: var(--text-muted); transition: transform 0.2s; }
-.venue-header.open .toggle { transform: rotate(180deg); }
-.venue-races { display: none; }
-.venue-races.open { display: block; }
+.cv-badge {
+  font-size: 10px; font-weight: 700; font-family: monospace;
+  background: var(--bg); border: 1px solid var(--border);
+  padding: 2px 7px; border-radius: 5px; color: var(--text-sub);
+}
+.cv-badge b { color: var(--accent); }
+.cv-badge.moist b { color: var(--blue); }
 .race-list a {
   display: flex; align-items: center; justify-content: space-between;
   padding: 13px 14px; border-top: 1px solid var(--border);
   background: #111827; color: var(--text); text-decoration: none;
   font-size: 14px; font-weight: 700;
+  transition: background 0.1s;
   -webkit-tap-highlight-color: transparent;
 }
-.race-list a:active { background: var(--bg-card); }
-.race-list a .arrow { color: var(--text-muted); }
+.race-list a:active { background: #1e293b; }
+.race-list a .meta { font-size: 10px; color: var(--text-muted); font-weight: 600; margin-left: 8px; }
+.race-list a .arrow { color: var(--text-muted); font-size: 14px; }
+.page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+.page-header-text h1 { font-size: 20px; font-weight: 900; }
+.page-header-text .sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+.admin-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #1e293b; border: 1px solid #334155; color: #94a3b8;
+  text-decoration: none; padding: 8px 14px; border-radius: 10px;
+  font-size: 12px; font-weight: 800; white-space: nowrap; flex-shrink: 0;
+}
+.admin-btn:hover { border-color: var(--accent); color: var(--accent); }
+.admin-dot { width: 7px; height: 7px; border-radius: 50%; background: #475569; }
 </style>
 </head>
 <body>
 <div class="page-header">
-  <h1>クッション値×含水率 散布図</h1>
-  <div class="sub">日付別一覧 — タップでレース一覧を表示</div>
+  <div class="page-header-text">
+    <h1>04/19 競馬　クッション値×含水率</h1>
+    <div class="sub">散布図一覧 — タップで各レースの散布図を表示</div>
+  </div>
+  <a href="http://localhost:5001/" target="_blank" class="admin-btn">
+    <span class="admin-dot"></span>管理ページ
+  </a>
 </div>
-<div class="date-section"><div class="date-header open" onclick="toggleDate(this)">2026/04/19（36R）<span class="toggle">▼</span></div>
-<div class="race-list open">
-<div class="venue-header open" onclick="toggleVenue(this)">中山<span class="venue-cv"></span><span class="toggle">▼</span></div>
-<div class="venue-races open">
-<a href="scatter_20260419_中山01R_3歳未勝利_ダ1800m.html"><span>01R 3歳未勝利 ダ1800m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_中山02R_3歳未勝利_ダ1200m.html"><span>02R 3歳未勝利 ダ1200m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_中山03R_3歳未勝利_ダ1800m.html"><span>03R 3歳未勝利 ダ1800m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_中山04R_3歳未勝利_芝2000m.html"><span>04R 3歳未勝利 芝2000m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_中山05R_3歳1勝クラス_芝1600m.html"><span>05R 3歳1勝クラス 芝1600m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_中山06R_3歳1勝クラス_ダ1800m.html"><span>06R 3歳1勝クラス ダ1800m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_中山07R_4歳以上1勝クラス_ダ1200m.html"><span>07R 4歳以上1勝クラス ダ1200m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_中山08R_利根川特別_ダ1800m.html"><span>08R 利根川特別 ダ1800m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_中山09R_野島崎特別_芝2000m.html"><span>09R 野島崎特別 芝2000m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_中山10R_京葉S_ダ1200m.html"><span>10R 京葉S ダ1200m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_中山11R_皐月賞_芝2000m.html"><span>11R 皐月賞 芝2000m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_中山12R_サンシャイン_芝2200m.html"><span>12R サンシャイン 芝2200m</span><span class="arrow">›</span></a>
+<div class="venue-block">
+  <div class="venue-head">
+    <div>
+      <h2>中山</h2>
+      <div class="venue-cv">
+        <span class="cv-badge">CV <b>9.6</b></span>
+        <span class="cv-badge moist">芝 <b>9.8%</b></span>
+        <span class="cv-badge moist">ダ <b>7.1%</b></span>
+      </div>
+    </div>
+  </div>
+  <div class="race-list">
+  <a href="scatter_20260419_中山01R_3歳未勝利_ダ1800m.html"><span>1R　3歳未勝利　ダ1800m</span><span><span class="meta">12頭 33pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_中山02R_3歳未勝利_ダ1200m.html"><span>2R　3歳未勝利　ダ1200m</span><span><span class="meta">16頭 54pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_中山03R_3歳未勝利_ダ1800m.html"><span>3R　3歳未勝利　ダ1800m</span><span><span class="meta">14頭 54pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_中山04R_3歳未勝利_芝2000m.html"><span>4R　3歳未勝利　芝2000m</span><span><span class="meta">16頭 46pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_中山05R_3歳1勝クラス_芝1600m.html"><span>5R　3歳1勝クラス　芝1600m</span><span><span class="meta">10頭 54pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_中山06R_3歳1勝クラス_ダ1800m.html"><span>6R　3歳1勝クラス　ダ1800m</span><span><span class="meta">6頭 26pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_中山07R_4歳以上1勝クラス_ダ1200m.html"><span>7R　4歳以上1勝クラス　ダ1200m</span><span><span class="meta">13頭 109pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_中山08R_利根川特別_ダ1800m.html"><span>8R　利根川特別　ダ1800m</span><span><span class="meta">12頭 110pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_中山09R_野島崎特別_芝2000m.html"><span>9R　野島崎特別　芝2000m</span><span><span class="meta">12頭 104pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_中山10R_京葉S_ダ1200m.html"><span>10R　京葉S　ダ1200m</span><span><span class="meta">15頭 148pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_中山11R_皐月賞_芝2000m.html"><span>11R　皐月賞　芝2000m</span><span><span class="meta">18頭 71pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_中山12R_サンシャイン_芝2200m.html"><span>12R　サンシャイン　芝2200m</span><span><span class="meta">18頭 180pts</span> <span class="arrow">›</span></span></a>
+  </div>
 </div>
-<div class="venue-header open" onclick="toggleVenue(this)">阪神<span class="venue-cv"></span><span class="toggle">▼</span></div>
-<div class="venue-races open">
-<a href="scatter_20260419_阪神01R_3歳未勝利_ダ1800m.html"><span>01R 3歳未勝利 ダ1800m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_阪神02R_3歳未勝利_芝2000m.html"><span>02R 3歳未勝利 芝2000m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_阪神03R_3歳未勝利_ダ1400m.html"><span>03R 3歳未勝利 ダ1400m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_阪神04R_4歳以上障害未勝利_ダ2970m.html"><span>04R 4歳以上障害未勝利 ダ2970m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_阪神05R_3歳未勝利_芝2200m.html"><span>05R 3歳未勝利 芝2200m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_阪神06R_3歳1勝クラス_ダ1200m.html"><span>06R 3歳1勝クラス ダ1200m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_阪神07R_3歳1勝クラス_芝1600m.html"><span>07R 3歳1勝クラス 芝1600m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_阪神08R_4歳以上1勝クラス_ダ1800m.html"><span>08R 4歳以上1勝クラス ダ1800m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_阪神09R_蓬莱峡特別_芝2000m.html"><span>09R 蓬莱峡特別 芝2000m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_阪神10R_陽春S_ダ1200m.html"><span>10R 陽春S ダ1200m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_阪神11R_立雲峡S_芝1600m.html"><span>11R 立雲峡S 芝1600m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_阪神12R_4歳以上2勝クラス_ダ1800m.html"><span>12R 4歳以上2勝クラス ダ1800m</span><span class="arrow">›</span></a>
+<div class="venue-block">
+  <div class="venue-head">
+    <div>
+      <h2>阪神</h2>
+      <div class="venue-cv">
+        <span class="cv-badge">CV <b>9.2</b></span>
+        <span class="cv-badge moist">芝 <b>13.9%</b></span>
+        <span class="cv-badge moist">ダ <b>10.1%</b></span>
+      </div>
+    </div>
+  </div>
+  <div class="race-list">
+  <a href="scatter_20260419_阪神01R_3歳未勝利_ダ1800m.html"><span>1R　3歳未勝利　ダ1800m</span><span><span class="meta">16頭 50pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_阪神02R_3歳未勝利_芝2000m.html"><span>2R　3歳未勝利　芝2000m</span><span><span class="meta">16頭 40pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_阪神03R_3歳未勝利_ダ1400m.html"><span>3R　3歳未勝利　ダ1400m</span><span><span class="meta">16頭 56pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_阪神04R_4歳以上障害未勝利_ダ2970m.html"><span>4R　4歳以上障害未勝利　ダ2970m</span><span><span class="meta">14頭 120pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_阪神05R_3歳未勝利_芝2200m.html"><span>5R　3歳未勝利　芝2200m</span><span><span class="meta">13頭 26pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_阪神06R_3歳1勝クラス_ダ1200m.html"><span>6R　3歳1勝クラス　ダ1200m</span><span><span class="meta">15頭 70pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_阪神07R_3歳1勝クラス_芝1600m.html"><span>7R　3歳1勝クラス　芝1600m</span><span><span class="meta">8頭 26pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_阪神08R_4歳以上1勝クラス_ダ1800m.html"><span>8R　4歳以上1勝クラス　ダ1800m</span><span><span class="meta">11頭 91pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_阪神09R_蓬莱峡特別_芝2000m.html"><span>9R　蓬莱峡特別　芝2000m</span><span><span class="meta">10頭 96pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_阪神10R_陽春S_ダ1200m.html"><span>10R　陽春S　ダ1200m</span><span><span class="meta">13頭 120pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_阪神11R_立雲峡S_芝1600m.html"><span>11R　立雲峡S　芝1600m</span><span><span class="meta">10頭 92pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_阪神12R_4歳以上2勝クラス_ダ1800m.html"><span>12R　4歳以上2勝クラス　ダ1800m</span><span><span class="meta">10頭 96pts</span> <span class="arrow">›</span></span></a>
+  </div>
 </div>
-<div class="venue-header open" onclick="toggleVenue(this)">福島<span class="venue-cv"></span><span class="toggle">▼</span></div>
-<div class="venue-races open">
-<a href="scatter_20260419_福島01R_3歳未勝利_ダ1150m.html"><span>01R 3歳未勝利 ダ1150m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_福島02R_3歳未勝利_ダ1700m.html"><span>02R 3歳未勝利 ダ1700m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_福島03R_3歳未勝利_芝2000m.html"><span>03R 3歳未勝利 芝2000m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_福島04R_3歳未勝利_ダ1700m.html"><span>04R 3歳未勝利 ダ1700m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_福島05R_3歳未勝利_芝1200m.html"><span>05R 3歳未勝利 芝1200m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_福島06R_4歳以上1勝クラス_芝1800m.html"><span>06R 4歳以上1勝クラス 芝1800m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_福島07R_4歳以上1勝クラス_芝2000m.html"><span>07R 4歳以上1勝クラス 芝2000m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_福島08R_4歳以上1勝クラス_ダ1700m.html"><span>08R 4歳以上1勝クラス ダ1700m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_福島09R_須賀川特別_芝1200m.html"><span>09R 須賀川特別 芝1200m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_福島10R_奥の細道特別_芝2600m.html"><span>10R 奥の細道特別 芝2600m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_福島11R_福島牝馬S_芝1800m.html"><span>11R 福島牝馬S 芝1800m</span><span class="arrow">›</span></a>
-<a href="scatter_20260419_福島12R_4歳以上1勝クラス_ダ1150m.html"><span>12R 4歳以上1勝クラス ダ1150m</span><span class="arrow">›</span></a>
+<div class="venue-block">
+  <div class="venue-head">
+    <div>
+      <h2>福島</h2>
+      <div class="venue-cv">
+        <span class="cv-badge">CV <b>9.2</b></span>
+        <span class="cv-badge moist">芝 <b>12.0%</b></span>
+        <span class="cv-badge moist">ダ <b>7.3%</b></span>
+      </div>
+    </div>
+  </div>
+  <div class="race-list">
+  <a href="scatter_20260419_福島01R_3歳未勝利_ダ1150m.html"><span>1R　3歳未勝利　ダ1150m</span><span><span class="meta">16頭 66pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_福島02R_3歳未勝利_ダ1700m.html"><span>2R　3歳未勝利　ダ1700m</span><span><span class="meta">15頭 41pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_福島03R_3歳未勝利_芝2000m.html"><span>3R　3歳未勝利　芝2000m</span><span><span class="meta">16頭 32pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_福島04R_3歳未勝利_ダ1700m.html"><span>4R　3歳未勝利　ダ1700m</span><span><span class="meta">15頭 40pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_福島05R_3歳未勝利_芝1200m.html"><span>5R　3歳未勝利　芝1200m</span><span><span class="meta">16頭 37pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_福島06R_4歳以上1勝クラス_芝1800m.html"><span>6R　4歳以上1勝クラス　芝1800m</span><span><span class="meta">13頭 117pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_福島07R_4歳以上1勝クラス_芝2000m.html"><span>7R　4歳以上1勝クラス　芝2000m</span><span><span class="meta">10頭 74pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_福島08R_4歳以上1勝クラス_ダ1700m.html"><span>8R　4歳以上1勝クラス　ダ1700m</span><span><span class="meta">15頭 135pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_福島09R_須賀川特別_芝1200m.html"><span>9R　須賀川特別　芝1200m</span><span><span class="meta">16頭 130pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_福島10R_奥の細道特別_芝2600m.html"><span>10R　奥の細道特別　芝2600m</span><span><span class="meta">13頭 127pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_福島11R_福島牝馬S_芝1800m.html"><span>11R　福島牝馬S　芝1800m</span><span><span class="meta">16頭 147pts</span> <span class="arrow">›</span></span></a>
+  <a href="scatter_20260419_福島12R_4歳以上1勝クラス_ダ1150m.html"><span>12R　4歳以上1勝クラス　ダ1150m</span><span><span class="meta">15頭 134pts</span> <span class="arrow">›</span></span></a>
+  </div>
 </div>
-</div></div>
-<script>
-function toggleDate(el) { el.classList.toggle('open'); el.nextElementSibling.classList.toggle('open'); }
-function toggleVenue(el) { el.classList.toggle('open'); el.nextElementSibling.classList.toggle('open'); }
-</script>
 </body></html>
