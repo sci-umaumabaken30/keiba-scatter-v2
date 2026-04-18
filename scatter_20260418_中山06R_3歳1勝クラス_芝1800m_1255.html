@@ -660,12 +660,11 @@ function buildPanel() {
       h.races.forEach((r, ri) => {
         const inIdeal = Math.abs(r.cushion - TX) <= 0.2 && Math.abs(r.moisture - TY) <= 1.5;
         const rrKey = h.name + '_' + ri;
-        const distLabel = r.distance === TDIST ? '同距離' : (r.distance > TDIST ? '短縮' : '延長');
+        const distLabel = r.distance === TDIST ? '同' : (r.distance > TDIST ? '短' : '延');
         const resultColor = r.result === 1 ? '#f59e0b' : r.result !== null && r.result <= 3 ? '#22c55e' : '#ef4444';
         html += `<div class="race-card${inIdeal ? ' ideal' : ''}" data-horse="${i}" data-ri="${ri}">
           <div class="rc-date">${r.date} ${r.venue}</div>
-          <div class="rc-name">${r.race_name}</div>
-          <div class="rc-cond">${r.surface}${r.distance}m (${distLabel})</div>
+          <div class="rc-name">${r.race_name}　${r.surface}${r.distance}m（${distLabel}）</div>
           <div class="rc-bottom">
             <span class="rc-cv">CV${r.cushion} / ${r.moisture}%</span>
             <span class="rc-result" style="color:${resultColor}">${r.result !== null ? r.result + '着' : '取消'}</span>
