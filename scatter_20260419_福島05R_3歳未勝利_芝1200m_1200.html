@@ -147,8 +147,8 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
 .rc-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 3px; }
 .rc-cv { font-size: 9px; color: var(--text-muted); }
 .rc-result { font-size: 13px; font-weight: 900; }
-.rc-winner { font-size: 9px; color: var(--text-muted); text-align: right; }
-.rc-sub { font-size: 9px; color: var(--text-muted); margin-top: 2px; }
+.rc-winner { font-size: 11px; color: var(--text-muted); text-align: right; }
+.rc-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 .race-mark-row { display: flex; gap: 3px; margin-top: 4px; justify-content: flex-end; }
 .race-mark-btn {
   width: 26px; height: 22px; border: 1.5px solid var(--border);
@@ -156,7 +156,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
   font-size: 10px; font-weight: 800; color: var(--text-muted);
   transition: all 0.12s; -webkit-tap-highlight-color: transparent; padding: 0;
 }
-.race-mark-btn:active { transform: scale(0.9); }
+.race-mark-btn:active { transform: none; }
 .race-mark-btn.marked-○ { background: #dc2626; border-color: #dc2626; color: #fff; }
 .race-mark-btn.marked-▲ { background: #f59e0b; border-color: #f59e0b; color: #fff; }
 .race-mark-btn.marked-× { background: #64748b; border-color: #64748b; color: #fff; }
@@ -984,7 +984,7 @@ function draw() {
   const tx = toX(TX), ty = toY(TY);
   ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 24px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 3;
-  ctx.strokeText('★', tx, ty); ctx.fillText('★', tx, ty);
+  ctx.strokeText('◆', tx, ty); ctx.fillText('◆', tx, ty);
   ctx.textBaseline = 'alphabetic';
 }
 
@@ -1021,7 +1021,6 @@ function buildPanel() {
     const cnt = h.races.length;
     const noData = cnt === 0;
     html += `<button class="horse-btn${noData ? ' no-data' : ''}" id="btn-${i}">
-      <span class="h-dot" style="background:${horseColors[i]}"></span>
       <span class="h-num">${h.horse_num}</span>
       <span>${h.name}</span>
       <span class="h-count">${cnt > 0 ? cnt + '走' : 'なし'}</span>
