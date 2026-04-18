@@ -3,148 +3,544 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>04/19 クッション値×含水率</title>
+<title>クッション値×含水率 散布図</title>
 <style>
 :root {
-  --bg: #0f172a; --bg-card: #1e293b; --border: #334155;
-  --text: #f1f5f9; --text-sub: #94a3b8; --text-muted: #64748b;
-  --accent: #f59e0b; --blue: #38bdf8;
+  --bg-start: #0a1e4a; --bg-mid: #0f2d6b; --bg-end: #0a1a3d;
+  --bg-card: rgba(255,255,255,0.07); --bg-card2: rgba(255,255,255,0.04);
+  --border: rgba(100,160,255,0.2); --border-bright: rgba(100,160,255,0.4);
+  --text: #e8f0ff; --text-muted: #7ea8d8; --text-sub: #a8c4e8;
+  --accent: #f59e0b; --accent2: #38bdf8;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans JP', sans-serif;
-  background: var(--bg); color: var(--text); padding: 14px;
+  background: linear-gradient(160deg, var(--bg-start) 0%, var(--bg-mid) 50%, var(--bg-end) 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  color: var(--text); padding: 14px;
   -webkit-font-smoothing: antialiased;
 }
-.page-header { margin-bottom: 16px; }
-.page-header h1 { font-size: 20px; font-weight: 900; }
-.page-header .sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
-.venue-block { margin-bottom: 16px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
-.venue-head {
-  padding: 12px 14px; background: var(--bg-card);
-  display: flex; justify-content: space-between; align-items: center;
+/* ── Header ── */
+.page-header {
+  margin-bottom: 14px; display: flex;
+  justify-content: space-between; align-items: flex-start;
+  background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.04));
+  border: 1px solid var(--border-bright);
+  border-radius: 14px; padding: 14px 16px;
+  backdrop-filter: blur(10px);
 }
-.venue-head h2 { font-size: 16px; font-weight: 900; }
-.venue-cv {
-  display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;
+.page-header h1 {
+  font-size: 18px; font-weight: 900;
+  background: linear-gradient(90deg, #ffffff, #7eb8f7);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
-.cv-badge {
-  font-size: 10px; font-weight: 700; font-family: monospace;
-  background: var(--bg); border: 1px solid var(--border);
-  padding: 2px 7px; border-radius: 5px; color: var(--text-sub);
-}
-.cv-badge b { color: var(--accent); }
-.cv-badge.moist b { color: var(--blue); }
-.race-list a {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 13px 14px; border-top: 1px solid var(--border);
-  background: #111827; color: var(--text); text-decoration: none;
-  font-size: 14px; font-weight: 700;
-  transition: background 0.1s;
-  -webkit-tap-highlight-color: transparent;
-}
-.race-list a:active { background: #1e293b; }
-.race-list a .meta { font-size: 10px; color: var(--text-muted); font-weight: 600; margin-left: 8px; }
-.race-list a .arrow { color: var(--text-muted); font-size: 14px; }
-.page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
-.page-header-text h1 { font-size: 20px; font-weight: 900; }
-.page-header-text .sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+.page-header .sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
 .admin-btn {
   display: inline-flex; align-items: center; gap: 6px;
-  background: #1e293b; border: 1px solid #334155; color: #94a3b8;
-  text-decoration: none; padding: 8px 14px; border-radius: 10px;
-  font-size: 12px; font-weight: 800; white-space: nowrap; flex-shrink: 0;
+  background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  color: var(--text-sub); padding: 7px 12px; border-radius: 10px;
+  font-size: 12px; font-weight: 800; white-space: nowrap;
+  cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
-.admin-btn:hover { border-color: var(--accent); color: var(--accent); }
-.admin-dot { width: 7px; height: 7px; border-radius: 50%; background: #475569; }
+.admin-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(245,158,11,0.15); }
+.admin-dot { width: 7px; height: 7px; border-radius: 50%; background: #4a6a8a; flex-shrink: 0; }
+.admin-btn.online .admin-dot { background: #22c55e; animation: pulse 1.5s infinite; }
+.admin-btn.online { border-color: rgba(34,197,94,0.4); color: #22c55e; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+/* ── Filter bar ── */
+.filter-bar {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 14px; flex-wrap: wrap;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 14px; padding: 10px 12px;
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+}
+.stab {
+  padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 800;
+  cursor: pointer; border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.10); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  color: var(--text-sub); transition: all 0.15s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+.stab:hover { border-color: rgba(255,255,255,0.35); color: var(--text); background: rgba(255,255,255,0.16); }
+.stab.active { background: var(--accent); border-color: var(--accent); color: #000; backdrop-filter: none; }
+.graded-label {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 800;
+  border: 1px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.10);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  color: var(--text-sub); cursor: pointer; user-select: none; transition: all 0.15s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+.graded-label input { display: none; }
+.graded-label.checked { background: rgba(124,58,237,0.3); border-color: rgba(167,139,250,0.5); color: #c4b5fd; backdrop-filter: blur(8px); }
+.venue-select {
+  margin-left: auto; padding: 6px 10px; border-radius: 8px;
+  background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  color: var(--text); font-size: 12px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+.venue-select option { background: #0f2d6b; }
+/* ── Date section ── */
+.date-section {
+  margin-bottom: 12px; border-radius: 14px; overflow: hidden;
+  border: 1px solid var(--border-bright);
+  box-shadow: 0 4px 24px rgba(0,30,80,0.4);
+}
+.date-header {
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(30,80,160,0.5), rgba(15,45,107,0.5));
+  cursor: pointer; display: flex; align-items: center; gap: 8px;
+  font-size: 15px; font-weight: 900; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  backdrop-filter: blur(8px);
+}
+.badge-week {
+  font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 10px;
+  background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3);
+}
+.race-count { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+.date-header .spacer { flex: 1; }
+.date-header .toggle { font-size: 11px; color: var(--text-muted); transition: transform 0.2s; }
+.date-header.open .toggle { transform: rotate(180deg); }
+.race-list {
+  display: none; padding: 10px;
+  background: linear-gradient(180deg, rgba(10,30,74,0.6), rgba(8,20,55,0.8));
+  backdrop-filter: blur(4px);
+}
+.race-list.open { display: block; }
+/* ── Venue grid (horizontal scroll) ── */
+.venue-grid {
+  display: flex; gap: 10px;
+  overflow-x: auto; padding-bottom: 6px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin; scrollbar-color: rgba(100,160,255,0.3) transparent;
+}
+.venue-grid::-webkit-scrollbar { height: 4px; }
+.venue-grid::-webkit-scrollbar-track { background: transparent; }
+.venue-grid::-webkit-scrollbar-thumb { background: rgba(100,160,255,0.3); border-radius: 2px; }
+.venue-col {
+  min-width: 220px; flex-shrink: 0;
+  background: rgba(255,255,255,0.06);
+  border-radius: 10px;
+  border: 1px solid var(--border); overflow: hidden;
+  backdrop-filter: blur(6px);
+}
+.venue-col-header {
+  padding: 8px 12px;
+  background: linear-gradient(135deg, rgba(56,100,200,0.35), rgba(30,60,140,0.35));
+  border-bottom: 1px solid var(--border-bright);
+}
+.venue-head-row {
+  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+}
+.venue-col-header .venue-name {
+  font-size: 14px; font-weight: 900;
+  color: #c8deff;
+}
+.venue-col-header .venue-cv {
+  font-size: 10px; color: var(--text-muted); font-weight: 600;
+}
+.venue-weather {
+  display: flex; gap: 6px; margin-top: 5px; flex-wrap: wrap;
+}
+.wx-slot {
+  font-size: 10px; color: #a8c4e8; font-weight: 600;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  min-width: 28px;
+}
+.wx-slot .wx-time { font-size: 8px; color: #7ea8d8; }
+.wx-slot .wx-icon { font-size: 16px; line-height: 1;
+  font-family: 'Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji','Twemoji Mozilla',sans-serif; }
+/* ── Race row ── */
+.race-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 12px; border-bottom: 1px solid var(--border);
+  color: var(--text); text-decoration: none; font-size: 13px;
+  -webkit-tap-highlight-color: transparent; transition: background 0.1s;
+}
+.race-row:last-child { border-bottom: none; }
+.race-row:active, .race-row:hover { background: rgba(100,160,255,0.12); }
+.race-num-block { display: flex; flex-direction: column; align-items: center; min-width: 36px; flex-shrink: 0; gap: 2px; }
+.race-num { font-size: 11px; font-weight: 800; color: var(--text-muted); white-space: nowrap; }
+.race-time-row { display: flex; align-items: center; gap: 3px; }
+.race-time { font-size: 9px; color: var(--accent2); font-weight: 700; white-space: nowrap; font-family: monospace; }
+.time-lamp { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: #2d3f55; }
+.time-lamp.lamp-green { background: #22c55e; box-shadow: 0 0 4px #22c55e; }
+.time-lamp.lamp-red { background: #ef4444; box-shadow: 0 0 5px #ef4444; }
+.race-name { flex: 1; font-weight: 700; font-size: 12px; line-height: 1.3; }
+.race-dist { font-size: 10px; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
+.arrow { color: var(--text-muted); font-size: 14px; flex-shrink: 0; }
+/* ── Surface badges ── */
+.sbadge {
+  font-size: 10px; font-weight: 900; padding: 2px 6px;
+  border-radius: 6px; flex-shrink: 0;
+}
+.sbadge.turf { background: rgba(34,197,94,0.2); color: #4ade80; border: 1px solid rgba(34,197,94,0.4); }
+.sbadge.dirt { background: rgba(245,158,11,0.2); color: #fbbf24; border: 1px solid rgba(245,158,11,0.4); }
+.sbadge.hurdle { background: rgba(148,163,184,0.15); color: #94a3b8; border: 1px solid rgba(148,163,184,0.3); }
+/* ── Admin modal ── */
+.admin-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,10,40,0.75); z-index: 200;
+  align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.admin-overlay.show { display: flex; }
+.admin-modal {
+  background: linear-gradient(135deg, rgba(20,50,120,0.95), rgba(10,30,80,0.95));
+  border: 1px solid var(--border-bright); border-radius: 16px;
+  padding: 24px; max-width: 360px; width: 90%;
+  box-shadow: 0 20px 60px rgba(0,10,50,0.7);
+  backdrop-filter: blur(12px);
+}
+.admin-modal h3 { font-size: 16px; font-weight: 900; margin-bottom: 8px; color: #c8deff; }
+.admin-modal p { font-size: 13px; color: var(--text-sub); line-height: 1.6; margin-bottom: 16px; }
+.admin-modal code {
+  display: block; background: rgba(0,0,0,0.3); border: 1px solid var(--border-bright);
+  border-radius: 8px; padding: 10px 12px; font-size: 12px;
+  color: var(--accent); font-family: monospace; margin-bottom: 16px;
+}
+.modal-btns { display: flex; gap: 8px; }
+.modal-btn {
+  flex: 1; padding: 10px; border-radius: 8px; font-size: 13px;
+  font-weight: 800; cursor: pointer; border: none; transition: all 0.15s;
+}
+.modal-btn-primary { background: var(--accent); color: #000; }
+.modal-btn-primary:hover { background: #fbbf24; }
+.modal-btn-secondary { background: rgba(255,255,255,0.1); color: var(--text); border: 1px solid var(--border); }
+.modal-btn-secondary:hover { background: rgba(255,255,255,0.15); }
 </style>
 </head>
 <body>
+
 <div class="page-header">
-  <div class="page-header-text">
-    <h1>04/19 競馬　クッション値×含水率</h1>
-    <div class="sub">散布図一覧 — タップで各レースの散布図を表示</div>
+  <div>
+    <h1>クッション値×含水率 散布図</h1>
+    <div class="sub">会場別レース一覧</div>
   </div>
-  <a href="http://localhost:5001/" target="_blank" class="admin-btn">
+  <button class="admin-btn" id="admin-btn" onclick="openAdmin()">
     <span class="admin-dot"></span>管理ページ
-  </a>
+  </button>
 </div>
-<div class="venue-block">
-  <div class="venue-head">
-    <div>
-      <h2>中山</h2>
-      <div class="venue-cv">
-        <span class="cv-badge">CV <b>9.6</b></span>
-        <span class="cv-badge moist">芝 <b>10.6%</b></span>
-        <span class="cv-badge moist">ダ <b>5.8%</b></span>
-      </div>
+
+<div class="filter-bar">
+  <button class="stab active" data-filter="all">全て</button>
+  <button class="stab" data-filter="turf">芝</button>
+  <button class="stab" data-filter="dirt">ダート</button>
+  <label class="graded-label" id="graded-label">
+    <input type="checkbox" id="graded-toggle"> 重賞
+  </label>
+  <select class="venue-select" id="venue-select">
+    <option value="">全会場</option>
+  </select>
+</div>
+
+<div id="admin-modal" class="admin-overlay">
+  <div class="admin-modal">
+    <h3>🏇 管理ダッシュボード</h3>
+    <p id="modal-msg">ローカルサーバーが起動しているか確認しています...</p>
+    <code>start_admin.bat をダブルクリックして起動</code>
+    <div class="modal-btns">
+      <button class="modal-btn modal-btn-primary" id="modal-open-btn" onclick="goAdmin()">開く</button>
+      <button class="modal-btn modal-btn-secondary" onclick="closeModal()">閉じる</button>
     </div>
   </div>
-  <div class="race-list">
-  <a href="scatter_20260419_中山01R__ダ0m.html"><span>1R　　ダ0m</span><span><span class="meta">12頭 33pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_中山02R__ダ0m.html"><span>2R　　ダ0m</span><span><span class="meta">16頭 55pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_中山03R__ダ0m.html"><span>3R　　ダ0m</span><span><span class="meta">14頭 54pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_中山04R__芝0m.html"><span>4R　　芝0m</span><span><span class="meta">16頭 46pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_中山05R__芝0m.html"><span>5R　　芝0m</span><span><span class="meta">10頭 56pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_中山06R__ダ0m.html"><span>6R　　ダ0m</span><span><span class="meta">6頭 26pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_中山07R__ダ0m.html"><span>7R　　ダ0m</span><span><span class="meta">13頭 170pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_中山08R__ダ0m.html"><span>8R　　ダ0m</span><span><span class="meta">12頭 150pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_中山09R__芝0m.html"><span>9R　　芝0m</span><span><span class="meta">12頭 169pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_中山10R__ダ0m.html"><span>10R　　ダ0m</span><span><span class="meta">15頭 305pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_中山11R__芝0m.html"><span>11R　　芝0m</span><span><span class="meta">18頭 71pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_中山12R__芝0m.html"><span>12R　　芝0m</span><span><span class="meta">18頭 380pts</span> <span class="arrow">›</span></span></a>
-  </div>
 </div>
-<div class="venue-block">
-  <div class="venue-head">
-    <div>
-      <h2>阪神</h2>
-      <div class="venue-cv">
-        <span class="cv-badge">CV <b>9.4</b></span>
-        <span class="cv-badge moist">芝 <b>12.9%</b></span>
-        <span class="cv-badge moist">ダ <b>7.1%</b></span>
-      </div>
-    </div>
-  </div>
-  <div class="race-list">
-  <a href="scatter_20260419_阪神01R__ダ0m.html"><span>1R　　ダ0m</span><span><span class="meta">16頭 50pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_阪神02R__芝0m.html"><span>2R　　芝0m</span><span><span class="meta">16頭 40pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_阪神03R__ダ0m.html"><span>3R　　ダ0m</span><span><span class="meta">16頭 56pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_阪神04R__芝0m.html"><span>4R　　芝0m</span><span><span class="meta">14頭 267pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_阪神05R__芝0m.html"><span>5R　　芝0m</span><span><span class="meta">13頭 26pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_阪神06R__ダ0m.html"><span>6R　　ダ0m</span><span><span class="meta">15頭 70pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_阪神07R__芝0m.html"><span>7R　　芝0m</span><span><span class="meta">8頭 26pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_阪神08R__ダ0m.html"><span>8R　　ダ0m</span><span><span class="meta">11頭 120pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_阪神09R__芝0m.html"><span>9R　　芝0m</span><span><span class="meta">10頭 190pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_阪神10R__ダ0m.html"><span>10R　　ダ0m</span><span><span class="meta">13頭 236pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_阪神11R__芝0m.html"><span>11R　　芝0m</span><span><span class="meta">10頭 142pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_阪神12R__ダ0m.html"><span>12R　　ダ0m</span><span><span class="meta">10頭 142pts</span> <span class="arrow">›</span></span></a>
-  </div>
+<div class="date-section" data-date="2026/04/19">
+<div class="date-header open" onclick="toggleDate(this)"><span>4/19（日）</span><span class="badge-week">今週</span><span class="spacer"></span><span class="toggle">▼</span></div>
+<div class="race-list open"><div class="venue-grid">
+<div class="venue-col" data-venue="中山">
+<div class="venue-col-header"><div class="venue-head-row"><span class="venue-name">中山</span><span class="venue-cv">CV未取得</span></div><div class="venue-weather" data-wxvenue="中山"><span class="wx-slot"><span class="wx-time">9時</span><span class="wx-icon" data-wxh="9">…</span></span><span class="wx-slot"><span class="wx-time">12時</span><span class="wx-icon" data-wxh="12">…</span></span><span class="wx-slot"><span class="wx-time">15時</span><span class="wx-icon" data-wxh="15">…</span></span></div></div>
+<a class="race-row" href="scatter_20260419_中山01R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_中山01R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_中山02R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_中山02R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_中山03R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_中山03R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_中山04R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_中山04R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_中山05R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_中山05R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_中山06R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_中山06R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_中山07R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_中山07R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_中山08R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_中山08R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_中山09R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_中山09R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_中山10R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_中山10R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_中山11R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_中山11R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_中山12R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_中山12R__芝0m</span><span class="arrow">›</span></a>
 </div>
-<div class="venue-block">
-  <div class="venue-head">
-    <div>
-      <h2>福島</h2>
-      <div class="venue-cv">
-        <span class="cv-badge">CV <b>9.5</b></span>
-        <span class="cv-badge moist">芝 <b>12.3%</b></span>
-        <span class="cv-badge moist">ダ <b>3.0%</b></span>
-      </div>
-    </div>
-  </div>
-  <div class="race-list">
-  <a href="scatter_20260419_福島01R__ダ0m.html"><span>1R　　ダ0m</span><span><span class="meta">16頭 66pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_福島02R__ダ0m.html"><span>2R　　ダ0m</span><span><span class="meta">15頭 41pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_福島03R__芝0m.html"><span>3R　　芝0m</span><span><span class="meta">16頭 32pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_福島04R__ダ0m.html"><span>4R　　ダ0m</span><span><span class="meta">15頭 41pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_福島05R__芝0m.html"><span>5R　　芝0m</span><span><span class="meta">16頭 37pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_福島06R__芝0m.html"><span>6R　　芝0m</span><span><span class="meta">13頭 199pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_福島07R__芝0m.html"><span>7R　　芝0m</span><span><span class="meta">10頭 139pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_福島08R__ダ0m.html"><span>8R　　ダ0m</span><span><span class="meta">15頭 267pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_福島09R__芝0m.html"><span>9R　　芝0m</span><span><span class="meta">16頭 209pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_福島10R__芝0m.html"><span>10R　　芝0m</span><span><span class="meta">13頭 218pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_福島11R__芝0m.html"><span>11R　　芝0m</span><span><span class="meta">16頭 207pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_福島12R__ダ0m.html"><span>12R　　ダ0m</span><span><span class="meta">15頭 232pts</span> <span class="arrow">›</span></span></a>
-  </div>
+<div class="venue-col" data-venue="阪神">
+<div class="venue-col-header"><div class="venue-head-row"><span class="venue-name">阪神</span><span class="venue-cv">CV未取得</span></div><div class="venue-weather" data-wxvenue="阪神"><span class="wx-slot"><span class="wx-time">9時</span><span class="wx-icon" data-wxh="9">…</span></span><span class="wx-slot"><span class="wx-time">12時</span><span class="wx-icon" data-wxh="12">…</span></span><span class="wx-slot"><span class="wx-time">15時</span><span class="wx-icon" data-wxh="15">…</span></span></div></div>
+<a class="race-row" href="scatter_20260419_阪神01R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_阪神01R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_阪神02R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_阪神02R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_阪神03R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_阪神03R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_阪神04R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_阪神04R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_阪神05R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_阪神05R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_阪神06R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_阪神06R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_阪神07R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_阪神07R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_阪神08R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_阪神08R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_阪神09R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_阪神09R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_阪神10R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_阪神10R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_阪神11R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_阪神11R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_阪神12R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_阪神12R__ダ0m</span><span class="arrow">›</span></a>
 </div>
+<div class="venue-col" data-venue="福島">
+<div class="venue-col-header"><div class="venue-head-row"><span class="venue-name">福島</span><span class="venue-cv">CV未取得</span></div><div class="venue-weather" data-wxvenue="福島"><span class="wx-slot"><span class="wx-time">9時</span><span class="wx-icon" data-wxh="9">…</span></span><span class="wx-slot"><span class="wx-time">12時</span><span class="wx-icon" data-wxh="12">…</span></span><span class="wx-slot"><span class="wx-time">15時</span><span class="wx-icon" data-wxh="15">…</span></span></div></div>
+<a class="race-row" href="scatter_20260419_福島01R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_福島01R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_福島02R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_福島02R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_福島03R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_福島03R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_福島04R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_福島04R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_福島05R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_福島05R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_福島06R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_福島06R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_福島07R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_福島07R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_福島08R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_福島08R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_福島09R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_福島09R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_福島10R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_福島10R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_福島11R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_福島11R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260419_福島12R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260419_福島12R__ダ0m</span><span class="arrow">›</span></a>
+</div>
+</div></div></div>
+<div class="date-section" data-date="2026/04/18">
+<div class="date-header" onclick="toggleDate(this)"><span>4/18（土）</span><span class="badge-week">今週</span><span class="spacer"></span><span class="toggle">▼</span></div>
+<div class="race-list"><div class="venue-grid">
+<div class="venue-col" data-venue="中山">
+<div class="venue-col-header"><div class="venue-head-row"><span class="venue-name">中山</span><span class="venue-cv">CV=9.6  芝10.6%  ダ5.8%</span></div></div>
+<a class="race-row" href="scatter_20260418_中山01R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_中山01R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_中山02R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_中山02R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_中山03R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_中山03R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_中山04R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_中山04R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_中山05R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_中山05R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_中山06R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_中山06R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_中山07R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_中山07R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_中山08R__ダ2000m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_中山08R__ダ2000m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_中山09R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_中山09R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_中山10R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_中山10R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_中山11R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_中山11R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_中山12R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_中山12R__ダ0m</span><span class="arrow">›</span></a>
+</div>
+<div class="venue-col" data-venue="阪神">
+<div class="venue-col-header"><div class="venue-head-row"><span class="venue-name">阪神</span><span class="venue-cv">CV=9.4  芝12.9%  ダ7.1%</span></div></div>
+<a class="race-row" href="scatter_20260418_阪神01R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_阪神01R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_阪神02R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_阪神02R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_阪神03R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_阪神03R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_阪神04R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_阪神04R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_阪神05R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_阪神05R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_阪神06R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_阪神06R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_阪神07R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_阪神07R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_阪神08R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_阪神08R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_阪神09R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_阪神09R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_阪神10R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_阪神10R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_阪神11R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_阪神11R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_阪神12R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_阪神12R__ダ0m</span><span class="arrow">›</span></a>
+</div>
+<div class="venue-col" data-venue="福島">
+<div class="venue-col-header"><div class="venue-head-row"><span class="venue-name">福島</span><span class="venue-cv">CV=9.5  芝12.3%  ダ3.0%</span></div></div>
+<a class="race-row" href="scatter_20260418_福島01R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_福島01R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_福島02R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_福島02R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_福島03R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_福島03R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_福島04R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_福島04R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_福島05R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_福島05R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_福島06R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_福島06R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_福島07R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_福島07R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_福島08R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_福島08R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_福島09R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_福島09R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_福島10R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_福島10R__芝0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_福島11R__ダ0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_福島11R__ダ0m</span><span class="arrow">›</span></a>
+<a class="race-row" href="scatter_20260418_福島12R__芝0m.html" data-surface="all" data-graded="0"><span class="race-name">20260418_福島12R__芝0m</span><span class="arrow">›</span></a>
+</div>
+</div></div></div>
+<script>
+function toggleDate(el) {
+  el.classList.toggle('open');
+  el.nextElementSibling.classList.toggle('open');
+}
+
+// Populate venue select
+(function() {
+  var sel = document.getElementById('venue-select');
+  document.querySelectorAll('.venue-col').forEach(function(col) {
+    var v = col.dataset.venue;
+    if (v && !sel.querySelector('option[value="' + v + '"]')) {
+      var opt = document.createElement('option');
+      opt.value = v; opt.textContent = v;
+      sel.appendChild(opt);
+    }
+  });
+})();
+
+var surfaceFilter = 'all';
+var gradedOnly = false;
+var venueFilter = '';
+
+function applyFilters() {
+  document.querySelectorAll('.race-row').forEach(function(row) {
+    var surf = row.dataset.surface;
+    var graded = row.dataset.graded === '1';
+    var show = true;
+    if (surfaceFilter !== 'all' && surf !== surfaceFilter) show = false;
+    if (gradedOnly && !graded) show = false;
+    row.style.display = show ? '' : 'none';
+  });
+  document.querySelectorAll('.venue-col').forEach(function(col) {
+    var vMatch = !venueFilter || col.dataset.venue === venueFilter;
+    var hasVisible = vMatch && Array.from(col.querySelectorAll('.race-row')).some(function(r) {
+      return r.style.display !== 'none';
+    });
+    col.style.display = hasVisible ? '' : 'none';
+  });
+}
+
+document.querySelectorAll('.stab').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.stab').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    surfaceFilter = btn.dataset.filter;
+    applyFilters();
+  });
+});
+
+document.getElementById('graded-toggle').addEventListener('change', function(e) {
+  gradedOnly = e.target.checked;
+  document.getElementById('graded-label').classList.toggle('checked', gradedOnly);
+  applyFilters();
+});
+
+document.getElementById('venue-select').addEventListener('change', function(e) {
+  venueFilter = e.target.value;
+  applyFilters();
+});
+
+// Admin
+var ADMIN_URL = 'http://localhost:5001/';
+function checkAdmin() {
+  fetch(ADMIN_URL + 'api/status', { signal: AbortSignal.timeout(1500) })
+    .then(function(r) { if (r.ok) document.getElementById('admin-btn').classList.add('online'); })
+    .catch(function() {});
+}
+function openAdmin() {
+  document.getElementById('admin-modal').classList.add('show');
+  fetch(ADMIN_URL + 'api/status', { signal: AbortSignal.timeout(1500) })
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(data) {
+      var msg = document.getElementById('modal-msg');
+      var btn = document.getElementById('modal-open-btn');
+      if (data) {
+        msg.textContent = '✅ サーバー起動中です。管理ページを開けます。';
+        msg.style.color = '#22c55e';
+      } else {
+        msg.textContent = '⚠️ サーバーが起動していません。先に start_admin.bat を実行してください。';
+        msg.style.color = '#f59e0b';
+      }
+      btn.disabled = false;
+    })
+    .catch(function() {
+      document.getElementById('modal-msg').textContent = '⚠️ サーバーが起動していません。先に start_admin.bat を実行してください。';
+      document.getElementById('modal-msg').style.color = '#f59e0b';
+    });
+}
+function goAdmin() { window.open(ADMIN_URL, '_blank'); closeModal(); }
+function closeModal() { document.getElementById('admin-modal').classList.remove('show'); }
+document.getElementById('admin-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+checkAdmin();
+
+// ── Race lamps ──
+function updateLamps() {
+  var now = new Date();
+  var todayStr = now.getFullYear() + '/' +
+    String(now.getMonth()+1).padStart(2,'0') + '/' +
+    String(now.getDate()).padStart(2,'0');
+  var nowMin = now.getHours() * 60 + now.getMinutes();
+
+  // 今日のレース行を収集
+  var todayRows = [];
+  document.querySelectorAll('.date-section').forEach(function(sec) {
+    if (sec.dataset.date !== todayStr) return;
+    sec.querySelectorAll('.race-row[data-starttime]').forEach(function(row) {
+      var t = row.dataset.starttime;
+      todayRows.push({
+        row: row,
+        startMin: parseInt(t.slice(0,2),10)*60 + parseInt(t.slice(2,4),10)
+      });
+    });
+  });
+
+  // 全ランプをいったん消灯
+  document.querySelectorAll('.time-lamp').forEach(function(l) {
+    l.className = 'time-lamp';
+  });
+
+  if (todayRows.length === 0) return;
+
+  // 直近レースを特定（未開始の中で nowMin に最も近いもの）
+  var nearest = null, nearestDiff = Infinity;
+  todayRows.forEach(function(r) {
+    if (r.startMin <= nowMin) return; // 開始済みはスキップ
+    var diff = r.startMin - nowMin;
+    if (diff < nearestDiff) { nearestDiff = diff; nearest = r; }
+  });
+
+  todayRows.forEach(function(r) {
+    var lamp = r.row.querySelector('.time-lamp');
+    if (!lamp) return;
+    if (r.startMin <= nowMin) {
+      // 開始済み → 消灯
+    } else if (r === nearest) {
+      lamp.className = 'time-lamp lamp-red';  // 直近 → 赤
+    } else {
+      lamp.className = 'time-lamp lamp-green'; // 未来 → 緑
+    }
+  });
+}
+updateLamps();
+setInterval(updateLamps, 60000);
+
+// ── 天気取得 ──
+(function() {
+  var VENUE_COORDS = {
+    '東京':[35.6955,139.4903],'中山':[35.7756,139.9297],'阪神':[34.8167,135.3833],
+    '京都':[34.9000,135.7667],'中京':[35.1667,136.9333],'小倉':[33.8833,130.8333],
+    '新潟':[37.8833,138.9500],'福島':[37.7667,140.4667],'函館':[41.7500,140.6833],'札幌':[43.0000,141.3500]
+  };
+  function wmoIcon(code) {
+    if (code === 0) return '☀';
+    if (code <= 1) return '🌤';
+    if (code <= 2) return '⛅';
+    if (code <= 3) return '☁';
+    if (code <= 48) return '🌫';
+    if (code <= 57) return '🌦';
+    if (code <= 67) return '🌧';
+    if (code <= 77) return '🌨';
+    if (code <= 82) return '🌦';
+    return '⛈';
+  }
+  var today = new Date();
+  var todayStr = today.getFullYear() + '-' +
+    String(today.getMonth()+1).padStart(2,'0') + '-' +
+    String(today.getDate()).padStart(2,'0');
+  document.querySelectorAll('[data-wxvenue]').forEach(function(el) {
+    var venue = el.dataset.wxvenue;
+    var coords = VENUE_COORDS[venue];
+    if (!coords) return;
+    var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + coords[0] +
+      '&longitude=' + coords[1] + '&hourly=weather_code&timezone=Asia%2FTokyo&forecast_days=1';
+    fetch(url).then(function(r) { return r.json(); }).then(function(data) {
+      var times = data.hourly.time;
+      var codes = data.hourly.weather_code;
+      [9, 12, 15].forEach(function(h) {
+        var ts = todayStr + 'T' + String(h).padStart(2,'0') + ':00';
+        var idx = times.indexOf(ts);
+        if (idx < 0) return;
+        var icon = wmoIcon(codes[idx]);
+        el.querySelectorAll('[data-wxh]').forEach(function(slot) {
+          if (parseInt(slot.dataset.wxh) === h) slot.textContent = icon;
+        });
+      });
+    }).catch(function() {});
+  });
+})();
+</script>
 </body></html>
