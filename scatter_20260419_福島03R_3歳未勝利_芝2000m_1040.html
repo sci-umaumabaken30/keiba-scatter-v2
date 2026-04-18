@@ -31,12 +31,14 @@ body {
   box-shadow: 0 2px 16px rgba(0,10,60,0.5);
   backdrop-filter: blur(8px);
 }
+.header-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .header h1 {
   font-size: 14px; font-weight: 900; letter-spacing: -0.3px;
   background: linear-gradient(90deg, #ffffff, #7eb8f7);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  line-height: 1.3; white-space: nowrap;
 }
+.header-time { font-size: 11px; color: var(--text-muted); font-weight: 700; }
 .header .sub { display: none; }
 .header-badges { display: none; }
 .badge {
@@ -180,10 +182,13 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
 <body>
 
 <div class="header">
-  <h1>福島3R　3歳未勝利　芝2000m　CV9.5　含水率12.3%　10:40</h1>
+  <div class="header-row">
+    <h1>福島3R　3歳未勝利　芝2000m</h1>
+    <div class="badge cv"><span>CV</span><b>9.5</b></div>
+    <div class="badge moist"><span>含水率</span><b>12.3%</b></div>
+    <span class="header-time">10:40</span>
+  </div>
 </div>
-</div>
-
 <div class="main">
   <div class="chart-wrap">
     <canvas id="chart"></canvas>
