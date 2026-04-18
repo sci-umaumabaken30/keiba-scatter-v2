@@ -1095,7 +1095,7 @@ function buildPanel() {
         const inIdeal = Math.abs(r.cushion - TX) <= 0.2 && Math.abs(r.moisture - TY) <= 1.5;
         const rrKey = h.name + '_' + ri;
         const distLabel = r.distance === TDIST ? '同' : (r.distance > TDIST ? '短' : '延');
-        const resultColor = r.result === 1 ? '#f59e0b' : r.result !== null && r.result <= 3 ? '#22c55e' : '#ef4444';
+        const resultColor = COLORS[r.cat] || '#888888';
         html += `<div class="race-card${inIdeal ? ' ideal' : ''}" data-horse="${i}" data-ri="${ri}">
           <div class="rc-date">${r.date}　${r.venue}　CV${r.cushion}/${r.moisture}%</div>
           <div class="rc-name">${r.race_name}　${r.surface}${r.distance}m（${distLabel}）</div>
