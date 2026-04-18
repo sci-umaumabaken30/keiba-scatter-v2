@@ -41,15 +41,22 @@ body {
 .header-time { font-size: 11px; color: var(--text-muted); font-weight: 700; }
 .header .sub { display: none; }
 .header-badges { display: none; }
-.badge {
-  display: inline-flex; align-items: center; gap: 4px;
-  background: rgba(255,255,255,0.08); border: 1px solid var(--border2);
-  padding: 3px 8px; border-radius: 6px;
-  font-size: 11px; font-weight: 700; font-family: monospace; color: var(--text-sub);
-}
+.badge { display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.08); border: 1px solid var(--border2); padding: 3px 8px; border-radius: 6px; min-width: 70px; justify-content: center; font-size: 11px; font-weight: 700; font-family: monospace; color: var(--text-sub); }
 .badge b { color: var(--text); }
-.badge.cv b { color: var(--accent-cv); }
-.badge.moist b { color: var(--accent-moist); }
+.badge.turf { border-color: rgba(34,197,94,0.6); color: #22c55e; background: rgba(34,197,94,0.08); }
+.badge.turf b { color: #22c55e; }
+.badge.dirt { border-color: rgba(245,158,11,0.6); color: #f59e0b; background: rgba(245,158,11,0.08); }
+.badge.dirt b { color: #f59e0b; }
+.badge.turf { border-color: rgba(34,197,94,0.6); color: #22c55e; background: rgba(34,197,94,0.08); }
+.badge.turf b { color: #22c55e; }
+.badge.dirt { border-color: rgba(245,158,11,0.6); color: #f59e0b; background: rgba(245,158,11,0.08); }
+.badge.dirt b { color: #f59e0b; }
+.badge.turf { border-color: rgba(34,197,94,0.6); color: #22c55e; background: rgba(34,197,94,0.08); }
+.badge.turf b { color: #22c55e; }
+.badge.dirt { border-color: rgba(245,158,11,0.6); color: #f59e0b; background: rgba(245,158,11,0.08); }
+.badge.dirt b { color: #f59e0b; }
+
+
 
 /* ── Layout ── */
 .main { display: flex; flex: 1; overflow: hidden; flex-direction: column; }
@@ -184,8 +191,8 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
 <div class="header">
   <div class="header-row">
     <h1>中山12R　葛飾特別　ダ1200m</h1>
-    <div class="badge cv"><span>CV</span><b>9.6</b></div>
-    <div class="badge moist"><span>含水率</span><b>5.8%</b></div>
+    <div class="badge dirt"><span>CV</span><b>9.6</b></div>
+    <div class="badge dirt"><span>含水率</span><b>5.8%</b></div>
     <span class="header-time">16:30</span>
   </div>
 </div>
