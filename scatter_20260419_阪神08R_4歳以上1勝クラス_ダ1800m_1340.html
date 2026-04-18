@@ -1707,11 +1707,11 @@ function buildPanel() {
         html += `<div class="race-card${inIdeal ? ' ideal' : ''}" data-horse="${i}" data-ri="${ri}">
           <div class="rc-date">${r.date}　${r.venue}　CV${r.cushion}/${r.moisture}%</div>
           <div class="rc-name">${r.race_name}　${r.surface}${r.distance}m（${distLabel}）</div>
-          ${(r.agari || r.passage) ? `<div class="rc-agari">${r.agari ? '上がり ' + r.agari : ''}${r.agari && r.passage ? '　' : ''}${r.passage ? '通過 ' + r.passage : ''}</div>` : ''}
           <div class="rc-result-row">
             <span class="rc-result" style="color:${resultColor}">${r.result !== null ? r.result + '着' : '取消'}</span>
           </div>
           ${r.winner ? `<div class="rc-winner">${r.winner}${r.time_diff ? ' (' + r.time_diff + ')' : ''}</div>` : ''}
+          ${(r.agari || r.passage) ? `<div class="rc-agari">${r.agari ? '上がり ' + r.agari : ''}${r.agari && r.passage ? '　' : ''}${r.passage ? '通過 ' + r.passage : ''}</div>` : ''}
           <div class="race-mark-row" data-rrkey="${rrKey}">
             <button class="race-mark-btn" data-mark="○">○</button>
             <button class="race-mark-btn" data-mark="▲">▲</button>
