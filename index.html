@@ -46,7 +46,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
 }
 .race-list a:hover{background:var(--bg-card);}
 .race-left{display:flex;align-items:center;gap:8px;}
-.race-num{font-size:13px;font-weight:800;color:var(--text-sub);min-width:28px;}
+.race-num-wrap{display:flex;flex-direction:column;align-items:flex-start;min-width:36px;}
+.race-num{font-size:13px;font-weight:800;color:var(--text-sub);}
+.race-time{font-size:9px;color:var(--text-muted);font-weight:600;white-space:nowrap;}
 .race-name{font-size:13px;font-weight:700;}
 .sbadge{font-size:10px;font-weight:800;padding:2px 7px;border-radius:5px;}
 .sbadge.turf{background:rgba(34,197,94,0.18);color:#4ade80;border:1px solid rgba(34,197,94,0.35);}
@@ -78,7 +80,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
   <div class="race-list">
     <a href="scatter_20260419_中山01R_3歳未勝利_ダ1800m.html">
       <div class="race-left">
-        <span class="race-num">1R</span>
+        <div class="race-num-wrap"><span class="race-num">1R</span><span class="race-time">10:00</span></div>
         <span class="race-name">3歳未勝利</span>
         
         <span class="sbadge dirt">ダ</span>
@@ -88,7 +90,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_中山02R_3歳未勝利_ダ1200m.html">
       <div class="race-left">
-        <span class="race-num">2R</span>
+        <div class="race-num-wrap"><span class="race-num">2R</span><span class="race-time">10:30</span></div>
         <span class="race-name">3歳未勝利</span>
         
         <span class="sbadge dirt">ダ</span>
@@ -98,7 +100,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_中山03R_3歳未勝利_ダ1800m.html">
       <div class="race-left">
-        <span class="race-num">3R</span>
+        <div class="race-num-wrap"><span class="race-num">3R</span><span class="race-time">11:00</span></div>
         <span class="race-name">3歳未勝利</span>
         
         <span class="sbadge dirt">ダ</span>
@@ -108,7 +110,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_中山04R_3歳未勝利_芝2000m.html">
       <div class="race-left">
-        <span class="race-num">4R</span>
+        <div class="race-num-wrap"><span class="race-num">4R</span><span class="race-time">11:30</span></div>
         <span class="race-name">3歳未勝利</span>
         
         <span class="sbadge turf">芝</span>
@@ -118,7 +120,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_中山05R_3歳1勝クラス_芝1600m.html">
       <div class="race-left">
-        <span class="race-num">5R</span>
+        <div class="race-num-wrap"><span class="race-num">5R</span><span class="race-time">12:20</span></div>
         <span class="race-name">3歳1勝クラス</span>
         
         <span class="sbadge turf">芝</span>
@@ -128,7 +130,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_中山06R_3歳1勝クラス_ダ1800m.html">
       <div class="race-left">
-        <span class="race-num">6R</span>
+        <div class="race-num-wrap"><span class="race-num">6R</span><span class="race-time">12:50</span></div>
         <span class="race-name">3歳1勝クラス</span>
         
         <span class="sbadge dirt">ダ</span>
@@ -138,7 +140,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_中山07R_4歳以上1勝クラス_ダ1200m.html">
       <div class="race-left">
-        <span class="race-num">7R</span>
+        <div class="race-num-wrap"><span class="race-num">7R</span><span class="race-time">13:20</span></div>
         <span class="race-name">4歳以上1勝クラス</span>
         
         <span class="sbadge dirt">ダ</span>
@@ -148,7 +150,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_中山08R_利根川特別_ダ1800m.html">
       <div class="race-left">
-        <span class="race-num">8R</span>
+        <div class="race-num-wrap"><span class="race-num">8R</span><span class="race-time">13:50</span></div>
         <span class="race-name">利根川特別</span>
         
         <span class="sbadge dirt">ダ</span>
@@ -158,7 +160,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_中山09R_野島崎特別_芝2000m.html">
       <div class="race-left">
-        <span class="race-num">9R</span>
+        <div class="race-num-wrap"><span class="race-num">9R</span><span class="race-time">14:25</span></div>
         <span class="race-name">野島崎特別</span>
         
         <span class="sbadge turf">芝</span>
@@ -168,7 +170,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_中山10R_京葉ステークス_ダ1200m.html">
       <div class="race-left">
-        <span class="race-num">10R</span>
+        <div class="race-num-wrap"><span class="race-num">10R</span><span class="race-time">15:01</span></div>
         <span class="race-name">京葉ステークス</span>
         
         <span class="sbadge dirt">ダ</span>
@@ -178,7 +180,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_中山11R_皐月賞_芝2000m_G1.html">
       <div class="race-left">
-        <span class="race-num">11R</span>
+        <div class="race-num-wrap"><span class="race-num">11R</span><span class="race-time">15:40</span></div>
         <span class="race-name">皐月賞</span>
         <span class="grade-badge">G1</span>
         <span class="sbadge turf">芝</span>
@@ -188,7 +190,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_中山12R_サンシャインステークス_芝2200m.html">
       <div class="race-left">
-        <span class="race-num">12R</span>
+        <div class="race-num-wrap"><span class="race-num">12R</span><span class="race-time">16:30</span></div>
         <span class="race-name">サンシャインステークス</span>
         
         <span class="sbadge turf">芝</span>
@@ -213,7 +215,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
   <div class="race-list">
     <a href="scatter_20260419_阪神01R_3歳未勝利_ダ1800m.html">
       <div class="race-left">
-        <span class="race-num">1R</span>
+        <div class="race-num-wrap"><span class="race-num">1R</span><span class="race-time">09:50</span></div>
         <span class="race-name">3歳未勝利</span>
         
         <span class="sbadge dirt">ダ</span>
@@ -223,7 +225,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_阪神02R_3歳未勝利_芝2000m.html">
       <div class="race-left">
-        <span class="race-num">2R</span>
+        <div class="race-num-wrap"><span class="race-num">2R</span><span class="race-time">10:20</span></div>
         <span class="race-name">3歳未勝利</span>
         
         <span class="sbadge turf">芝</span>
@@ -233,7 +235,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_阪神03R_3歳未勝利_ダ1400m.html">
       <div class="race-left">
-        <span class="race-num">3R</span>
+        <div class="race-num-wrap"><span class="race-num">3R</span><span class="race-time">10:50</span></div>
         <span class="race-name">3歳未勝利</span>
         
         <span class="sbadge dirt">ダ</span>
@@ -243,7 +245,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_阪神04R_障害4歳以上未勝利_芝2970m.html">
       <div class="race-left">
-        <span class="race-num">4R</span>
+        <div class="race-num-wrap"><span class="race-num">4R</span><span class="race-time">11:20</span></div>
         <span class="race-name">障害4歳以上未勝利</span>
         
         <span class="sbadge turf">芝</span>
@@ -253,7 +255,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_阪神05R_3歳未勝利_芝2200m.html">
       <div class="race-left">
-        <span class="race-num">5R</span>
+        <div class="race-num-wrap"><span class="race-num">5R</span><span class="race-time">12:10</span></div>
         <span class="race-name">3歳未勝利</span>
         
         <span class="sbadge turf">芝</span>
@@ -263,7 +265,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_阪神06R_3歳1勝クラス_ダ1200m.html">
       <div class="race-left">
-        <span class="race-num">6R</span>
+        <div class="race-num-wrap"><span class="race-num">6R</span><span class="race-time">12:40</span></div>
         <span class="race-name">3歳1勝クラス</span>
         
         <span class="sbadge dirt">ダ</span>
@@ -273,7 +275,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_阪神07R_3歳1勝クラス_芝1600m.html">
       <div class="race-left">
-        <span class="race-num">7R</span>
+        <div class="race-num-wrap"><span class="race-num">7R</span><span class="race-time">13:10</span></div>
         <span class="race-name">3歳1勝クラス</span>
         
         <span class="sbadge turf">芝</span>
@@ -283,7 +285,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_阪神08R_4歳以上1勝クラス_ダ1800m.html">
       <div class="race-left">
-        <span class="race-num">8R</span>
+        <div class="race-num-wrap"><span class="race-num">8R</span><span class="race-time">13:40</span></div>
         <span class="race-name">4歳以上1勝クラス</span>
         
         <span class="sbadge dirt">ダ</span>
@@ -293,7 +295,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_阪神09R_蓬莱峡特別_芝2000m.html">
       <div class="race-left">
-        <span class="race-num">9R</span>
+        <div class="race-num-wrap"><span class="race-num">9R</span><span class="race-time">14:15</span></div>
         <span class="race-name">蓬莱峡特別</span>
         
         <span class="sbadge turf">芝</span>
@@ -303,7 +305,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_阪神10R_陽春ステークス_ダ1200m.html">
       <div class="race-left">
-        <span class="race-num">10R</span>
+        <div class="race-num-wrap"><span class="race-num">10R</span><span class="race-time">14:50</span></div>
         <span class="race-name">陽春ステークス</span>
         
         <span class="sbadge dirt">ダ</span>
@@ -313,7 +315,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_阪神11R_立雲峡ステークス_芝1600m.html">
       <div class="race-left">
-        <span class="race-num">11R</span>
+        <div class="race-num-wrap"><span class="race-num">11R</span><span class="race-time">15:25</span></div>
         <span class="race-name">立雲峡ステークス</span>
         
         <span class="sbadge turf">芝</span>
@@ -323,7 +325,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_阪神12R_4歳以上2勝クラス_ダ1800m.html">
       <div class="race-left">
-        <span class="race-num">12R</span>
+        <div class="race-num-wrap"><span class="race-num">12R</span><span class="race-time">16:10</span></div>
         <span class="race-name">4歳以上2勝クラス</span>
         
         <span class="sbadge dirt">ダ</span>
@@ -348,7 +350,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
   <div class="race-list">
     <a href="scatter_20260419_福島01R_3歳未勝利_ダ1150m.html">
       <div class="race-left">
-        <span class="race-num">1R</span>
+        <div class="race-num-wrap"><span class="race-num">1R</span><span class="race-time">09:45</span></div>
         <span class="race-name">3歳未勝利</span>
         
         <span class="sbadge dirt">ダ</span>
@@ -358,7 +360,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_福島02R_3歳未勝利_ダ1700m.html">
       <div class="race-left">
-        <span class="race-num">2R</span>
+        <div class="race-num-wrap"><span class="race-num">2R</span><span class="race-time">10:10</span></div>
         <span class="race-name">3歳未勝利</span>
         
         <span class="sbadge dirt">ダ</span>
@@ -368,7 +370,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_福島03R_3歳未勝利_芝2000m.html">
       <div class="race-left">
-        <span class="race-num">3R</span>
+        <div class="race-num-wrap"><span class="race-num">3R</span><span class="race-time">10:40</span></div>
         <span class="race-name">3歳未勝利</span>
         
         <span class="sbadge turf">芝</span>
@@ -378,7 +380,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_福島04R_3歳未勝利_ダ1700m.html">
       <div class="race-left">
-        <span class="race-num">4R</span>
+        <div class="race-num-wrap"><span class="race-num">4R</span><span class="race-time">11:10</span></div>
         <span class="race-name">3歳未勝利</span>
         
         <span class="sbadge dirt">ダ</span>
@@ -388,7 +390,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_福島05R_3歳未勝利_芝1200m.html">
       <div class="race-left">
-        <span class="race-num">5R</span>
+        <div class="race-num-wrap"><span class="race-num">5R</span><span class="race-time">12:00</span></div>
         <span class="race-name">3歳未勝利</span>
         
         <span class="sbadge turf">芝</span>
@@ -398,7 +400,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_福島06R_4歳以上1勝クラス_芝1800m.html">
       <div class="race-left">
-        <span class="race-num">6R</span>
+        <div class="race-num-wrap"><span class="race-num">6R</span><span class="race-time">12:30</span></div>
         <span class="race-name">4歳以上1勝クラス</span>
         
         <span class="sbadge turf">芝</span>
@@ -408,7 +410,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_福島07R_4歳以上1勝クラス_芝2000m.html">
       <div class="race-left">
-        <span class="race-num">7R</span>
+        <div class="race-num-wrap"><span class="race-num">7R</span><span class="race-time">13:01</span></div>
         <span class="race-name">4歳以上1勝クラス</span>
         
         <span class="sbadge turf">芝</span>
@@ -418,7 +420,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_福島08R_4歳以上1勝クラス_ダ1700m.html">
       <div class="race-left">
-        <span class="race-num">8R</span>
+        <div class="race-num-wrap"><span class="race-num">8R</span><span class="race-time">13:30</span></div>
         <span class="race-name">4歳以上1勝クラス</span>
         
         <span class="sbadge dirt">ダ</span>
@@ -428,7 +430,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_福島09R_須賀川特別_芝1200m.html">
       <div class="race-left">
-        <span class="race-num">9R</span>
+        <div class="race-num-wrap"><span class="race-num">9R</span><span class="race-time">14:05</span></div>
         <span class="race-name">須賀川特別</span>
         
         <span class="sbadge turf">芝</span>
@@ -438,7 +440,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_福島10R_奥の細道特別_芝2600m.html">
       <div class="race-left">
-        <span class="race-num">10R</span>
+        <div class="race-num-wrap"><span class="race-num">10R</span><span class="race-time">14:40</span></div>
         <span class="race-name">奥の細道特別</span>
         
         <span class="sbadge turf">芝</span>
@@ -448,7 +450,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_福島11R_福島牝馬ステークス_芝1800m_G3.html">
       <div class="race-left">
-        <span class="race-num">11R</span>
+        <div class="race-num-wrap"><span class="race-num">11R</span><span class="race-time">15:15</span></div>
         <span class="race-name">福島牝馬ステークス</span>
         <span class="grade-badge">G3</span>
         <span class="sbadge turf">芝</span>
@@ -458,7 +460,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_福島12R_4歳以上1勝クラス_ダ1150m.html">
       <div class="race-left">
-        <span class="race-num">12R</span>
+        <div class="race-num-wrap"><span class="race-num">12R</span><span class="race-time">16:01</span></div>
         <span class="race-name">4歳以上1勝クラス</span>
         
         <span class="sbadge dirt">ダ</span>
