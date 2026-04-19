@@ -541,15 +541,21 @@ Object.entries(VENUE_COORDS).forEach(([venue, [lat, lon]]) => {
     });
   }).catch(() => {});
 });
-// ランプ更新（毎分）
+// ランプ更新（30秒ごと）
 function updateLamps() {
   const now = new Date();
-  document.querySelectorAll('.lamp[data-start]').forEach(el => {
-    const start = new Date(el.dataset.start);
-    const diffMin = (start - now) / 60000;
+  const lamps = Array.from(document.querySelectorAll('.lamp[data-start]'));
+  // 未来のレースのうち現在時刻に最も近いものを特定
+  let nearest = null, nearestDiff = Infinity;
+  lamps.forEach(el => {
+    const diff = new Date(el.dataset.start) - now;
+    if (diff >= 0 && diff < nearestDiff) { nearestDiff = diff; nearest = el; }
+  });
+  lamps.forEach(el => {
+    const diff = new Date(el.dataset.start) - now;
     el.classList.remove('on', 'soon');
-    if (diffMin > 5) el.classList.add('on');        // 5分以上前: 緑
-    else if (diffMin > 0) el.classList.add('soon'); // 0〜5分前: 黄
+    if (el === nearest) el.classList.add('soon');  // 直近レース: 赤
+    else if (diff > 0) el.classList.add('on');     // その他未来: 緑
     // 発走済: グレー（デフォルト）
   });
 }
