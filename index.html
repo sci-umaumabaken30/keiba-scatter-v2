@@ -20,9 +20,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
 .week-badge{background:#3b5bdb;color:#fff;font-size:11px;font-weight:800;
   padding:3px 10px;border-radius:20px;}
 /* グリッド */
-.venue-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
-@media(max-width:700px){.venue-grid{grid-template-columns:1fr;}}
-@media(min-width:701px) and (max-width:1000px){.venue-grid{grid-template-columns:repeat(2,1fr);}}
+.venue-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(260px,1fr));
+  gap:12px;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  padding-bottom:4px;
+}
 /* カード */
 .venue-card{border:1px solid var(--border);border-radius:12px;overflow:hidden;}
 .venue-head{padding:10px 13px 8px;background:var(--bg-card);}
