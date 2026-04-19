@@ -48,17 +48,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
   padding:11px 13px;border-top:1px solid var(--border);
   background:var(--bg-row);color:var(--text);text-decoration:none;
   transition:background 0.12s;-webkit-tap-highlight-color:transparent;
+  overflow:hidden;
 }
 .race-list a:hover{background:var(--bg-card);}
-.race-left{display:flex;align-items:center;gap:8px;}
-.race-num-wrap{display:flex;flex-direction:column;align-items:flex-start;min-width:36px;}
+.race-left{display:flex;align-items:center;gap:8px;min-width:0;flex:1;overflow:hidden;}
+.race-num-wrap{display:flex;flex-direction:column;align-items:flex-start;min-width:36px;flex-shrink:0;}
 .race-num{font-size:13px;font-weight:800;color:var(--text-sub);}
 .race-time{font-size:9px;color:var(--text-muted);font-weight:600;white-space:nowrap;}
-.race-name{font-size:13px;font-weight:700;}
-.sbadge{font-size:10px;font-weight:800;padding:2px 7px;border-radius:5px;}
+.race-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sbadge{font-size:10px;font-weight:800;padding:2px 7px;border-radius:5px;flex-shrink:0;white-space:nowrap;}
 .sbadge.turf{background:rgba(34,197,94,0.18);color:#4ade80;border:1px solid rgba(34,197,94,0.35);}
 .sbadge.dirt{background:rgba(245,158,11,0.18);color:#fbbf24;border:1px solid rgba(245,158,11,0.35);}
-.race-dist{font-size:12px;color:var(--text-sub);font-weight:600;}
+.race-dist{font-size:12px;color:var(--text-sub);font-weight:600;flex-shrink:0;white-space:nowrap;}
 .grade-badge{font-size:9px;font-weight:900;padding:1px 5px;border-radius:4px;
   background:rgba(220,38,38,0.25);color:#fca5a5;border:1px solid rgba(220,38,38,0.4);}
 .arrow{color:var(--text-muted);font-size:14px;}
