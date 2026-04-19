@@ -3,148 +3,452 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>04/19 クッション値×含水率</title>
+<title>4/19（日） クッション値×含水率</title>
 <style>
 :root {
-  --bg: #0f172a; --bg-card: #1e293b; --border: #334155;
-  --text: #f1f5f9; --text-sub: #94a3b8; --text-muted: #64748b;
-  --accent: #f59e0b; --blue: #38bdf8;
+  --bg:#0d1117; --bg-card:#161b22; --bg-row:#0d1117;
+  --border:#30363d; --text:#e6edf3; --text-sub:#8b949e; --text-muted:#484f58;
+  --accent:#f0a92e; --green:#3fb950; --amber:#f0a92e; --sky:#58a6ff;
 }
-* { margin:0; padding:0; box-sizing:border-box; }
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans JP', sans-serif;
-  background: var(--bg); color: var(--text); padding: 14px;
-  -webkit-font-smoothing: antialiased;
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
+  background:var(--bg);color:var(--text);padding:12px;
+  -webkit-font-smoothing:antialiased;}
+/* ヘッダー */
+.top-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.top-header h1{font-size:22px;font-weight:900;letter-spacing:-0.5px;}
+.week-badge{background:#1f6feb;color:#fff;font-size:11px;font-weight:800;
+  padding:2px 9px;border-radius:20px;}
+/* グリッド */
+.venue-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+@media(max-width:700px){.venue-grid{grid-template-columns:1fr;}}
+@media(min-width:701px) and (max-width:1000px){.venue-grid{grid-template-columns:repeat(2,1fr);}}
+/* カード */
+.venue-card{border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.venue-head{padding:11px 13px 9px;background:var(--bg-card);}
+.venue-head h2{font-size:17px;font-weight:900;margin-bottom:5px;}
+.cv-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;}
+.cv-chip{font-size:10px;font-weight:700;font-family:monospace;
+  background:rgba(255,255,255,0.05);border:1px solid var(--border);
+  padding:2px 7px;border-radius:5px;color:var(--text-sub);}
+.cv-chip b{color:var(--accent);}
+.cv-chip.moist-t b{color:var(--green);}
+.cv-chip.moist-d b{color:var(--amber);}
+/* 天気 */
+.wx-row{display:flex;gap:10px;}
+.wx-slot{display:flex;flex-direction:column;align-items:center;gap:1px;}
+.wx-slot .wx-h{font-size:9px;color:var(--text-muted);}
+.wx-slot .wx-icon{font-size:16px;line-height:1;}
+/* レース行 */
+.race-list a{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:11px 13px;border-top:1px solid var(--border);
+  background:var(--bg-row);color:var(--text);text-decoration:none;
+  transition:background 0.1s;-webkit-tap-highlight-color:transparent;
 }
-.page-header { margin-bottom: 16px; }
-.page-header h1 { font-size: 20px; font-weight: 900; }
-.page-header .sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
-.venue-block { margin-bottom: 16px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
-.venue-head {
-  padding: 12px 14px; background: var(--bg-card);
-  display: flex; justify-content: space-between; align-items: center;
-}
-.venue-head h2 { font-size: 16px; font-weight: 900; }
-.venue-cv {
-  display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;
-}
-.cv-badge {
-  font-size: 10px; font-weight: 700; font-family: monospace;
-  background: var(--bg); border: 1px solid var(--border);
-  padding: 2px 7px; border-radius: 5px; color: var(--text-sub);
-}
-.cv-badge b { color: var(--accent); }
-.cv-badge.moist b { color: var(--blue); }
-.race-list a {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 13px 14px; border-top: 1px solid var(--border);
-  background: #111827; color: var(--text); text-decoration: none;
-  font-size: 14px; font-weight: 700;
-  transition: background 0.1s;
-  -webkit-tap-highlight-color: transparent;
-}
-.race-list a:active { background: #1e293b; }
-.race-list a .meta { font-size: 10px; color: var(--text-muted); font-weight: 600; margin-left: 8px; }
-.race-list a .arrow { color: var(--text-muted); font-size: 14px; }
-.page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
-.page-header-text h1 { font-size: 20px; font-weight: 900; }
-.page-header-text .sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
-.admin-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: #1e293b; border: 1px solid #334155; color: #94a3b8;
-  text-decoration: none; padding: 8px 14px; border-radius: 10px;
-  font-size: 12px; font-weight: 800; white-space: nowrap; flex-shrink: 0;
-}
-.admin-btn:hover { border-color: var(--accent); color: var(--accent); }
-.admin-dot { width: 7px; height: 7px; border-radius: 50%; background: #475569; }
+.race-list a:active{background:var(--bg-card);}
+.race-left{display:flex;align-items:center;gap:8px;}
+.race-num{font-size:13px;font-weight:800;color:var(--text-sub);min-width:28px;}
+.race-name{font-size:13px;font-weight:700;}
+.sbadge{font-size:10px;font-weight:800;padding:2px 6px;border-radius:5px;}
+.sbadge.turf{background:rgba(63,185,80,0.15);color:#3fb950;border:1px solid rgba(63,185,80,0.3);}
+.sbadge.dirt{background:rgba(240,169,46,0.15);color:#f0a92e;border:1px solid rgba(240,169,46,0.3);}
+.race-dist{font-size:12px;color:var(--text-sub);font-weight:600;}
+.arrow{color:var(--text-muted);font-size:13px;}
 </style>
 </head>
 <body>
-<div class="page-header">
-  <div class="page-header-text">
-    <h1>04/19 競馬　クッション値×含水率</h1>
-    <div class="sub">散布図一覧 — タップで各レースの散布図を表示</div>
-  </div>
-  <a href="http://localhost:5001/" target="_blank" class="admin-btn">
-    <span class="admin-dot"></span>管理ページ
-  </a>
+<div class="top-header">
+  <h1>4/19（日）</h1>
+  <span class="week-badge">今週</span>
 </div>
-<div class="venue-block">
+<div class="venue-grid" id="grid">
+<div class="venue-card">
   <div class="venue-head">
-    <div>
-      <h2>中山</h2>
-      <div class="venue-cv">
-        <span class="cv-badge">CV <b>9.8</b></span>
-        <span class="cv-badge moist">芝 <b>10.3%</b></span>
-        <span class="cv-badge moist">ダ <b>4.6%</b></span>
-      </div>
+    <h2>中山</h2>
+    <div class="cv-row">
+      <span class="cv-chip">CV <b>9.6</b></span>
+      <span class="cv-chip moist-t">芝 <b>?%</b></span>
+      <span class="cv-chip moist-d">ダ <b>?%</b></span>
+    </div>
+    <div class="wx-row" id="wx-中山">
+      <div class="wx-slot"><span class="wx-h">9時</span><span class="wx-icon" data-h="9">—</span></div>
+      <div class="wx-slot"><span class="wx-h">12時</span><span class="wx-icon" data-h="12">—</span></div>
+      <div class="wx-slot"><span class="wx-h">15時</span><span class="wx-icon" data-h="15">—</span></div>
     </div>
   </div>
   <div class="race-list">
-  <a href="scatter_20260419_中山01R_3歳未勝利_ダ1800m.html"><span>1R　3歳未勝利　ダ1800m</span><span><span class="meta">12頭 33pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_中山02R_3歳未勝利_ダ1200m.html"><span>2R　3歳未勝利　ダ1200m</span><span><span class="meta">16頭 55pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_中山03R_3歳未勝利_ダ1800m.html"><span>3R　3歳未勝利　ダ1800m</span><span><span class="meta">14頭 54pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_中山04R_3歳未勝利_芝2000m.html"><span>4R　3歳未勝利　芝2000m</span><span><span class="meta">16頭 46pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_中山05R_3歳1勝クラス_芝1600m.html"><span>5R　3歳1勝クラス　芝1600m</span><span><span class="meta">10頭 56pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_中山06R_3歳1勝クラス_ダ1800m.html"><span>6R　3歳1勝クラス　ダ1800m</span><span><span class="meta">6頭 26pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_中山07R_4歳以上1勝クラス_ダ1200m.html"><span>7R　4歳以上1勝クラス　ダ1200m</span><span><span class="meta">13頭 170pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_中山08R_利根川特別_ダ1800m.html"><span>8R　利根川特別　ダ1800m</span><span><span class="meta">12頭 150pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_中山09R_野島崎特別_芝2000m.html"><span>9R　野島崎特別　芝2000m</span><span><span class="meta">12頭 169pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_中山10R_京葉ステークス_ダ1200m.html"><span>10R　京葉ステークス　ダ1200m</span><span><span class="meta">15頭 305pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_中山11R_皐月賞_芝2000m.html"><span>11R　皐月賞　芝2000m</span><span><span class="meta">18頭 71pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_中山12R_サンシャインステークス_芝2200m.html"><span>12R　サンシャインステークス　芝2200m</span><span><span class="meta">18頭 380pts</span> <span class="arrow">›</span></span></a>
+    <a href="scatter_20260419_中山01R_3歳未勝利_ダ1800m.html">
+      <div class="race-left">
+        <span class="race-num">1R</span>
+        <span class="race-name">3歳未勝利</span>
+        <span class="sbadge dirt">ダ</span>
+        <span class="race-dist">1800m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_中山02R_3歳未勝利_ダ1200m.html">
+      <div class="race-left">
+        <span class="race-num">2R</span>
+        <span class="race-name">3歳未勝利</span>
+        <span class="sbadge dirt">ダ</span>
+        <span class="race-dist">1200m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_中山03R_3歳未勝利_ダ1800m.html">
+      <div class="race-left">
+        <span class="race-num">3R</span>
+        <span class="race-name">3歳未勝利</span>
+        <span class="sbadge dirt">ダ</span>
+        <span class="race-dist">1800m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_中山04R_3歳未勝利_芝2000m.html">
+      <div class="race-left">
+        <span class="race-num">4R</span>
+        <span class="race-name">3歳未勝利</span>
+        <span class="sbadge turf">芝</span>
+        <span class="race-dist">2000m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_中山05R_3歳1勝クラス_芝1600m.html">
+      <div class="race-left">
+        <span class="race-num">5R</span>
+        <span class="race-name">3歳1勝クラス</span>
+        <span class="sbadge turf">芝</span>
+        <span class="race-dist">1600m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_中山06R_3歳1勝クラス_ダ1800m.html">
+      <div class="race-left">
+        <span class="race-num">6R</span>
+        <span class="race-name">3歳1勝クラス</span>
+        <span class="sbadge dirt">ダ</span>
+        <span class="race-dist">1800m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_中山07R_4歳以上1勝クラス_ダ1200m.html">
+      <div class="race-left">
+        <span class="race-num">7R</span>
+        <span class="race-name">4歳以上1勝クラス</span>
+        <span class="sbadge dirt">ダ</span>
+        <span class="race-dist">1200m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_中山08R_利根川特別_ダ1800m.html">
+      <div class="race-left">
+        <span class="race-num">8R</span>
+        <span class="race-name">利根川特別</span>
+        <span class="sbadge dirt">ダ</span>
+        <span class="race-dist">1800m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_中山09R_野島崎特別_芝2000m.html">
+      <div class="race-left">
+        <span class="race-num">9R</span>
+        <span class="race-name">野島崎特別</span>
+        <span class="sbadge turf">芝</span>
+        <span class="race-dist">2000m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_中山10R_京葉ステークス_ダ1200m.html">
+      <div class="race-left">
+        <span class="race-num">10R</span>
+        <span class="race-name">京葉ステークス</span>
+        <span class="sbadge dirt">ダ</span>
+        <span class="race-dist">1200m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_中山12R_サンシャインステークス_芝2200m.html">
+      <div class="race-left">
+        <span class="race-num">12R</span>
+        <span class="race-name">サンシャインステークス</span>
+        <span class="sbadge turf">芝</span>
+        <span class="race-dist">2200m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
   </div>
 </div>
-<div class="venue-block">
+<div class="venue-card">
   <div class="venue-head">
-    <div>
-      <h2>阪神</h2>
-      <div class="venue-cv">
-        <span class="cv-badge">CV <b>9.7</b></span>
-        <span class="cv-badge moist">芝 <b>11.7%</b></span>
-        <span class="cv-badge moist">ダ <b>5.5%</b></span>
-      </div>
+    <h2>阪神</h2>
+    <div class="cv-row">
+      <span class="cv-chip">CV <b>9.4</b></span>
+      <span class="cv-chip moist-t">芝 <b>?%</b></span>
+      <span class="cv-chip moist-d">ダ <b>?%</b></span>
+    </div>
+    <div class="wx-row" id="wx-阪神">
+      <div class="wx-slot"><span class="wx-h">9時</span><span class="wx-icon" data-h="9">—</span></div>
+      <div class="wx-slot"><span class="wx-h">12時</span><span class="wx-icon" data-h="12">—</span></div>
+      <div class="wx-slot"><span class="wx-h">15時</span><span class="wx-icon" data-h="15">—</span></div>
     </div>
   </div>
   <div class="race-list">
-  <a href="scatter_20260419_阪神01R_3歳未勝利_ダ1800m.html"><span>1R　3歳未勝利　ダ1800m</span><span><span class="meta">16頭 50pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_阪神02R_3歳未勝利_芝2000m.html"><span>2R　3歳未勝利　芝2000m</span><span><span class="meta">16頭 40pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_阪神03R_3歳未勝利_ダ1400m.html"><span>3R　3歳未勝利　ダ1400m</span><span><span class="meta">16頭 56pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_阪神04R_障害4歳以上未勝利_芝2970m.html"><span>4R　障害4歳以上未勝利　芝2970m</span><span><span class="meta">14頭 267pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_阪神05R_3歳未勝利_芝2200m.html"><span>5R　3歳未勝利　芝2200m</span><span><span class="meta">13頭 26pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_阪神06R_3歳1勝クラス_ダ1200m.html"><span>6R　3歳1勝クラス　ダ1200m</span><span><span class="meta">15頭 70pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_阪神07R_3歳1勝クラス_芝1600m.html"><span>7R　3歳1勝クラス　芝1600m</span><span><span class="meta">8頭 26pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_阪神08R_4歳以上1勝クラス_ダ1800m.html"><span>8R　4歳以上1勝クラス　ダ1800m</span><span><span class="meta">11頭 120pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_阪神09R_蓬莱峡特別_芝2000m.html"><span>9R　蓬莱峡特別　芝2000m</span><span><span class="meta">10頭 190pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_阪神10R_陽春ステークス_ダ1200m.html"><span>10R　陽春ステークス　ダ1200m</span><span><span class="meta">13頭 236pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_阪神11R_立雲峡ステークス_芝1600m.html"><span>11R　立雲峡ステークス　芝1600m</span><span><span class="meta">10頭 142pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_阪神12R_4歳以上2勝クラス_ダ1800m.html"><span>12R　4歳以上2勝クラス　ダ1800m</span><span><span class="meta">10頭 142pts</span> <span class="arrow">›</span></span></a>
+    <a href="scatter_20260419_阪神01R_3歳未勝利_ダ1800m.html">
+      <div class="race-left">
+        <span class="race-num">1R</span>
+        <span class="race-name">3歳未勝利</span>
+        <span class="sbadge dirt">ダ</span>
+        <span class="race-dist">1800m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_阪神02R_3歳未勝利_芝2000m.html">
+      <div class="race-left">
+        <span class="race-num">2R</span>
+        <span class="race-name">3歳未勝利</span>
+        <span class="sbadge turf">芝</span>
+        <span class="race-dist">2000m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_阪神03R_3歳未勝利_ダ1400m.html">
+      <div class="race-left">
+        <span class="race-num">3R</span>
+        <span class="race-name">3歳未勝利</span>
+        <span class="sbadge dirt">ダ</span>
+        <span class="race-dist">1400m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_阪神04R_障害4歳以上未勝利_芝2970m.html">
+      <div class="race-left">
+        <span class="race-num">4R</span>
+        <span class="race-name">障害4歳以上未勝利</span>
+        <span class="sbadge turf">芝</span>
+        <span class="race-dist">2970m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_阪神05R_3歳未勝利_芝2200m.html">
+      <div class="race-left">
+        <span class="race-num">5R</span>
+        <span class="race-name">3歳未勝利</span>
+        <span class="sbadge turf">芝</span>
+        <span class="race-dist">2200m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_阪神06R_3歳1勝クラス_ダ1200m.html">
+      <div class="race-left">
+        <span class="race-num">6R</span>
+        <span class="race-name">3歳1勝クラス</span>
+        <span class="sbadge dirt">ダ</span>
+        <span class="race-dist">1200m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_阪神07R_3歳1勝クラス_芝1600m.html">
+      <div class="race-left">
+        <span class="race-num">7R</span>
+        <span class="race-name">3歳1勝クラス</span>
+        <span class="sbadge turf">芝</span>
+        <span class="race-dist">1600m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_阪神08R_4歳以上1勝クラス_ダ1800m.html">
+      <div class="race-left">
+        <span class="race-num">8R</span>
+        <span class="race-name">4歳以上1勝クラス</span>
+        <span class="sbadge dirt">ダ</span>
+        <span class="race-dist">1800m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_阪神09R_蓬莱峡特別_芝2000m.html">
+      <div class="race-left">
+        <span class="race-num">9R</span>
+        <span class="race-name">蓬莱峡特別</span>
+        <span class="sbadge turf">芝</span>
+        <span class="race-dist">2000m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_阪神10R_陽春ステークス_ダ1200m.html">
+      <div class="race-left">
+        <span class="race-num">10R</span>
+        <span class="race-name">陽春ステークス</span>
+        <span class="sbadge dirt">ダ</span>
+        <span class="race-dist">1200m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_阪神11R_立雲峡ステークス_芝1600m.html">
+      <div class="race-left">
+        <span class="race-num">11R</span>
+        <span class="race-name">立雲峡ステークス</span>
+        <span class="sbadge turf">芝</span>
+        <span class="race-dist">1600m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_阪神12R_4歳以上2勝クラス_ダ1800m.html">
+      <div class="race-left">
+        <span class="race-num">12R</span>
+        <span class="race-name">4歳以上2勝クラス</span>
+        <span class="sbadge dirt">ダ</span>
+        <span class="race-dist">1800m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
   </div>
 </div>
-<div class="venue-block">
+<div class="venue-card">
   <div class="venue-head">
-    <div>
-      <h2>福島</h2>
-      <div class="venue-cv">
-        <span class="cv-badge">CV <b>9.7</b></span>
-        <span class="cv-badge moist">芝 <b>10.7%</b></span>
-        <span class="cv-badge moist">ダ <b>2.9%</b></span>
-      </div>
+    <h2>福島</h2>
+    <div class="cv-row">
+      <span class="cv-chip">CV <b>9.5</b></span>
+      <span class="cv-chip moist-t">芝 <b>?%</b></span>
+      <span class="cv-chip moist-d">ダ <b>?%</b></span>
+    </div>
+    <div class="wx-row" id="wx-福島">
+      <div class="wx-slot"><span class="wx-h">9時</span><span class="wx-icon" data-h="9">—</span></div>
+      <div class="wx-slot"><span class="wx-h">12時</span><span class="wx-icon" data-h="12">—</span></div>
+      <div class="wx-slot"><span class="wx-h">15時</span><span class="wx-icon" data-h="15">—</span></div>
     </div>
   </div>
   <div class="race-list">
-  <a href="scatter_20260419_福島01R_3歳未勝利_ダ1150m.html"><span>1R　3歳未勝利　ダ1150m</span><span><span class="meta">16頭 66pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_福島02R_3歳未勝利_ダ1700m.html"><span>2R　3歳未勝利　ダ1700m</span><span><span class="meta">15頭 41pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_福島03R_3歳未勝利_芝2000m.html"><span>3R　3歳未勝利　芝2000m</span><span><span class="meta">16頭 32pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_福島04R_3歳未勝利_ダ1700m.html"><span>4R　3歳未勝利　ダ1700m</span><span><span class="meta">15頭 41pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_福島05R_3歳未勝利_芝1200m.html"><span>5R　3歳未勝利　芝1200m</span><span><span class="meta">16頭 37pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_福島06R_4歳以上1勝クラス_芝1800m.html"><span>6R　4歳以上1勝クラス　芝1800m</span><span><span class="meta">13頭 199pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_福島07R_4歳以上1勝クラス_芝2000m.html"><span>7R　4歳以上1勝クラス　芝2000m</span><span><span class="meta">10頭 139pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_福島08R_4歳以上1勝クラス_ダ1700m.html"><span>8R　4歳以上1勝クラス　ダ1700m</span><span><span class="meta">15頭 267pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_福島09R_須賀川特別_芝1200m.html"><span>9R　須賀川特別　芝1200m</span><span><span class="meta">16頭 209pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_福島10R_奥の細道特別_芝2600m.html"><span>10R　奥の細道特別　芝2600m</span><span><span class="meta">13頭 218pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_福島11R_福島牝馬ステークス_芝1800m.html"><span>11R　福島牝馬ステークス　芝1800m</span><span><span class="meta">16頭 207pts</span> <span class="arrow">›</span></span></a>
-  <a href="scatter_20260419_福島12R_4歳以上1勝クラス_ダ1150m.html"><span>12R　4歳以上1勝クラス　ダ1150m</span><span><span class="meta">15頭 232pts</span> <span class="arrow">›</span></span></a>
+    <a href="scatter_20260419_福島01R_3歳未勝利_ダ1150m.html">
+      <div class="race-left">
+        <span class="race-num">1R</span>
+        <span class="race-name">3歳未勝利</span>
+        <span class="sbadge dirt">ダ</span>
+        <span class="race-dist">1150m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_福島02R_3歳未勝利_ダ1700m.html">
+      <div class="race-left">
+        <span class="race-num">2R</span>
+        <span class="race-name">3歳未勝利</span>
+        <span class="sbadge dirt">ダ</span>
+        <span class="race-dist">1700m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_福島03R_3歳未勝利_芝2000m.html">
+      <div class="race-left">
+        <span class="race-num">3R</span>
+        <span class="race-name">3歳未勝利</span>
+        <span class="sbadge turf">芝</span>
+        <span class="race-dist">2000m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_福島04R_3歳未勝利_ダ1700m.html">
+      <div class="race-left">
+        <span class="race-num">4R</span>
+        <span class="race-name">3歳未勝利</span>
+        <span class="sbadge dirt">ダ</span>
+        <span class="race-dist">1700m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_福島05R_3歳未勝利_芝1200m.html">
+      <div class="race-left">
+        <span class="race-num">5R</span>
+        <span class="race-name">3歳未勝利</span>
+        <span class="sbadge turf">芝</span>
+        <span class="race-dist">1200m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_福島06R_4歳以上1勝クラス_芝1800m.html">
+      <div class="race-left">
+        <span class="race-num">6R</span>
+        <span class="race-name">4歳以上1勝クラス</span>
+        <span class="sbadge turf">芝</span>
+        <span class="race-dist">1800m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_福島07R_4歳以上1勝クラス_芝2000m.html">
+      <div class="race-left">
+        <span class="race-num">7R</span>
+        <span class="race-name">4歳以上1勝クラス</span>
+        <span class="sbadge turf">芝</span>
+        <span class="race-dist">2000m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_福島08R_4歳以上1勝クラス_ダ1700m.html">
+      <div class="race-left">
+        <span class="race-num">8R</span>
+        <span class="race-name">4歳以上1勝クラス</span>
+        <span class="sbadge dirt">ダ</span>
+        <span class="race-dist">1700m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_福島09R_須賀川特別_芝1200m.html">
+      <div class="race-left">
+        <span class="race-num">9R</span>
+        <span class="race-name">須賀川特別</span>
+        <span class="sbadge turf">芝</span>
+        <span class="race-dist">1200m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_福島10R_奥の細道特別_芝2600m.html">
+      <div class="race-left">
+        <span class="race-num">10R</span>
+        <span class="race-name">奥の細道特別</span>
+        <span class="sbadge turf">芝</span>
+        <span class="race-dist">2600m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_福島12R_4歳以上1勝クラス_ダ1150m.html">
+      <div class="race-left">
+        <span class="race-num">12R</span>
+        <span class="race-name">4歳以上1勝クラス</span>
+        <span class="sbadge dirt">ダ</span>
+        <span class="race-dist">1150m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
   </div>
 </div>
+</div>
+<script>
+const VENUE_COORDS = {"中山": [35.78, 139.93], "阪神": [34.82, 135.37], "福島": [37.75, 140.43]};
+const TODAY = '2026-04-19';
+function wmoIcon(c) {
+  if (c === 0) return '☀️';
+  if (c <= 2) return '🌤️';
+  if (c <= 3) return '☁️';
+  if (c <= 49) return '🌫️';
+  if (c <= 67) return '🌧️';
+  if (c <= 77) return '❄️';
+  if (c <= 82) return '🌦️';
+  return '⛈️';
+}
+Object.entries(VENUE_COORDS).forEach(([venue, [lat, lon]]) => {
+  const el = document.getElementById('wx-' + venue);
+  if (!el) return;
+  const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat +
+    '&longitude=' + lon + '&hourly=weather_code&timezone=Asia%2FTokyo&forecast_days=1';
+  fetch(url).then(r => r.json()).then(data => {
+    const times = data.hourly.time;
+    const codes = data.hourly.weather_code;
+    el.querySelectorAll('.wx-icon').forEach(slot => {
+      const h = parseInt(slot.dataset.h);
+      const ts = TODAY + 'T' + String(h).padStart(2,'0') + ':00';
+      const idx = times.indexOf(ts);
+      if (idx >= 0) slot.textContent = wmoIcon(codes[idx]);
+    });
+  }).catch(() => {});
+});
+</script>
 </body></html>
