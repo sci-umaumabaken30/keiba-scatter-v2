@@ -57,6 +57,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
 .grade-badge{font-size:9px;font-weight:900;padding:1px 5px;border-radius:4px;
   background:rgba(220,38,38,0.25);color:#fca5a5;border:1px solid rgba(220,38,38,0.4);}
 .arrow{color:var(--text-muted);font-size:14px;}
+/* ランプ */
+.lamp{width:8px;height:8px;border-radius:50%;flex-shrink:0;
+  background:#374151;box-shadow:none;transition:background 0.3s,box-shadow 0.3s;}
+.lamp.on{background:#22c55e;box-shadow:0 0 6px 2px rgba(34,197,94,0.55);}
+.lamp.soon{background:#f59e0b;box-shadow:0 0 6px 2px rgba(245,158,11,0.55);}
 </style>
 </head>
 <body>
@@ -80,6 +85,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
   <div class="race-list">
     <a href="scatter_20260419_中山01R_3歳未勝利_ダ1800m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T10:00"></span>
         <div class="race-num-wrap"><span class="race-num">1R</span><span class="race-time">10:00</span></div>
         <span class="race-name">3歳未勝利</span>
         
@@ -90,6 +96,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_中山02R_3歳未勝利_ダ1200m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T10:30"></span>
         <div class="race-num-wrap"><span class="race-num">2R</span><span class="race-time">10:30</span></div>
         <span class="race-name">3歳未勝利</span>
         
@@ -100,6 +107,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_中山03R_3歳未勝利_ダ1800m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T11:00"></span>
         <div class="race-num-wrap"><span class="race-num">3R</span><span class="race-time">11:00</span></div>
         <span class="race-name">3歳未勝利</span>
         
@@ -110,6 +118,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_中山04R_3歳未勝利_芝2000m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T11:30"></span>
         <div class="race-num-wrap"><span class="race-num">4R</span><span class="race-time">11:30</span></div>
         <span class="race-name">3歳未勝利</span>
         
@@ -120,6 +129,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_中山05R_3歳1勝クラス_芝1600m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T12:20"></span>
         <div class="race-num-wrap"><span class="race-num">5R</span><span class="race-time">12:20</span></div>
         <span class="race-name">3歳1勝クラス</span>
         
@@ -130,6 +140,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_中山06R_3歳1勝クラス_ダ1800m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T12:50"></span>
         <div class="race-num-wrap"><span class="race-num">6R</span><span class="race-time">12:50</span></div>
         <span class="race-name">3歳1勝クラス</span>
         
@@ -140,6 +151,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_中山07R_4歳以上1勝クラス_ダ1200m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T13:20"></span>
         <div class="race-num-wrap"><span class="race-num">7R</span><span class="race-time">13:20</span></div>
         <span class="race-name">4歳以上1勝クラス</span>
         
@@ -150,6 +162,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_中山08R_利根川特別_ダ1800m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T13:50"></span>
         <div class="race-num-wrap"><span class="race-num">8R</span><span class="race-time">13:50</span></div>
         <span class="race-name">利根川特別</span>
         
@@ -160,6 +173,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_中山09R_野島崎特別_芝2000m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T14:25"></span>
         <div class="race-num-wrap"><span class="race-num">9R</span><span class="race-time">14:25</span></div>
         <span class="race-name">野島崎特別</span>
         
@@ -170,6 +184,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_中山10R_京葉ステークス_ダ1200m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T15:01"></span>
         <div class="race-num-wrap"><span class="race-num">10R</span><span class="race-time">15:01</span></div>
         <span class="race-name">京葉ステークス</span>
         
@@ -180,6 +195,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_中山11R_皐月賞_芝2000m_G1.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T15:40"></span>
         <div class="race-num-wrap"><span class="race-num">11R</span><span class="race-time">15:40</span></div>
         <span class="race-name">皐月賞</span>
         <span class="grade-badge">G1</span>
@@ -190,6 +206,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_中山12R_サンシャインステークス_芝2200m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T16:30"></span>
         <div class="race-num-wrap"><span class="race-num">12R</span><span class="race-time">16:30</span></div>
         <span class="race-name">サンシャインステークス</span>
         
@@ -215,6 +232,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
   <div class="race-list">
     <a href="scatter_20260419_阪神01R_3歳未勝利_ダ1800m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T09:50"></span>
         <div class="race-num-wrap"><span class="race-num">1R</span><span class="race-time">09:50</span></div>
         <span class="race-name">3歳未勝利</span>
         
@@ -225,6 +243,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_阪神02R_3歳未勝利_芝2000m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T10:20"></span>
         <div class="race-num-wrap"><span class="race-num">2R</span><span class="race-time">10:20</span></div>
         <span class="race-name">3歳未勝利</span>
         
@@ -235,6 +254,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_阪神03R_3歳未勝利_ダ1400m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T10:50"></span>
         <div class="race-num-wrap"><span class="race-num">3R</span><span class="race-time">10:50</span></div>
         <span class="race-name">3歳未勝利</span>
         
@@ -245,6 +265,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_阪神04R_障害4歳以上未勝利_芝2970m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T11:20"></span>
         <div class="race-num-wrap"><span class="race-num">4R</span><span class="race-time">11:20</span></div>
         <span class="race-name">障害4歳以上未勝利</span>
         
@@ -255,6 +276,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_阪神05R_3歳未勝利_芝2200m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T12:10"></span>
         <div class="race-num-wrap"><span class="race-num">5R</span><span class="race-time">12:10</span></div>
         <span class="race-name">3歳未勝利</span>
         
@@ -265,6 +287,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_阪神06R_3歳1勝クラス_ダ1200m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T12:40"></span>
         <div class="race-num-wrap"><span class="race-num">6R</span><span class="race-time">12:40</span></div>
         <span class="race-name">3歳1勝クラス</span>
         
@@ -275,6 +298,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_阪神07R_3歳1勝クラス_芝1600m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T13:10"></span>
         <div class="race-num-wrap"><span class="race-num">7R</span><span class="race-time">13:10</span></div>
         <span class="race-name">3歳1勝クラス</span>
         
@@ -285,6 +309,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_阪神08R_4歳以上1勝クラス_ダ1800m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T13:40"></span>
         <div class="race-num-wrap"><span class="race-num">8R</span><span class="race-time">13:40</span></div>
         <span class="race-name">4歳以上1勝クラス</span>
         
@@ -295,6 +320,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_阪神09R_蓬莱峡特別_芝2000m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T14:15"></span>
         <div class="race-num-wrap"><span class="race-num">9R</span><span class="race-time">14:15</span></div>
         <span class="race-name">蓬莱峡特別</span>
         
@@ -305,6 +331,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_阪神10R_陽春ステークス_ダ1200m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T14:50"></span>
         <div class="race-num-wrap"><span class="race-num">10R</span><span class="race-time">14:50</span></div>
         <span class="race-name">陽春ステークス</span>
         
@@ -315,6 +342,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_阪神11R_立雲峡ステークス_芝1600m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T15:25"></span>
         <div class="race-num-wrap"><span class="race-num">11R</span><span class="race-time">15:25</span></div>
         <span class="race-name">立雲峡ステークス</span>
         
@@ -325,6 +353,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_阪神12R_4歳以上2勝クラス_ダ1800m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T16:10"></span>
         <div class="race-num-wrap"><span class="race-num">12R</span><span class="race-time">16:10</span></div>
         <span class="race-name">4歳以上2勝クラス</span>
         
@@ -350,6 +379,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
   <div class="race-list">
     <a href="scatter_20260419_福島01R_3歳未勝利_ダ1150m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T09:45"></span>
         <div class="race-num-wrap"><span class="race-num">1R</span><span class="race-time">09:45</span></div>
         <span class="race-name">3歳未勝利</span>
         
@@ -360,6 +390,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_福島02R_3歳未勝利_ダ1700m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T10:10"></span>
         <div class="race-num-wrap"><span class="race-num">2R</span><span class="race-time">10:10</span></div>
         <span class="race-name">3歳未勝利</span>
         
@@ -370,6 +401,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_福島03R_3歳未勝利_芝2000m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T10:40"></span>
         <div class="race-num-wrap"><span class="race-num">3R</span><span class="race-time">10:40</span></div>
         <span class="race-name">3歳未勝利</span>
         
@@ -380,6 +412,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_福島04R_3歳未勝利_ダ1700m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T11:10"></span>
         <div class="race-num-wrap"><span class="race-num">4R</span><span class="race-time">11:10</span></div>
         <span class="race-name">3歳未勝利</span>
         
@@ -390,6 +423,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_福島05R_3歳未勝利_芝1200m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T12:00"></span>
         <div class="race-num-wrap"><span class="race-num">5R</span><span class="race-time">12:00</span></div>
         <span class="race-name">3歳未勝利</span>
         
@@ -400,6 +434,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_福島06R_4歳以上1勝クラス_芝1800m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T12:30"></span>
         <div class="race-num-wrap"><span class="race-num">6R</span><span class="race-time">12:30</span></div>
         <span class="race-name">4歳以上1勝クラス</span>
         
@@ -410,6 +445,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_福島07R_4歳以上1勝クラス_芝2000m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T13:01"></span>
         <div class="race-num-wrap"><span class="race-num">7R</span><span class="race-time">13:01</span></div>
         <span class="race-name">4歳以上1勝クラス</span>
         
@@ -420,6 +456,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_福島08R_4歳以上1勝クラス_ダ1700m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T13:30"></span>
         <div class="race-num-wrap"><span class="race-num">8R</span><span class="race-time">13:30</span></div>
         <span class="race-name">4歳以上1勝クラス</span>
         
@@ -430,6 +467,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_福島09R_須賀川特別_芝1200m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T14:05"></span>
         <div class="race-num-wrap"><span class="race-num">9R</span><span class="race-time">14:05</span></div>
         <span class="race-name">須賀川特別</span>
         
@@ -440,6 +478,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_福島10R_奥の細道特別_芝2600m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T14:40"></span>
         <div class="race-num-wrap"><span class="race-num">10R</span><span class="race-time">14:40</span></div>
         <span class="race-name">奥の細道特別</span>
         
@@ -450,6 +489,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_福島11R_福島牝馬ステークス_芝1800m_G3.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T15:15"></span>
         <div class="race-num-wrap"><span class="race-num">11R</span><span class="race-time">15:15</span></div>
         <span class="race-name">福島牝馬ステークス</span>
         <span class="grade-badge">G3</span>
@@ -460,6 +500,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
     </a>
     <a href="scatter_20260419_福島12R_4歳以上1勝クラス_ダ1150m.html">
       <div class="race-left">
+        <span class="lamp" data-start="2026-04-19T16:01"></span>
         <div class="race-num-wrap"><span class="race-num">12R</span><span class="race-time">16:01</span></div>
         <span class="race-name">4歳以上1勝クラス</span>
         
@@ -500,5 +541,19 @@ Object.entries(VENUE_COORDS).forEach(([venue, [lat, lon]]) => {
     });
   }).catch(() => {});
 });
+// ランプ更新（毎分）
+function updateLamps() {
+  const now = new Date();
+  document.querySelectorAll('.lamp[data-start]').forEach(el => {
+    const start = new Date(el.dataset.start);
+    const diffMin = (start - now) / 60000;
+    el.classList.remove('on', 'soon');
+    if (diffMin > 5) el.classList.add('on');        // 5分以上前: 緑
+    else if (diffMin > 0) el.classList.add('soon'); // 0〜5分前: 黄
+    // 発走済: グレー（デフォルト）
+  });
+}
+updateLamps();
+setInterval(updateLamps, 30000);
 </script>
 </body></html>
