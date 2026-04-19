@@ -6,55 +6,55 @@
 <title>4/19（日） クッション値×含水率</title>
 <style>
 :root {
-  --bg:#0d1117; --bg-card:#161b22; --bg-row:#0d1117;
-  --border:#30363d; --text:#e6edf3; --text-sub:#8b949e; --text-muted:#484f58;
-  --accent:#f0a92e; --green:#3fb950; --amber:#f0a92e; --sky:#58a6ff;
+  --bg:#132044; --bg-card:#1a2c5a; --bg-row:#152348;
+  --border:#253d72; --text:#e8eef8; --text-sub:#8da8d8; --text-muted:#4a6090;
+  --accent:#f59e0b; --green:#22c55e; --amber:#f59e0b;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
   background:var(--bg);color:var(--text);padding:12px;
   -webkit-font-smoothing:antialiased;}
 /* ヘッダー */
-.top-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.top-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:4px 0;}
 .top-header h1{font-size:22px;font-weight:900;letter-spacing:-0.5px;}
-.week-badge{background:#1f6feb;color:#fff;font-size:11px;font-weight:800;
-  padding:2px 9px;border-radius:20px;}
+.week-badge{background:#3b5bdb;color:#fff;font-size:11px;font-weight:800;
+  padding:3px 10px;border-radius:20px;}
 /* グリッド */
 .venue-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
 @media(max-width:700px){.venue-grid{grid-template-columns:1fr;}}
 @media(min-width:701px) and (max-width:1000px){.venue-grid{grid-template-columns:repeat(2,1fr);}}
 /* カード */
 .venue-card{border:1px solid var(--border);border-radius:12px;overflow:hidden;}
-.venue-head{padding:11px 13px 9px;background:var(--bg-card);}
-.venue-head h2{font-size:17px;font-weight:900;margin-bottom:5px;}
-.cv-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;}
-.cv-chip{font-size:10px;font-weight:700;font-family:monospace;
-  background:rgba(255,255,255,0.05);border:1px solid var(--border);
-  padding:2px 7px;border-radius:5px;color:var(--text-sub);}
-.cv-chip b{color:var(--accent);}
-.cv-chip.moist-t b{color:var(--green);}
-.cv-chip.moist-d b{color:var(--amber);}
+.venue-head{padding:10px 13px 8px;background:var(--bg-card);}
+.venue-title{display:flex;align-items:baseline;gap:8px;margin-bottom:5px;flex-wrap:wrap;}
+.venue-title h2{font-size:17px;font-weight:900;}
+.cv-inline{font-size:11px;color:var(--text-sub);font-weight:600;}
+.cv-inline b{color:var(--accent);}
+.cv-inline .t{color:var(--green);}
+.cv-inline .d{color:var(--amber);}
 /* 天気 */
-.wx-row{display:flex;gap:10px;}
+.wx-row{display:flex;gap:12px;}
 .wx-slot{display:flex;flex-direction:column;align-items:center;gap:1px;}
 .wx-slot .wx-h{font-size:9px;color:var(--text-muted);}
-.wx-slot .wx-icon{font-size:16px;line-height:1;}
+.wx-slot .wx-icon{font-size:17px;line-height:1;}
 /* レース行 */
 .race-list a{
   display:flex;align-items:center;justify-content:space-between;
   padding:11px 13px;border-top:1px solid var(--border);
   background:var(--bg-row);color:var(--text);text-decoration:none;
-  transition:background 0.1s;-webkit-tap-highlight-color:transparent;
+  transition:background 0.12s;-webkit-tap-highlight-color:transparent;
 }
-.race-list a:active{background:var(--bg-card);}
+.race-list a:hover{background:var(--bg-card);}
 .race-left{display:flex;align-items:center;gap:8px;}
 .race-num{font-size:13px;font-weight:800;color:var(--text-sub);min-width:28px;}
 .race-name{font-size:13px;font-weight:700;}
-.sbadge{font-size:10px;font-weight:800;padding:2px 6px;border-radius:5px;}
-.sbadge.turf{background:rgba(63,185,80,0.15);color:#3fb950;border:1px solid rgba(63,185,80,0.3);}
-.sbadge.dirt{background:rgba(240,169,46,0.15);color:#f0a92e;border:1px solid rgba(240,169,46,0.3);}
+.sbadge{font-size:10px;font-weight:800;padding:2px 7px;border-radius:5px;}
+.sbadge.turf{background:rgba(34,197,94,0.18);color:#4ade80;border:1px solid rgba(34,197,94,0.35);}
+.sbadge.dirt{background:rgba(245,158,11,0.18);color:#fbbf24;border:1px solid rgba(245,158,11,0.35);}
 .race-dist{font-size:12px;color:var(--text-sub);font-weight:600;}
-.arrow{color:var(--text-muted);font-size:13px;}
+.grade-badge{font-size:9px;font-weight:900;padding:1px 5px;border-radius:4px;
+  background:rgba(220,38,38,0.25);color:#fca5a5;border:1px solid rgba(220,38,38,0.4);}
+.arrow{color:var(--text-muted);font-size:14px;}
 </style>
 </head>
 <body>
@@ -65,11 +65,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
 <div class="venue-grid" id="grid">
 <div class="venue-card">
   <div class="venue-head">
-    <h2>中山</h2>
-    <div class="cv-row">
-      <span class="cv-chip">CV <b>9.6</b></span>
-      <span class="cv-chip moist-t">芝 <b>?%</b></span>
-      <span class="cv-chip moist-d">ダ <b>?%</b></span>
+    <div class="venue-title">
+      <h2>中山</h2>
+      <span class="cv-inline">CV=<b>9.6</b>&nbsp; 芝<span class="t">?%</span>&nbsp; ダ<span class="d">?%</span></span>
     </div>
     <div class="wx-row" id="wx-中山">
       <div class="wx-slot"><span class="wx-h">9時</span><span class="wx-icon" data-h="9">—</span></div>
@@ -82,6 +80,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">1R</span>
         <span class="race-name">3歳未勝利</span>
+        
         <span class="sbadge dirt">ダ</span>
         <span class="race-dist">1800m</span>
       </div>
@@ -91,6 +90,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">2R</span>
         <span class="race-name">3歳未勝利</span>
+        
         <span class="sbadge dirt">ダ</span>
         <span class="race-dist">1200m</span>
       </div>
@@ -100,6 +100,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">3R</span>
         <span class="race-name">3歳未勝利</span>
+        
         <span class="sbadge dirt">ダ</span>
         <span class="race-dist">1800m</span>
       </div>
@@ -109,6 +110,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">4R</span>
         <span class="race-name">3歳未勝利</span>
+        
         <span class="sbadge turf">芝</span>
         <span class="race-dist">2000m</span>
       </div>
@@ -118,6 +120,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">5R</span>
         <span class="race-name">3歳1勝クラス</span>
+        
         <span class="sbadge turf">芝</span>
         <span class="race-dist">1600m</span>
       </div>
@@ -127,6 +130,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">6R</span>
         <span class="race-name">3歳1勝クラス</span>
+        
         <span class="sbadge dirt">ダ</span>
         <span class="race-dist">1800m</span>
       </div>
@@ -136,6 +140,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">7R</span>
         <span class="race-name">4歳以上1勝クラス</span>
+        
         <span class="sbadge dirt">ダ</span>
         <span class="race-dist">1200m</span>
       </div>
@@ -145,6 +150,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">8R</span>
         <span class="race-name">利根川特別</span>
+        
         <span class="sbadge dirt">ダ</span>
         <span class="race-dist">1800m</span>
       </div>
@@ -154,6 +160,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">9R</span>
         <span class="race-name">野島崎特別</span>
+        
         <span class="sbadge turf">芝</span>
         <span class="race-dist">2000m</span>
       </div>
@@ -163,8 +170,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">10R</span>
         <span class="race-name">京葉ステークス</span>
+        
         <span class="sbadge dirt">ダ</span>
         <span class="race-dist">1200m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_中山11R_皐月賞_芝2000m_G1.html">
+      <div class="race-left">
+        <span class="race-num">11R</span>
+        <span class="race-name">皐月賞</span>
+        <span class="grade-badge">G1</span>
+        <span class="sbadge turf">芝</span>
+        <span class="race-dist">2000m</span>
       </div>
       <span class="arrow">›</span>
     </a>
@@ -172,6 +190,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">12R</span>
         <span class="race-name">サンシャインステークス</span>
+        
         <span class="sbadge turf">芝</span>
         <span class="race-dist">2200m</span>
       </div>
@@ -181,11 +200,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
 </div>
 <div class="venue-card">
   <div class="venue-head">
-    <h2>阪神</h2>
-    <div class="cv-row">
-      <span class="cv-chip">CV <b>9.4</b></span>
-      <span class="cv-chip moist-t">芝 <b>?%</b></span>
-      <span class="cv-chip moist-d">ダ <b>?%</b></span>
+    <div class="venue-title">
+      <h2>阪神</h2>
+      <span class="cv-inline">CV=<b>9.4</b>&nbsp; 芝<span class="t">?%</span>&nbsp; ダ<span class="d">?%</span></span>
     </div>
     <div class="wx-row" id="wx-阪神">
       <div class="wx-slot"><span class="wx-h">9時</span><span class="wx-icon" data-h="9">—</span></div>
@@ -198,6 +215,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">1R</span>
         <span class="race-name">3歳未勝利</span>
+        
         <span class="sbadge dirt">ダ</span>
         <span class="race-dist">1800m</span>
       </div>
@@ -207,6 +225,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">2R</span>
         <span class="race-name">3歳未勝利</span>
+        
         <span class="sbadge turf">芝</span>
         <span class="race-dist">2000m</span>
       </div>
@@ -216,6 +235,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">3R</span>
         <span class="race-name">3歳未勝利</span>
+        
         <span class="sbadge dirt">ダ</span>
         <span class="race-dist">1400m</span>
       </div>
@@ -225,6 +245,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">4R</span>
         <span class="race-name">障害4歳以上未勝利</span>
+        
         <span class="sbadge turf">芝</span>
         <span class="race-dist">2970m</span>
       </div>
@@ -234,6 +255,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">5R</span>
         <span class="race-name">3歳未勝利</span>
+        
         <span class="sbadge turf">芝</span>
         <span class="race-dist">2200m</span>
       </div>
@@ -243,6 +265,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">6R</span>
         <span class="race-name">3歳1勝クラス</span>
+        
         <span class="sbadge dirt">ダ</span>
         <span class="race-dist">1200m</span>
       </div>
@@ -252,6 +275,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">7R</span>
         <span class="race-name">3歳1勝クラス</span>
+        
         <span class="sbadge turf">芝</span>
         <span class="race-dist">1600m</span>
       </div>
@@ -261,6 +285,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">8R</span>
         <span class="race-name">4歳以上1勝クラス</span>
+        
         <span class="sbadge dirt">ダ</span>
         <span class="race-dist">1800m</span>
       </div>
@@ -270,6 +295,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">9R</span>
         <span class="race-name">蓬莱峡特別</span>
+        
         <span class="sbadge turf">芝</span>
         <span class="race-dist">2000m</span>
       </div>
@@ -279,6 +305,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">10R</span>
         <span class="race-name">陽春ステークス</span>
+        
         <span class="sbadge dirt">ダ</span>
         <span class="race-dist">1200m</span>
       </div>
@@ -288,6 +315,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">11R</span>
         <span class="race-name">立雲峡ステークス</span>
+        
         <span class="sbadge turf">芝</span>
         <span class="race-dist">1600m</span>
       </div>
@@ -297,6 +325,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">12R</span>
         <span class="race-name">4歳以上2勝クラス</span>
+        
         <span class="sbadge dirt">ダ</span>
         <span class="race-dist">1800m</span>
       </div>
@@ -306,11 +335,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
 </div>
 <div class="venue-card">
   <div class="venue-head">
-    <h2>福島</h2>
-    <div class="cv-row">
-      <span class="cv-chip">CV <b>9.5</b></span>
-      <span class="cv-chip moist-t">芝 <b>?%</b></span>
-      <span class="cv-chip moist-d">ダ <b>?%</b></span>
+    <div class="venue-title">
+      <h2>福島</h2>
+      <span class="cv-inline">CV=<b>9.5</b>&nbsp; 芝<span class="t">?%</span>&nbsp; ダ<span class="d">?%</span></span>
     </div>
     <div class="wx-row" id="wx-福島">
       <div class="wx-slot"><span class="wx-h">9時</span><span class="wx-icon" data-h="9">—</span></div>
@@ -323,6 +350,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">1R</span>
         <span class="race-name">3歳未勝利</span>
+        
         <span class="sbadge dirt">ダ</span>
         <span class="race-dist">1150m</span>
       </div>
@@ -332,6 +360,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">2R</span>
         <span class="race-name">3歳未勝利</span>
+        
         <span class="sbadge dirt">ダ</span>
         <span class="race-dist">1700m</span>
       </div>
@@ -341,6 +370,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">3R</span>
         <span class="race-name">3歳未勝利</span>
+        
         <span class="sbadge turf">芝</span>
         <span class="race-dist">2000m</span>
       </div>
@@ -350,6 +380,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">4R</span>
         <span class="race-name">3歳未勝利</span>
+        
         <span class="sbadge dirt">ダ</span>
         <span class="race-dist">1700m</span>
       </div>
@@ -359,6 +390,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">5R</span>
         <span class="race-name">3歳未勝利</span>
+        
         <span class="sbadge turf">芝</span>
         <span class="race-dist">1200m</span>
       </div>
@@ -368,6 +400,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">6R</span>
         <span class="race-name">4歳以上1勝クラス</span>
+        
         <span class="sbadge turf">芝</span>
         <span class="race-dist">1800m</span>
       </div>
@@ -377,6 +410,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">7R</span>
         <span class="race-name">4歳以上1勝クラス</span>
+        
         <span class="sbadge turf">芝</span>
         <span class="race-dist">2000m</span>
       </div>
@@ -386,6 +420,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">8R</span>
         <span class="race-name">4歳以上1勝クラス</span>
+        
         <span class="sbadge dirt">ダ</span>
         <span class="race-dist">1700m</span>
       </div>
@@ -395,6 +430,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">9R</span>
         <span class="race-name">須賀川特別</span>
+        
         <span class="sbadge turf">芝</span>
         <span class="race-dist">1200m</span>
       </div>
@@ -404,8 +440,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">10R</span>
         <span class="race-name">奥の細道特別</span>
+        
         <span class="sbadge turf">芝</span>
         <span class="race-dist">2600m</span>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a href="scatter_20260419_福島11R_福島牝馬ステークス_芝1800m_G3.html">
+      <div class="race-left">
+        <span class="race-num">11R</span>
+        <span class="race-name">福島牝馬ステークス</span>
+        <span class="grade-badge">G3</span>
+        <span class="sbadge turf">芝</span>
+        <span class="race-dist">1800m</span>
       </div>
       <span class="arrow">›</span>
     </a>
@@ -413,6 +460,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
       <div class="race-left">
         <span class="race-num">12R</span>
         <span class="race-name">4歳以上1勝クラス</span>
+        
         <span class="sbadge dirt">ダ</span>
         <span class="race-dist">1150m</span>
       </div>
