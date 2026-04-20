@@ -1208,9 +1208,12 @@ def deploy_to_github(out_dir, date_str, cleanup=False):
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif; background:#0f172a; color:#f1f5f9; min-height:100vh; }
-.global-header { padding:16px 20px 12px; border-bottom:1px solid #1e293b; }
+.global-header { padding:16px 20px 12px; border-bottom:1px solid #1e293b; display:flex; align-items:center; gap:12px; }
+.global-header-text { flex:1; }
 .global-header h1 { font-size:18px; font-weight:900; }
 .global-header .sub { font-size:12px; color:#64748b; margin-top:2px; }
+.admin-btn { display:inline-flex; align-items:center; gap:6px; background:#1e293b; border:1px solid #334155; color:#94a3b8; font-size:12px; font-weight:700; padding:7px 14px; border-radius:8px; text-decoration:none; transition:border-color 0.15s,color 0.15s; white-space:nowrap; flex-shrink:0; }
+.admin-btn:hover { border-color:#f59e0b; color:#f59e0b; background:#1e293b; }
 .date-section { margin-bottom:4px; }
 .date-header { font-size:15px; font-weight:800; padding:12px 20px; background:#1e293b; color:#f1f5f9; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border-top:1px solid #0f172a; }
 .date-header:hover { background:#273549; }
@@ -1236,8 +1239,11 @@ a:hover, a:active { background:#334155; }
 </head>
 <body>
 <div class="global-header">
-  <h1>クッション値×含水率 散布図</h1>
-  <div class="sub">日付をタップで展開 → レースを選択</div>
+  <div class="global-header-text">
+    <h1>クッション値×含水率 散布図</h1>
+    <div class="sub">日付をタップで展開 → レースを選択</div>
+  </div>
+  <a class="admin-btn" href="http://localhost:5000" target="_blank">⚙ 管理</a>
 </div>
 '''
     date_keys = sorted(date_groups.keys(), reverse=True)
