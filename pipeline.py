@@ -307,6 +307,8 @@ def scrape_race_data(race_id):
     sd_match = re.search(r'(芝|ダ|障)(\d+)m', race_data_text)
     surface = sd_match.group(1) if sd_match else '?'
     distance = int(sd_match.group(2)) if sd_match else 0
+    time_match = re.search(r'(\d{1,2}):(\d{2})発走', race_data_text)
+    start_time = f"{int(time_match.group(1)):02d}:{time_match.group(2)}" if time_match else ''
     venue_code = race_id[4:6]
     venue = VENUE_CODES.get(venue_code, '?')
 
@@ -349,6 +351,7 @@ def scrape_race_data(race_id):
             'venue': venue,
             'surface': surface,
             'distance': distance,
+            'start_time': start_time,
         },
         'horses': all_horses,
         'horse_nums': horse_nums,
@@ -1012,6 +1015,7 @@ def main():
     print(f"[Step 4] 各レース処理")
     print("=" * 60)
     results_summary = []
+    start_times_map = {}  # {venue_rnum: "HH:MM"}
 
     for race in races:
         rid = race['race_id']
@@ -1042,6 +1046,11 @@ def main():
             race_data['race_info']['surface'] = surface
         if not race_data['race_info'].get('distance'):
             race_data['race_info']['distance'] = race['distance']
+
+        # 発走時刻を収集
+        st = race_data['race_info'].get('start_time', '')
+        if st:
+            start_times_map[f'{venue}_{race_num:02d}'] = st
 
         # クッション値紐付け
         race_data = link_cushion_data(race_data, cushion_db)
@@ -1094,6 +1103,14 @@ def main():
     print(f"\n  出力先: {out_dir}")
     print(f"  合計: {len(results_summary)}レース")
 
+    # 発走時刻をJSONに保存
+    if start_times_map:
+        st_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               f'start_times_{date_str}.json')
+        with open(st_path, 'w', encoding='utf-8') as f:
+            json.dump(start_times_map, f, ensure_ascii=False, indent=2)
+        print(f"  発走時刻保存: {st_path} ({len(start_times_map)}件)")
+
     # インデックスページ生成
     generate_index(out_dir, results_summary, jra_live, date_label, date_str)
 
@@ -1110,12 +1127,31 @@ def generate_index(out_dir, results_summary, jra_live, date_label, date_str=''):
             venues[venue] = []
         venues[venue].append((rnum, rname, total, pts, surf, dist))
 
+    # 当日はライブ値、過去日はDBから取得
+    today = datetime.now().strftime('%Y%m%d')
+    is_today = (date_str == today)
     venue_info = {}
-    for venue, data in jra_live.items():
-        c = data.get('cushion', '?')
-        tm = data.get('turf_moisture', '?')
-        dm = data.get('dirt_moisture', '?')
-        venue_info[venue] = {'cushion': c, 'turf': tm, 'dirt': dm}
+    if is_today:
+        for venue, data in jra_live.items():
+            c = data.get('cushion', '?')
+            tm = data.get('turf_moisture', '?')
+            dm = data.get('dirt_moisture', '?')
+            venue_info[venue] = {'cushion': c, 'turf': tm, 'dirt': dm}
+    else:
+        cushion_db = {}
+        if os.path.exists(CUSHION_DB_PATH):
+            with open(CUSHION_DB_PATH, encoding='utf-8') as f:
+                cushion_db = json.load(f)
+        date_fmt = f"{date_str[:4]}/{date_str[4:6]}/{date_str[6:8]}"
+        for venue in set(v for v, *_ in results_summary):
+            key = f"{date_fmt}_{venue}"
+            if key in cushion_db:
+                e = cushion_db[key]
+                venue_info[venue] = {
+                    'cushion': e.get('cushion', '?'),
+                    'turf': e.get('turf_goal', '?'),
+                    'dirt': e.get('dirt_goal', '?'),
+                }
 
     html = f'''<!DOCTYPE html>
 <html lang="ja">
@@ -1526,7 +1562,7 @@ a:hover, a:active { background:rgba(255,255,255,0.06); }
                     badge_cls = 'surf-turf' if surf == '芝' else 'surf-dirt'
                     st_key = f'{venue_name}_{rnum:02d}'
                     start_time = st_map.get(st_key, '')
-                    lamp_html = f'<span class="lamp" data-time="{start_time}"></span>' if start_time else ''
+                    lamp_html = f'<span class="lamp" data-time="{start_time}"></span>'
                     time_html = f'<span class="rtime-text">{start_time}</span>' if start_time else ''
                     # 重賞バッジ
                     grade_html = ''

@@ -178,23 +178,19 @@ a.site-link:hover { text-decoration: underline; }
     <div class="log-area" id="log"></div>
   </div>
 
-  <!-- クイック日付 -->
-  <div class="card">
-    <h2>クイック選択</h2>
-    <div class="dates-grid" id="quick-dates"></div>
-  </div>
-
   <!-- クッション値DB更新 -->
   <div class="card">
     <h2>クッション値DB更新</h2>
     <p style="font-size:12px;color:#64748b;margin-bottom:10px">週末前にJRA公式からクッション値・含水率を取得してDBを更新します</p>
     <p style="font-size:12px;margin-bottom:14px">期間: <span id="db-range" style="color:#f59e0b;font-weight:700">読込中...</span> &nbsp;<span id="db-count" style="color:#64748b"></span></p>
     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-      <button class="btn-run" style="background:#3b82f6" onclick="runUpdateDB()">↻ DB更新</button>
+      <button class="btn-run" id="btn-db" style="background:#3b82f6" onclick="runUpdateDB()">↻ DB更新</button>
+      <button class="btn-run" id="btn-weekend" style="background:#10b981" onclick="runWeekendUpdate()">🔄 今週末を一括更新</button>
       <label class="check-label">
         <input type="checkbox" id="chk-year"> 過去データも取得（時間がかかります）
       </label>
     </div>
+    <p style="font-size:11px;color:#475569;margin-top:10px">一括更新: DB更新 → 今週土日のパイプライン自動実行（再スクレイピングなし）</p>
   </div>
 
 </div>
@@ -208,18 +204,7 @@ const pad = n => String(n).padStart(2,'0');
 document.getElementById('date-input').value =
   `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
 
-// クイック日付（過去7日）
-const qdiv = document.getElementById('quick-dates');
-for(let i=0; i<7; i++){
-  const d = new Date(); d.setDate(d.getDate()-i);
-  const label = i===0?'今日':i===1?'昨日':`${d.getMonth()+1}/${d.getDate()}`;
-  const val = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-  const chip = document.createElement('div');
-  chip.className='date-chip';
-  chip.textContent=label;
-  chip.onclick=()=>{ document.getElementById('date-input').value=val; };
-  qdiv.appendChild(chip);
-}
+
 
 function setStatus(state, text){
   const dot = document.getElementById('status-dot');
@@ -231,7 +216,7 @@ function appendLog(text, cls){
   const log = document.getElementById('log');
   const span = document.createElement('span');
   if(cls) span.className=cls;
-  span.textContent=text+'\n';
+  span.textContent=text+'\\n';
   log.appendChild(span);
   log.scrollTop=log.scrollHeight;
 }
@@ -290,6 +275,9 @@ function runUpdateDB(){
   if(evtSource){ evtSource.close(); evtSource=null; }
   document.getElementById('log').innerHTML='';
   setStatus('running','DB更新中...');
+  const btn = document.getElementById('btn-db');
+  btn.disabled = true;
+  btn.textContent = '⏳ 更新中...';
   const withYear = document.getElementById('chk-year').checked;
   evtSource = new EventSource('/api/update_db?with_year=' + withYear);
   evtSource.onmessage = e => {
@@ -298,11 +286,51 @@ function runUpdateDB(){
     if(line.includes('追加') || line.includes('完了')) cls='ok';
     else if(line.includes('ERROR') || line.includes('エラー')) cls='err';
     else if(line.startsWith('===')) cls='head';
-    if(line==='__DONE__'){ setStatus('done','DB更新完了'); evtSource.close(); evtSource=null; }
-    else if(line==='__ERROR__'){ setStatus('error','エラー'); evtSource.close(); evtSource=null; }
-    else { appendLog(line, cls); }
+    if(line==='__DONE__'){
+      setStatus('done','DB更新完了');
+      btn.disabled=false; btn.textContent='↻ DB更新';
+      evtSource.close(); evtSource=null;
+    } else if(line==='__ERROR__'){
+      setStatus('error','エラー');
+      btn.disabled=false; btn.textContent='↻ DB更新';
+      evtSource.close(); evtSource=null;
+    } else { appendLog(line, cls); }
   };
-  evtSource.onerror = ()=>{ setStatus('error','接続エラー'); evtSource.close(); evtSource=null; };
+  evtSource.onerror = ()=>{
+    setStatus('error','接続エラー');
+    btn.disabled=false; btn.textContent='↻ DB更新';
+    evtSource.close(); evtSource=null;
+  };
+}
+
+function runWeekendUpdate(){
+  const btn = document.getElementById('btn-weekend');
+  btn.disabled=true; btn.textContent='⏳ 更新中...';
+  document.getElementById('log').innerHTML='';
+  setStatus('running','一括更新中...');
+  if(evtSource){ evtSource.close(); evtSource=null; }
+  evtSource = new EventSource('/api/weekend_update');
+  evtSource.onmessage = e => {
+    const line = JSON.parse(e.data);
+    let cls='';
+    if(line.includes('完了') || line.includes('✓')) cls='ok';
+    else if(line.includes('ERROR') || line.includes('エラー')) cls='err';
+    else if(line.startsWith('===') || line.startsWith('[')) cls='head';
+    if(line==='__DONE__'){
+      setStatus('done','一括更新完了');
+      btn.disabled=false; btn.textContent='🔄 今週末を一括更新';
+      evtSource.close(); evtSource=null;
+    } else if(line==='__ERROR__'){
+      setStatus('error','エラー');
+      btn.disabled=false; btn.textContent='🔄 今週末を一括更新';
+      evtSource.close(); evtSource=null;
+    } else { appendLog(line, cls); }
+  };
+  evtSource.onerror = ()=>{
+    setStatus('error','接続エラー');
+    btn.disabled=false; btn.textContent='🔄 今週末を一括更新';
+    evtSource.close(); evtSource=null;
+  };
 }
 </script>
 </body>
@@ -348,7 +376,7 @@ def api_run():
     if not date_str or len(date_str) != 8:
         return Response('data: ' + json.dumps('日付エラー') + '\n\n', mimetype='text/event-stream')
 
-    cmd = [sys.executable, '-X', 'utf8', os.path.join(BASE_DIR, 'pipeline.py'), date_str]
+    cmd = [sys.executable, '-u', '-X', 'utf8', os.path.join(BASE_DIR, 'pipeline.py'), date_str]
     if deploy:
         cmd.append('--deploy')
     if no_scrape:
@@ -381,6 +409,57 @@ def api_run():
                     headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
 
 
+@app.route('/api/weekend_update')
+def api_weekend_update():
+    """DB更新 → 今週土日のパイプライン再実行（no-scrape）"""
+    import datetime as _dt
+    today = _dt.date.today()
+    # 今週の土曜・日曜を計算
+    weekday = today.weekday()  # 0=月 … 5=土 6=日
+    days_to_sat = (5 - weekday) % 7
+    sat = today + _dt.timedelta(days=days_to_sat)
+    sun = sat + _dt.timedelta(days=1)
+    weekend_dates = [sat.strftime('%Y%m%d'), sun.strftime('%Y%m%d')]
+
+    def generate():
+        # Step1: DB更新
+        yield f'data: {json.dumps("=== Step1: DB更新 ===")}\n\n'
+        db_cmd = [sys.executable, '-u', '-X', 'utf8',
+                  os.path.join(BASE_DIR, 'update_cushion_db.py')]
+        proc = subprocess.Popen(db_cmd, stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT, cwd=BASE_DIR,
+                                encoding='utf-8', errors='replace')
+        for line in proc.stdout:
+            yield f'data: {json.dumps(line.rstrip())}\n\n'
+        proc.wait()
+        if proc.returncode != 0:
+            yield f'data: {json.dumps("DB更新失敗")}\n\n'
+            yield f'data: {json.dumps("__ERROR__")}\n\n'
+            return
+
+        # Step2: 土日パイプライン（出力ディレクトリが存在する日のみ）
+        for date_str in weekend_dates:
+            out_dir = os.path.join(BASE_DIR, 'output', date_str)
+            if not os.path.exists(out_dir):
+                yield f'data: {json.dumps(f"{date_str}: 出力なし（先にパイプラインを実行してください）")}\n\n'
+                continue
+            yield f'data: {json.dumps(f"=== Step2: {date_str} パイプライン ===")}\n\n'
+            pip_cmd = [sys.executable, '-u', '-X', 'utf8',
+                       os.path.join(BASE_DIR, 'pipeline.py'),
+                       date_str, '--no-scrape', '--deploy']
+            proc2 = subprocess.Popen(pip_cmd, stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT, cwd=BASE_DIR,
+                                     encoding='utf-8', errors='replace')
+            for line in proc2.stdout:
+                yield f'data: {json.dumps(line.rstrip())}\n\n'
+            proc2.wait()
+
+        yield f'data: {json.dumps("__DONE__")}\n\n'
+
+    return Response(generate(), mimetype='text/event-stream',
+                    headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
+
+
 @app.route('/api/db_info')
 def api_db_info():
     import json as _json
@@ -397,7 +476,7 @@ def api_db_info():
 @app.route('/api/update_db')
 def api_update_db():
     with_year = request.args.get('with_year', 'false') == 'true'
-    cmd = [sys.executable, '-X', 'utf8',
+    cmd = [sys.executable, '-u', '-X', 'utf8',
            os.path.join(BASE_DIR, 'update_cushion_db.py')]
     if with_year:
         import datetime as dt
