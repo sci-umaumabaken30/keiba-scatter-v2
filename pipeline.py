@@ -192,6 +192,45 @@ def fetch_venue_weather(venues, date_str):
     return result
 
 
+# ===== 重賞グレード取得（netkeiba） =====
+def fetch_grades_for_date(date_str):
+    """指定日の重賞グレード {venue_RR: (race_name, grade)} を返す"""
+    url = f'https://race.netkeiba.com/top/race_list_sub.html?kaisai_date={date_str}'
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+    grade_re = re.compile(r'[(（]([GＧ][ⅠⅡⅢ123１２３]+)[)）]')
+    norm = {'Ｇ': 'G', 'Ⅰ': '1', 'Ⅱ': '2', 'Ⅲ': '3', '１': '1', '２': '2', '３': '3'}
+    grades = {}
+    try:
+        r = requests.get(url, headers=headers, timeout=10)
+        r.encoding = 'utf-8'
+        soup = BeautifulSoup(r.text, 'html.parser')
+        seen = set()
+        for link in soup.find_all('a', href=re.compile(r'race_id=')):
+            gm = grade_re.search(link.get_text())
+            if not gm:
+                continue
+            m = re.search(r'race_id=(\d+)', link.get('href', ''))
+            if not m:
+                continue
+            rid = m.group(1)
+            if rid in seen:
+                continue
+            seen.add(rid)
+            venue = VENUE_CODES.get(rid[4:6], '?')
+            rnum = int(rid[10:12])
+            raw_g = gm.group(1)
+            for k, v in norm.items():
+                raw_g = raw_g.replace(k, v)
+            grade = 'G' + raw_g[-1]
+            text = link.get_text(strip=True)
+            name_m = re.match(r'\d+R(.+?)[(（]', text)
+            rname = name_m.group(1).strip() if name_m else ''
+            grades[f'{venue}_{rnum:02d}'] = (rname, grade)
+    except Exception:
+        pass
+    return grades
+
+
 # ===== Step 2: レース一覧取得 =====
 def get_race_list(date_str):
     """netkeiba からレース一覧取得 (date_str: YYYYMMDD)"""
@@ -1183,6 +1222,9 @@ def deploy_to_github(out_dir, date_str, cleanup=False):
             except Exception:
                 pass
 
+    # 重賞グレードキャッシュ（日付ごとに取得）
+    all_grades = {}  # {date_str: {"会場_01": (race_name, grade), ...}}
+
     token = config['github_token']
     repo = config['repo']
     headers = {
@@ -1324,7 +1366,7 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif; b
 .weather-slot { display:flex; flex-direction:column; align-items:center; gap:1px; }
 .weather-icon { font-size:16px; line-height:1; }
 .weather-label { font-size:8px; color:#4a6090; font-weight:600; }
-a { display:flex; align-items:flex-start; gap:8px; padding:9px 14px; color:#e2e8f0; text-decoration:none; font-size:12px; font-weight:700; border-bottom:1px solid rgba(100,160,255,0.1); transition:background 0.12s; }
+a { display:flex; align-items:center; gap:8px; padding:9px 14px; color:#e2e8f0; text-decoration:none; font-size:12px; font-weight:700; border-bottom:1px solid rgba(100,160,255,0.1); transition:background 0.12s; }
 a:last-child { border-bottom:none; }
 a:hover, a:active { background:rgba(255,255,255,0.06); }
 .rinfo { display:flex; flex-direction:column; min-width:44px; flex-shrink:0; }
@@ -1339,7 +1381,13 @@ a:hover, a:active { background:rgba(255,255,255,0.06); }
 .surf-badge { font-size:9px; font-weight:800; padding:2px 6px; border-radius:4px; flex-shrink:0; margin-top:1px; }
 .surf-turf { background:rgba(34,197,94,0.18); color:#4ade80; border:1px solid rgba(34,197,94,0.35); }
 .surf-dirt { background:rgba(245,158,11,0.18); color:#fbbf24; border:1px solid rgba(245,158,11,0.35); }
-.dist { font-size:11px; color:#a8c4e8; font-weight:600; flex-shrink:0; margin-top:1px; }
+.dist { font-size:11px; color:#a8c4e8; font-weight:600; flex-shrink:0; }
+.grade-g1 { font-size:9px; font-weight:900; padding:1px 5px; border-radius:4px; flex-shrink:0; background:rgba(239,68,68,0.25); color:#fca5a5; border:1px solid rgba(239,68,68,0.5); }
+.grade-g2 { font-size:9px; font-weight:900; padding:1px 5px; border-radius:4px; flex-shrink:0; background:rgba(168,85,247,0.25); color:#d8b4fe; border:1px solid rgba(168,85,247,0.5); }
+.grade-g3 { font-size:9px; font-weight:900; padding:1px 5px; border-radius:4px; flex-shrink:0; background:rgba(59,130,246,0.25); color:#93c5fd; border:1px solid rgba(59,130,246,0.5); }
+.week-badge { font-size:9px; font-weight:800; padding:2px 7px; border-radius:10px; margin-left:6px; background:rgba(34,197,94,0.2); color:#4ade80; border:1px solid rgba(34,197,94,0.4); }
+.week-badge-last { background:rgba(100,116,139,0.2); color:#94a3b8; border:1px solid rgba(100,116,139,0.3); }
+.graded-in-date { font-size:11px; color:#94a3b8; margin-left:4px; }
 </style>
 </head>
 <body>
@@ -1351,13 +1399,51 @@ a:hover, a:active { background:rgba(255,255,255,0.06); }
   <a class="admin-btn" href="http://localhost:5000" target="_blank">⚙ 管理</a>
 </div>
 '''
+    from datetime import datetime as _dt
+    _today = _dt.now()
+    _today_week = _today.isocalendar()[1]
+    _today_year = _today.isocalendar()[0]
+
     date_keys = sorted(date_groups.keys(), reverse=True)
     for idx, d_fmt in enumerate(date_keys):
         files_in_date = sorted(date_groups[d_fmt])
-        count = len(files_in_date)
         open_class = ' open' if idx == 0 else ''
+
+        # 日付文字列を取得（ファイル名から）
+        raw_date_hdr = ''
+        for fn in files_in_date:
+            dm = re.match(r'scatter_(\d{8})_', fn)
+            if dm:
+                raw_date_hdr = dm.group(1)
+                break
+
+        # 今週/先週バッジ
+        week_badge_html = ''
+        if raw_date_hdr:
+            rd = _dt(int(raw_date_hdr[:4]), int(raw_date_hdr[4:6]), int(raw_date_hdr[6:]))
+            rd_iso = rd.isocalendar()
+            if rd_iso[0] == _today_year and rd_iso[1] == _today_week:
+                week_badge_html = '<span class="week-badge">今週</span>'
+            elif (rd_iso[0] == _today_year and rd_iso[1] == _today_week - 1) or \
+                 (_today_week == 1 and rd_iso[1] >= 52):
+                week_badge_html = '<span class="week-badge week-badge-last">先週</span>'
+
+        # 重賞レース名取得（キャッシュまたは新規取得）
+        grades_for_date = all_grades.get(raw_date_hdr)
+        if grades_for_date is None:
+            grades_for_date = fetch_grades_for_date(raw_date_hdr)
+            all_grades[raw_date_hdr] = grades_for_date
+
+        graded_names = [f'{rn}<span style="font-size:9px;opacity:0.8">{gr}</span>'
+                        for k, (rn, gr) in grades_for_date.items()]
+        graded_html = '<span class="graded-in-date">' + '・'.join(graded_names[:3]) + '</span>' if graded_names else ''
+
         index_html += f'<div class="date-section">'
-        index_html += f'<div class="date-header{open_class}" onclick="toggleDate(this)">{d_fmt} <span style="font-size:11px;color:#64748b;font-weight:600">{count}R</span><span class="toggle">▼</span></div>\n'
+        index_html += (
+            f'<div class="date-header{open_class}" onclick="toggleDate(this)">'
+            f'{d_fmt}{week_badge_html}{graded_html}'
+            f'<span class="toggle">▼</span></div>\n'
+        )
         index_html += f'<div class="race-list{open_class}">\n'
 
         venue_groups = {}
@@ -1428,11 +1514,18 @@ a:hover, a:active { background:rgba(255,255,255,0.06); }
                     start_time = st_map.get(st_key, '')
                     lamp_html = f'<span class="lamp" data-time="{start_time}"></span>' if start_time else ''
                     time_html = f'<span class="rtime-text">{start_time}</span>' if start_time else ''
+                    # 重賞バッジ
+                    grade_html = ''
+                    if st_key in grades_for_date:
+                        _, gr = grades_for_date[st_key]
+                        gcls = 'grade-g1' if gr == 'G1' else ('grade-g2' if gr == 'G2' else 'grade-g3')
+                        grade_html = f'<span class="{gcls}">{gr}</span>'
                     index_html += (
                         f'<a href="{fname}" data-venue="{venue_name}" data-rnum="{rnum}" data-date="{raw_date}">'
                         f'<span class="rinfo"><span class="rnum">{rnum}R</span>'
                         f'<span class="rtime">{lamp_html}{time_html}</span></span>'
                         f'<span class="rname">{rname}</span>'
+                        f'{grade_html}'
                         f'<span class="surf-badge {badge_cls}">{surf}</span>'
                         f'<span class="dist">{dist}m</span></a>\n'
                     )
