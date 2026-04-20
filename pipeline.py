@@ -1357,10 +1357,13 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif; b
 .admin-btn { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.08); border:1px solid rgba(100,160,255,0.3); color:#a8c4e8; font-size:12px; font-weight:700; padding:7px 14px; border-radius:8px; text-decoration:none; transition:border-color 0.15s,color 0.15s; white-space:nowrap; flex-shrink:0; }
 .admin-btn:hover { border-color:#f59e0b; color:#f59e0b; }
 .date-section { margin-bottom:4px; }
-.date-header { font-size:15px; font-weight:800; padding:14px 18px; background:rgba(15,30,70,0.8); color:#e8f0ff; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border-top:1px solid rgba(100,160,255,0.1); }
+.date-header { font-size:15px; font-weight:800; padding:14px 18px; background:rgba(15,30,70,0.8); color:#e8f0ff; cursor:pointer; display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:12px; border-top:1px solid rgba(100,160,255,0.1); }
 .date-header:hover { background:rgba(30,60,130,0.7); }
 .date-header .toggle { font-size:11px; color:#7ea8d8; transition:transform 0.2s; }
 .date-header.open .toggle { transform:rotate(180deg); }
+.date-left { white-space:nowrap; }
+.graded-center { font-size:11px; font-weight:700; color:#94a3b8; text-align:center; }
+.graded-in-date { }
 .race-list { display:none; padding:12px 14px; overflow-x:auto; background:rgba(10,20,50,0.5); }
 .race-list.open { display:flex; gap:10px; align-items:flex-start; }
 .venue-col { flex:0 0 auto; min-width:270px; background:rgba(15,30,70,0.5); border:1px solid rgba(100,160,255,0.25); border-radius:10px; overflow:hidden; }
@@ -1423,16 +1426,13 @@ a:hover, a:active { background:rgba(255,255,255,0.06); }
                 raw_date_hdr = dm.group(1)
                 break
 
-        # 今週/先週バッジ
+        # 今週バッジ（今週のみ表示）
         week_badge_html = ''
         if raw_date_hdr:
             rd = _dt(int(raw_date_hdr[:4]), int(raw_date_hdr[4:6]), int(raw_date_hdr[6:]))
             rd_iso = rd.isocalendar()
             if rd_iso[0] == _today_year and rd_iso[1] == _today_week:
                 week_badge_html = '<span class="week-badge">今週</span>'
-            elif (rd_iso[0] == _today_year and rd_iso[1] == _today_week - 1) or \
-                 (_today_week == 1 and rd_iso[1] >= 52):
-                week_badge_html = '<span class="week-badge week-badge-last">先週</span>'
 
         # 重賞レース名取得（キャッシュまたは新規取得）
         grades_for_date = all_grades.get(raw_date_hdr)
@@ -1440,14 +1440,24 @@ a:hover, a:active { background:rgba(255,255,255,0.06); }
             grades_for_date = fetch_grades_for_date(raw_date_hdr)
             all_grades[raw_date_hdr] = grades_for_date
 
-        graded_names = [f'{rn}<span style="font-size:9px;opacity:0.8">{gr}</span>'
-                        for k, (rn, gr) in grades_for_date.items()]
-        graded_html = '<span class="graded-in-date">' + '・'.join(graded_names[:3]) + '</span>' if graded_names else ''
+        # 例: 中山11R　GⅠ　皐月賞　/　福島11R　GⅢ　福島牝馬S
+        roman = {'G1': 'GⅠ', 'G2': 'GⅡ', 'G3': 'GⅢ'}
+        graded_parts = []
+        for key, (rn, gr) in list(grades_for_date.items())[:3]:
+            venue_r, rnum_r = key.split('_')
+            gr_roman = roman.get(gr, gr)
+            graded_parts.append(f'{venue_r}{int(rnum_r)}R\u3000{gr_roman}\u3000{rn}')
+        graded_html = (
+            '<span class="graded-in-date">' +
+            '\u3000/\u3000'.join(graded_parts) +
+            '</span>'
+        ) if graded_parts else ''
 
         index_html += f'<div class="date-section">'
         index_html += (
             f'<div class="date-header{open_class}" onclick="toggleDate(this)">'
-            f'{d_fmt}{week_badge_html}{graded_html}'
+            f'<span class="date-left">{d_fmt}{week_badge_html}</span>'
+            f'<span class="graded-center">{graded_html}</span>'
             f'<span class="toggle">▼</span></div>\n'
         )
         index_html += f'<div class="race-list{open_class}">\n'
