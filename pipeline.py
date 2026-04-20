@@ -1362,8 +1362,7 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif; b
 .date-header .toggle { font-size:11px; color:#7ea8d8; transition:transform 0.2s; }
 .date-header.open .toggle { transform:rotate(180deg); }
 .date-left { white-space:nowrap; }
-.graded-center { font-size:15px; font-weight:800; color:#94a3b8; text-align:center; }
-.graded-in-date { }
+.graded-center { font-size:15px; font-weight:800; color:#e8f0ff; text-align:center; }
 .race-list { display:none; padding:12px 14px; overflow-x:auto; background:rgba(10,20,50,0.5); }
 .race-list.open { display:flex; gap:10px; align-items:flex-start; }
 .venue-col { flex:0 0 auto; min-width:270px; background:rgba(15,30,70,0.5); border:1px solid rgba(100,160,255,0.25); border-radius:10px; overflow:hidden; }
@@ -1396,7 +1395,6 @@ a:hover, a:active { background:rgba(255,255,255,0.06); }
 .grade-g3 { font-size:9px; font-weight:900; padding:1px 5px; border-radius:4px; flex-shrink:0; background:rgba(59,130,246,0.25); color:#93c5fd; border:1px solid rgba(59,130,246,0.5); }
 .week-badge { font-size:9px; font-weight:800; padding:2px 7px; border-radius:10px; margin-left:6px; background:rgba(34,197,94,0.2); color:#4ade80; border:1px solid rgba(34,197,94,0.4); }
 .week-badge-last { background:rgba(100,116,139,0.2); color:#94a3b8; border:1px solid rgba(100,116,139,0.3); }
-.graded-in-date { font-size:11px; color:#94a3b8; margin-left:4px; }
 </style>
 </head>
 <body>
