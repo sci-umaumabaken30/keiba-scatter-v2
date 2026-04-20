@@ -1386,7 +1386,7 @@ a:hover, a:active { background:rgba(255,255,255,0.06); }
 .lamp-red { background:#ef4444; box-shadow:0 0 6px #ef4444; }
 .lamp-gray { background:#475569; }
 .rtime-text { font-size:9px; color:#4a6090; font-weight:600; }
-.rname { flex:1; white-space:nowrap; }
+.rname { flex:1; white-space:nowrap; font-size:14px; }
 .surf-badge { font-size:9px; font-weight:800; padding:2px 6px; border-radius:4px; flex-shrink:0; margin-top:1px; }
 .surf-turf { background:rgba(34,197,94,0.18); color:#4ade80; border:1px solid rgba(34,197,94,0.35); }
 .surf-dirt { background:rgba(245,158,11,0.18); color:#fbbf24; border:1px solid rgba(245,158,11,0.35); }
