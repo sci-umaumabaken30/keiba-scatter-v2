@@ -1362,7 +1362,7 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif; b
 .date-header .toggle { font-size:11px; color:#7ea8d8; transition:transform 0.2s; }
 .date-header.open .toggle { transform:rotate(180deg); }
 .date-left { white-space:nowrap; }
-.graded-center { font-size:15px; font-weight:800; color:#e8f0ff; text-align:center; }
+.graded-center { font-size:clamp(9px,2.5vw,15px); font-weight:800; color:#e8f0ff; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
 .race-list { display:none; padding:12px 14px; overflow-x:auto; background:rgba(10,20,50,0.5); }
 .race-list.open { display:flex; gap:10px; align-items:flex-start; }
 .venue-col { flex:0 0 auto; min-width:270px; background:rgba(15,30,70,0.5); border:1px solid rgba(100,160,255,0.25); border-radius:10px; overflow:hidden; }
