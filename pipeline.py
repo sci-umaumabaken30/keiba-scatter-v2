@@ -197,34 +197,40 @@ def fetch_grades_for_date(date_str):
     """指定日の重賞グレード {venue_RR: (race_name, grade)} を返す"""
     url = f'https://race.netkeiba.com/top/race_list_sub.html?kaisai_date={date_str}'
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-    grade_re = re.compile(r'[(（]([GＧ][ⅠⅡⅢ123１２３]+)[)）]')
-    norm = {'Ｇ': 'G', 'Ⅰ': '1', 'Ⅱ': '2', 'Ⅲ': '3', '１': '1', '２': '2', '３': '3'}
+    grade_type_re = re.compile(r'Icon_GradeType(\d+)')
     grades = {}
     try:
         r = requests.get(url, headers=headers, timeout=10)
         r.encoding = 'utf-8'
         soup = BeautifulSoup(r.text, 'html.parser')
-        seen = set()
-        for link in soup.find_all('a', href=re.compile(r'race_id=')):
-            gm = grade_re.search(link.get_text())
+        for li in soup.find_all('li', class_='bg_jyoken'):
+            grade_span = li.find('span', class_=grade_type_re)
+            if not grade_span:
+                continue
+            gm = grade_type_re.search(' '.join(grade_span.get('class', [])))
             if not gm:
                 continue
-            m = re.search(r'race_id=(\d+)', link.get('href', ''))
-            if not m:
+            gtype = int(gm.group(1))
+            if gtype not in (1, 2, 3):  # G1/G2/G3のみ（15はL）
                 continue
-            rid = m.group(1)
-            if rid in seen:
+            grade = f'G{gtype}'
+            a = li.find('a', href=re.compile(r'race_id='))
+            if not a:
                 continue
-            seen.add(rid)
+            rid_m = re.search(r'race_id=(\d+)', a.get('href', ''))
+            if not rid_m:
+                continue
+            rid = rid_m.group(1)
             venue = VENUE_CODES.get(rid[4:6], '?')
             rnum = int(rid[10:12])
-            raw_g = gm.group(1)
-            for k, v in norm.items():
-                raw_g = raw_g.replace(k, v)
-            grade = 'G' + raw_g[-1]
-            text = link.get_text(strip=True)
-            name_m = re.match(r'\d+R(.+?)[(（]', text)
-            rname = name_m.group(1).strip() if name_m else ''
+            # レース名取得（RaceName_Text か テキストから）
+            name_tag = li.find(class_=re.compile(r'RaceName'))
+            if name_tag:
+                rname = name_tag.get_text(strip=True)
+            else:
+                txt = li.get_text(' ', strip=True)
+                nm = re.search(r'\d+R\s*(.+?)\s+\d{1,2}:\d{2}', txt)
+                rname = nm.group(1).strip() if nm else ''
             grades[f'{venue}_{rnum:02d}'] = (rname, grade)
     except Exception:
         pass
