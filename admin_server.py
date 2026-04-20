@@ -202,12 +202,6 @@ a.site-link:hover { text-decoration: underline; }
 <script>
 let evtSource = null;
 
-// DB期間を取得して表示
-fetch('/api/db_info').then(r=>r.json()).then(d=>{
-  document.getElementById('db-range').textContent = d.min + ' 〜 ' + d.max;
-  document.getElementById('db-count').textContent = '(' + d.count + '件)';
-}).catch(()=>{ document.getElementById('db-range').textContent = '取得失敗'; });
-
 // 今日の日付をデフォルトに
 const today = new Date();
 const pad = n => String(n).padStart(2,'0');
@@ -318,9 +312,28 @@ function runUpdateDB(){
 _current_proc = None
 
 
+def get_db_info():
+    db_path = os.path.join(BASE_DIR, 'cushion_db_full.json')
+    try:
+        with open(db_path, encoding='utf-8') as f:
+            db = json.load(f)
+        dates = sorted(k.split('_')[0] for k in db.keys() if '_' in k)
+        return dates[0], dates[-1], len(db)
+    except Exception:
+        return '?', '?', 0
+
+
 @app.route('/')
 def index():
-    return render_template_string(ADMIN_HTML)
+    d_min, d_max, d_count = get_db_info()
+    html = ADMIN_HTML.replace(
+        '<span id="db-range" style="color:#f59e0b;font-weight:700">読込中...</span>',
+        f'<span id="db-range" style="color:#f59e0b;font-weight:700">{d_min} 〜 {d_max}</span>'
+    ).replace(
+        '<span id="db-count" style="color:#64748b"></span>',
+        f'<span id="db-count" style="color:#64748b">({d_count}件)</span>'
+    )
+    return html
 
 
 @app.route('/api/run')
