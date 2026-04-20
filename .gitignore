@@ -10,3 +10,6 @@ pipeline_*.log
 fix_start_times.py
 deploy_index_only.py
 data/
+admin_server.log
+horse_results_cache.db
+debug_spr10.py
