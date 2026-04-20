@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-競馬クッション値×含水率 散布図 一括生成パイプライン v2
+競馬クッション値×含水率 散布図 一括生成パイプライン
 
 使い方:
   python pipeline.py 20260215              # 全レース生成
@@ -16,27 +16,58 @@ import time
 import json
 import os
 import sys
-import asyncio
+import io
 import argparse
 import base64
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, date as _date
+import sqlite3
+from datetime import datetime
 from urllib.parse import quote
 
-# JRA公式スクレイパー（keiba-app）をインポート
-_JRA_APP = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'keiba-app', 'backend', 'scrapers')
-if os.path.isdir(_JRA_APP) and _JRA_APP not in sys.path:
-    sys.path.insert(0, _JRA_APP)
-try:
-    from jra_entries import JRAPlaywrightScraper
-    _JRA_AVAILABLE = True
-except ImportError:
-    _JRA_AVAILABLE = False
+# Windowsでの日本語・特殊文字出力対応
+if sys.stdout.encoding and sys.stdout.encoding.lower() in ('cp932', 'shift_jis', 'sjis'):
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
 # ===== 設定 =====
 CUSHION_DB_PATH = os.path.join(os.path.dirname(__file__), 'cushion_db_full.json')
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), 'output')
 CACHE_DIR = os.path.join(os.path.dirname(__file__), 'cache')
+HORSE_CACHE_DB = os.path.join(os.path.dirname(__file__), 'horse_results_cache.db')
+
+
+# ===== 馬成績キャッシュ（SQLite） =====
+def _cache_conn():
+    os.makedirs(os.path.dirname(HORSE_CACHE_DB) or '.', exist_ok=True)
+    conn = sqlite3.connect(HORSE_CACHE_DB)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS horse_results (
+            horse_id   TEXT PRIMARY KEY,
+            results_json TEXT NOT NULL,
+            fetched_at TEXT NOT NULL
+        )
+    """)
+    conn.commit()
+    return conn
+
+def _cache_get(horse_id: str):
+    try:
+        with _cache_conn() as conn:
+            row = conn.execute(
+                "SELECT results_json FROM horse_results WHERE horse_id = ?", (horse_id,)
+            ).fetchone()
+            return json.loads(row[0]) if row else None
+    except Exception:
+        return None
+
+def _cache_set(horse_id: str, results: list):
+    try:
+        with _cache_conn() as conn:
+            conn.execute(
+                "INSERT OR REPLACE INTO horse_results VALUES (?,?,?)",
+                (horse_id, json.dumps(results, ensure_ascii=False), datetime.now().isoformat())
+            )
+            conn.commit()
+    except Exception:
+        pass
 
 VENUE_CODES = {
     '01': '札幌', '02': '函館', '03': '福島', '04': '新潟',
@@ -45,169 +76,13 @@ VENUE_CODES = {
 }
 
 
-# ===== JRA公式スクレイパー統合 =====
-
-def fetch_jra_races(date_str):
-    """
-    JRA公式JRADB（Playwright）からレース一覧+馬データを取得し、
-    pipeline形式で返す。
-    Returns: (races_list, race_data_map)
-      races_list: [{race_id, venue, race_num, race_name, surface, distance, start_time}]
-      race_data_map: {race_id: {race_info, horses, horse_nums}}
-    """
-    if not _JRA_AVAILABLE:
-        return [], {}
-
-    def _convert_histories(histories):
-        converted = []
-        for hr in histories:
-            hdate = hr.get('race_date')
-            if isinstance(hdate, _date):
-                hdate_str = hdate.strftime('%Y/%m/%d')
-            else:
-                hdate_str = str(hdate)
-            hsurf = '芝' if hr.get('course_type') == 'turf' else 'ダ'
-            converted.append({
-                'date':       hdate_str,
-                'venue':      hr.get('venue', ''),
-                'surface':    hsurf,
-                'distance':   hr.get('distance', 0),
-                'race_name':  hr.get('race_name', ''),
-                'result':     hr.get('result_rank'),
-                'num_horses': hr.get('num_horses', ''),
-                'time_diff':  '',
-                'passage':    '',
-                'pace':       '',
-                'agari':      '',
-                'winner':     '',
-            })
-        return converted
-
-    async def _run():
-        from jra_entries import _parse_horse_history_table, BASE_URL, JRADB_U
-        target = _date(int(date_str[:4]), int(date_str[4:6]), int(date_str[6:]))
-        today  = _date.today()
-        is_past = target < today
-
-        async with JRAPlaywrightScraper() as sc:
-            if is_past:
-                cnames = await sc.get_past_race_cnames(target)
-            else:
-                cnames = await sc.get_shutuba_cnames(target)
-
-            if not cnames:
-                return [], {}
-
-            races_list = []
-            race_meta  = {}
-
-            # Phase 1: レース情報取得（馬名・CNAMEを収集）
-            for rc in sorted(cnames, key=lambda x: (x.get('venue') or '', x.get('race_num', 0))):
-                cname    = rc['cname']
-                venue    = rc.get('venue') or '?'
-                race_num = rc.get('race_num', 0)
-                fake_id  = f"jra_{date_str}_{venue}_{race_num:02d}"
-
-                try:
-                    rdata = await (sc.parse_spr10_race(cname, venue, race_num) if is_past
-                                   else sc.parse_dde010_race(cname, venue, race_num))
-                except Exception as e:
-                    print(f"  レース取得エラー {venue}{race_num}R: {e}")
-                    continue
-
-                if not rdata:
-                    continue
-
-                surface = '芝' if rdata.get('course_type') == 'turf' else 'ダ'
-                dist    = rdata.get('distance', 0)
-                rname   = rdata.get('race_name', '')
-
-                races_list.append({
-                    'race_id':    fake_id,
-                    'venue':      venue,
-                    'race_num':   race_num,
-                    'race_name':  rname,
-                    'surface':    surface,
-                    'distance':   dist,
-                    'start_time': rdata.get('start_time', ''),
-                    'text':       f"{race_num}R{rname}{surface}{dist}m",
-                    '_cname':     cname,
-                    '_is_past':   is_past,
-                })
-
-                horse_nums = {}
-                raw_horses = []
-                for h in rdata.get('horses', []):
-                    hname = h.get('horse_name', '')
-                    if not hname:
-                        continue
-                    horse_nums[hname] = str(h.get('horse_num', ''))
-                    raw_horses.append({'name': hname, 'hcname': h.get('history_cname')})
-
-                race_meta[fake_id] = {
-                    'race_info':  {'race_id': fake_id, 'race_name': rname,
-                                   'venue': venue, 'surface': surface, 'distance': dist},
-                    'horse_nums': horse_nums,
-                    'raw_horses': raw_horses,
-                }
-
-            # Phase 2: Playwright で馬歴を並列取得（同一ブラウザの複数ページ）
-            all_horses = [(fid, h['name'], h['hcname'])
-                          for fid, meta in race_meta.items()
-                          for h in meta['raw_horses'] if h['hcname']]
-            total = len(all_horses)
-            print(f"  馬歴並列取得: {total}頭 (最大6並列)", flush=True)
-
-            sem = asyncio.Semaphore(6)
-            done_count = 0
-            hist_results = {}
-
-            async def fetch_one(fid, hname, hcname):
-                nonlocal done_count
-                async with sem:
-                    try:
-                        url  = f"{BASE_URL}{JRADB_U}?CNAME={hcname}"
-                        page = await sc._browser.new_page()
-                        await page.goto(url, wait_until="domcontentloaded", timeout=30_000)
-                        html = await page.content()
-                        await page.close()
-                        raw  = _parse_horse_history_table(html, hname)
-                    except Exception:
-                        raw = []
-                    done_count += 1
-                    converted = _convert_histories(raw[:10])
-                    print(f"    [{done_count}/{total}] {hname}: {len(converted)}走", flush=True)
-                    hist_results[(fid, hname)] = converted
-
-            await asyncio.gather(*[fetch_one(fid, hname, hcname)
-                                   for fid, hname, hcname in all_horses])
-
-            # Phase 3: まとめ
-            race_data_map = {}
-            for fid, meta in race_meta.items():
-                horses_dict = {h['name']: hist_results.get((fid, h['name']), [])
-                               for h in meta['raw_horses']}
-                race_data_map[fid] = {
-                    'race_info':  meta['race_info'],
-                    'horses':     horses_dict,
-                    'horse_nums': meta['horse_nums'],
-                }
-
-            return races_list, race_data_map
-
-    try:
-        return asyncio.run(_run())
-    except Exception as e:
-        print(f"  JRAスクレイパーエラー: {e}")
-        return [], {}
-
-
 # ===== Step 1: JRA ライブデータ取得 =====
 def fetch_jra_live():
     """JRA公式からクッション値・含水率をリアルタイム取得"""
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
     result = {}
 
+    # クッション値
     r = requests.get('https://www.jra.go.jp/keiba/baba/_data_cushion.html', headers=headers)
     r.encoding = 'shift_jis'
     soup = BeautifulSoup(r.text, 'html.parser')
@@ -219,6 +94,7 @@ def fetch_jra_live():
             time_text = units[0].find('div', class_='time').get_text(strip=True)
             result[venue] = {'cushion': float(cushion_text), 'time_cushion': time_text}
 
+    # 含水率
     r = requests.get('https://www.jra.go.jp/keiba/baba/_data_moist.html', headers=headers)
     r.encoding = 'shift_jis'
     soup = BeautifulSoup(r.text, 'html.parser')
@@ -242,52 +118,196 @@ def fetch_jra_live():
     return result
 
 
-# ===== JRA重賞グレード取得 =====
-def fetch_jra_graded_races():
-    """JRA今週の重賞レースページからレース名→グレードのdictを返す"""
-    try:
-        r = requests.get('https://www.jra.go.jp/keiba/thisweek/',
-                         headers={'User-Agent': 'Mozilla/5.0'}, timeout=10)
-        soup = BeautifulSoup(r.content, 'html.parser', from_encoding='shift_jis')
-        graded = {}
-        grade_re = re.compile(r'[（(]([GＧJ・]*[ⅠⅡⅢ1-3]+)[）)]')
-        for h3 in soup.find_all('h3'):
-            text = h3.get_text(strip=True)
-            gm = grade_re.search(text)
-            if not gm:
-                continue
-            g = gm.group(1).replace('Ｇ', 'G').replace('Ⅰ', '1').replace('Ⅱ', '2').replace('Ⅲ', '3')
-            g = re.sub(r'^J.*G', 'G', g)  # J・GⅠ → G1
-            race_name = grade_re.sub('', text).strip()
-            norm = _norm_race(race_name)
-            graded[norm] = g
-        return graded
-    except Exception as e:
-        print(f"  JRA重賞ページ取得失敗: {e}")
-        return {}
+# ===== Step 2: レース一覧取得 =====
+def get_race_list(date_str):
+    """netkeiba からレース一覧取得 (date_str: YYYYMMDD)"""
+    url = f'https://race.netkeiba.com/top/race_list_sub.html?kaisai_date={date_str}'
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+    r = requests.get(url, headers=headers)
+    r.encoding = 'utf-8'
+    soup = BeautifulSoup(r.text, 'html.parser')
+
+    links = soup.find_all('a', href=re.compile(r'race_id=\d+'))
+    seen_rid = set()
+    seen_slot = set()  # (venue, race_num) で重複除去
+    races = []
+    for link in links:
+        m = re.search(r'race_id=(\d+)', link.get('href', ''))
+        if not m or m.group(1) in seen_rid:
+            continue
+        rid = m.group(1)
+        seen_rid.add(rid)
+        text = link.get_text(strip=True)
+        venue_code = rid[4:6]
+        venue = VENUE_CODES.get(venue_code, '?')
+        race_num = int(rid[10:12])
+
+        slot = (venue, race_num)
+        if slot in seen_slot:
+            continue
+        seen_slot.add(slot)
+
+        sd_match = re.search(r'(芝|ダ|障)(\d+)m', text)
+        surface = sd_match.group(1) if sd_match else '?'
+        distance = int(sd_match.group(2)) if sd_match else 0
+
+        name_match = re.match(r'\d+R(.+?)\d{1,2}:\d{2}', text)
+        race_name = name_match.group(1).strip() if name_match else text
+
+        races.append({
+            'race_id': rid,
+            'venue': venue,
+            'race_num': race_num,
+            'race_name': race_name,
+            'surface': surface,
+            'distance': distance,
+            'text': text,
+        })
+
+    return races
 
 
-def _norm_race(name):
-    """レース名正規化（マッチング用）"""
-    n = re.sub(r'[　 ・･]', '', name)
-    n = re.sub(r'(ステークス|スタークス|カップ|賞典|記念)$', '', n)
-    n = re.sub(r'[SsCc]$', '', n)  # 略称 "S" "C" 除去
-    return n
+# ===== Step 3: 出走馬+過去成績取得 =====
+def scrape_race_data(race_id):
+    """netkeiba から出走馬と各馬の過去成績を取得"""
+    session = requests.Session()
+    session.headers.update({
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    })
+
+    # 出馬表取得
+    url = f'https://race.netkeiba.com/race/shutuba.html?race_id={race_id}'
+    r = session.get(url)
+    r.encoding = 'euc-jp'
+    soup = BeautifulSoup(r.text, 'html.parser')
+
+    race_name_tag = soup.find('div', class_='RaceName')
+    race_name = race_name_tag.get_text(strip=True) if race_name_tag else ''
+    race_data_tag = soup.find('div', class_='RaceData01')
+    race_data_text = race_data_tag.get_text(strip=True) if race_data_tag else ''
+    sd_match = re.search(r'(芝|ダ|障)(\d+)m', race_data_text)
+    surface = sd_match.group(1) if sd_match else '?'
+    distance = int(sd_match.group(2)) if sd_match else 0
+    venue_code = race_id[4:6]
+    venue = VENUE_CODES.get(venue_code, '?')
+
+    # 馬一覧
+    horses = []
+    table = soup.find('table', class_='Shutuba_Table') or soup.find('table', id='shutuba_table')
+    if not table:
+        print(f"    WARNING: Shutuba table not found")
+        return None
+
+    rows = table.find_all('tr', class_='HorseList')
+    for row in rows:
+        horse_link = row.find('a', href=re.compile(r'/horse/\d+'))
+        if not horse_link:
+            continue
+        horse_name = horse_link.get_text(strip=True)
+        horse_id_match = re.search(r'/horse/(\d+)', horse_link.get('href', ''))
+        horse_id = horse_id_match.group(1) if horse_id_match else None
+        umaban_td = row.find('td', class_=re.compile(r'^Umaban\d*$'))
+        horse_num = umaban_td.get_text(strip=True) if umaban_td else ''
+        horses.append({'name': horse_name, 'horse_id': horse_id, 'horse_num': horse_num})
+
+    # 各馬の過去成績
+    all_horses = {}
+    horse_nums = {}
+    for h in horses:
+        cached = _cache_get(h['horse_id']) if h['horse_id'] else None
+        results = get_horse_results(session, h['horse_id'])
+        all_horses[h['name']] = results
+        horse_nums[h['name']] = h['horse_num']
+        label = '(キャッシュ)' if cached is not None else '(取得)'
+        print(f"    {h['name']}: {len(results)}走 {label}")
+        if cached is None:
+            time.sleep(1.0)
+
+    return {
+        'race_info': {
+            'race_id': race_id,
+            'race_name': race_name,
+            'venue': venue,
+            'surface': surface,
+            'distance': distance,
+        },
+        'horses': all_horses,
+        'horse_nums': horse_nums,
+    }
 
 
-def match_grade(race_name, jra_graded):
-    norm = _norm_race(race_name)
-    if norm in jra_graded:
-        return jra_graded[norm]
-    # 部分一致（スポンサー名付きや略称対応）
-    for jra_norm, grade in jra_graded.items():
-        if norm and jra_norm and (norm in jra_norm or jra_norm in norm):
-            return grade
-    return ''
+def get_horse_results(session, horse_id, max_races=10):
+    """馬の過去成績を取得（SQLiteキャッシュ付き）"""
+    if not horse_id:
+        return []
 
+    cached = _cache_get(horse_id)
+    if cached is not None:
+        return cached
 
-# ===== Step 2: レース一覧取得（JRA公式のみ） =====
-# netkeibaへのアクセスは行わない
+    url = f'https://db.netkeiba.com/horse/result/{horse_id}/'
+    r = session.get(url)
+    r.encoding = 'euc-jp'
+    soup = BeautifulSoup(r.text, 'html.parser')
+
+    results = []
+    table = soup.find('table', class_='db_h_race_results')
+    if not table:
+        return results
+
+    venue_short_map = {
+        '東': '東京', '京': '京都', '中': '中山', '阪': '阪神',
+        '小': '小倉', '新': '新潟', '福': '福島', '函': '函館',
+        '札': '札幌', '中京': '中京',
+    }
+
+    rows = table.find_all('tr')
+    for tr in rows[1:max_races + 1]:
+        cells = tr.find_all('td')
+        if len(cells) < 15:
+            continue
+        try:
+            date = cells[0].get_text(strip=True)
+            venue_raw = cells[1].get_text(strip=True)
+            race_name = cells[4].get_text(strip=True)
+            result_text = cells[11].get_text(strip=True)
+            result = int(result_text) if result_text.isdigit() else None
+            dist_text = cells[14].get_text(strip=True)
+            sd_match = re.search(r'(芝|ダ|障)(\d+)', dist_text)
+            surface = sd_match.group(1) if sd_match else '?'
+            distance = int(sd_match.group(2)) if sd_match else 0
+            venue = re.sub(r'\d+', '', venue_raw).strip()
+            for short, full in venue_short_map.items():
+                if venue == short:
+                    venue = full
+                    break
+
+            num_horses = cells[6].get_text(strip=True) if len(cells) > 6 else ''
+            time_diff = cells[19].get_text(strip=True) if len(cells) > 19 else ''
+            passage = cells[25].get_text(strip=True) if len(cells) > 25 else ''
+            pace = cells[26].get_text(strip=True) if len(cells) > 26 else ''
+            agari = cells[27].get_text(strip=True) if len(cells) > 27 else ''
+            winner = cells[31].get_text(strip=True) if len(cells) > 31 else ''
+
+            results.append({
+                'date': date,
+                'venue': venue,
+                'surface': surface,
+                'distance': distance,
+                'race_name': race_name,
+                'result': result,
+                'num_horses': num_horses,
+                'time_diff': time_diff,
+                'passage': passage,
+                'pace': pace,
+                'agari': agari,
+                'winner': winner,
+            })
+        except Exception:
+            continue
+
+    _cache_set(horse_id, results)
+    return results
 
 
 # ===== Step 4: クッション値紐付け =====
@@ -314,168 +334,21 @@ def link_cushion_data(race_data, cushion_db):
     return race_data
 
 
-# ===== 気象類似条件による予測範囲算出 =====
-_VENUE_JA_TO_EN = {
-    '札幌': 'sapporo', '函館': 'hakodate', '福島': 'fukushima', '新潟': 'niigata',
-    '東京': 'tokyo', '中山': 'nakayama', '中京': 'chukyo', '京都': 'kyoto',
-    '阪神': 'hanshin', '小倉': 'kokura',
-}
-
-def compute_weather_range(venue, surface, date_str):
-    """同会場・同路面・類似気象条件の過去データからクッション値・含水率の分布を返す"""
-    import csv as _csv
-    obs_path = os.path.join(os.path.dirname(__file__), 'data', 'observations.csv')
-    if not os.path.exists(obs_path):
-        return None
-
-    with open(obs_path, encoding='utf-8') as f:
-        all_rows = list(_csv.DictReader(f))
-
-    # venue: 日本語 → 英語キーに変換（CSVのvenueカラムは英語）
-    venue_en = _VENUE_JA_TO_EN.get(venue, venue)
-    surface_key = 'turf' if surface != 'ダ' else 'dirt'
-
-    # date_str: YYYYMMDD → YYYY-MM-DD（CSVのdate形式に合わせる）
-    if len(date_str) == 8 and '-' not in date_str:
-        date_csv = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:]}"
-    else:
-        date_csv = date_str
-
-    try:
-        target_month = int(date_csv[5:7])
-    except Exception:
-        return None
-
-    # 対象日の気象データ
-    target_wx = {}
-    for r in all_rows:
-        if r.get('date') == date_csv and r.get('venue') == venue_en and r.get('surface') == surface_key:
-            target_wx = r
-            break
-
-    def month_diff(m1, m2):
-        d = abs(m1 - m2)
-        return min(d, 12 - d)
-
-    def rain_cat(v):
-        try:
-            v = float(v or 0)
-        except Exception:
-            v = 0
-        return 0 if v < 1 else (1 if v < 5 else (2 if v < 20 else 3))
-
-    # ダートの場合は同日・同会場の芝クッション値を使う（クッション値は芝のみ計測）
-    turf_cv_by_date = {}
-    if surface_key == 'dirt':
-        for r in all_rows:
-            if r.get('venue') == venue_en and r.get('surface') == 'turf':
-                try:
-                    turf_cv_by_date[r['date']] = float(r['cushion_value'])
-                except (ValueError, TypeError):
-                    pass
-
-    candidates = []
-    for r in all_rows:
-        if r.get('venue') != venue_en or r.get('surface') != surface_key:
-            continue
-        if r.get('date') == date_csv:
-            continue
-        try:
-            if surface_key == 'dirt':
-                cv = turf_cv_by_date.get(r['date'])
-                if cv is None:
-                    continue
-            else:
-                cv = float(r['cushion_value'])
-            mo = float(r['moisture_rate'])
-        except (ValueError, TypeError):
-            continue
-        if cv <= 0 or mo <= 0:
-            continue
-        try:
-            row_month = int(r['date'][5:7])
-        except Exception:
-            continue
-        if month_diff(row_month, target_month) > 2:
-            continue
-
-        # 気象条件フィルター
-        if target_wx:
-            try:
-                t_temp = float(target_wx.get('temperature_avg') or '')
-                r_temp = float(r.get('temperature_avg') or '')
-                if abs(t_temp - r_temp) > 6:
-                    continue
-            except (ValueError, TypeError):
-                pass
-            try:
-                r_rain_raw = r.get('rainfall_24h', '')
-                if r_rain_raw:  # 空欄はスキップ（不明として扱う）
-                    t_rain = rain_cat(target_wx.get('rainfall_24h', '0'))
-                    r_rain = rain_cat(r_rain_raw)
-                    if t_rain != r_rain:
-                        continue
-            except (ValueError, TypeError):
-                pass
-
-        candidates.append((cv, mo))
-
-    if len(candidates) < 5:
-        return None
-
-    cvs = sorted(c[0] for c in candidates)
-    mos = sorted(c[1] for c in candidates)
-
-    def pct(data, p):
-        n = len(data)
-        idx = (n - 1) * p / 100
-        lo = int(idx)
-        hi = min(lo + 1, n - 1)
-        return round(data[lo] + (data[hi] - data[lo]) * (idx - lo), 2)
-
-    return {
-        'cv_p10':  pct(cvs, 10), 'cv_p25':  pct(cvs, 25),
-        'cv_p75':  pct(cvs, 75), 'cv_p90':  pct(cvs, 90),
-        'mo_p10':  pct(mos, 10), 'mo_p25':  pct(mos, 25),
-        'mo_p75':  pct(mos, 75), 'mo_p90':  pct(mos, 90),
-        'count': len(candidates),
-    }
-
-
-# ===== Step 5: 散布図HTML生成 (ダークテーマ v2) =====
-def generate_scatter_html(race_data, target_cushion, target_moisture, output_path, date_label='', race_num=0, race_date='', weather_range=None):
-    """散布図HTMLを生成（ダークテーマ・モバイル対応）"""
+# ===== Step 5: 散布図HTML生成 =====
+def generate_scatter_html(race_data, target_cushion, target_moisture, output_path, date_label='', race_num=0, race_date=''):
+    """散布図HTMLを生成"""
     race_info = race_data['race_info']
     venue = race_info['venue']
     race_name = race_info['race_name']
     surface = race_info['surface']
     distance = race_info['distance']
-    start_time = race_info.get('start_time', '')
 
     horse_nums = race_data.get('horse_nums', {})
-    def get_waku_color(num_horses, umaban):
-        waku_hex = ['#FFFFFF','#222222','#D83A3A','#2E6FD1','#F5C518','#2A8A4A','#E88527','#F3A3BD']
-        n = num_horses
-        if n <= 8:
-            arr = [1]*n + [0]*(8-n)
-        elif n <= 16:
-            arr = [1]*8
-            for i in range(n-8): arr[7-i] = 2
-        elif n == 17:
-            arr = [2,2,2,2,2,2,2,3]
-        else:
-            arr = [2,2,2,2,2,2,3,3]
-        uma = 1
-        for wi, cnt in enumerate(arr):
-            for _ in range(cnt):
-                if uma == umaban: return waku_hex[wi]
-                uma += 1
-        return '#888888'
-
     js_horses = []
     for horse_name, races in race_data['horses'].items():
         js_races = []
-        for r in races[:10]:
+        for r in races:
+            # 当日レースの結果を除外（出走前分析のため）
             if race_date and r.get('date', '').replace('/', '') == race_date:
                 continue
             if r.get('cushion') is None or r.get('moisture') is None:
@@ -505,38 +378,19 @@ def generate_scatter_html(race_data, target_cushion, target_moisture, output_pat
                 'agari': r.get('agari', ''),
                 'winner': r.get('winner', ''),
             })
-        hnum_str = horse_nums.get(horse_name, '')
-        try:
-            hnum_int = int(hnum_str)
-        except (ValueError, TypeError):
-            hnum_int = 999
         js_horses.append({
             'name': horse_name,
-            'horse_num': hnum_str,
+            'horse_num': horse_nums.get(horse_name, ''),
             'races': js_races,
-            '_sort': hnum_int,
         })
 
-    js_horses.sort(key=lambda h: h['_sort'])
-    total_horses = len(js_horses)
-    for h in js_horses:
-        try:
-            h['waku_color'] = get_waku_color(total_horses, int(h['horse_num']))
-        except (ValueError, TypeError):
-            h['waku_color'] = '#888888'
-        del h['_sort']
-
     horses_json = json.dumps(js_horses, ensure_ascii=False)
-    weather_range_json = json.dumps(weather_range, ensure_ascii=False) if weather_range else 'null'
-    race_id_str = race_info.get('race_id', '')
     surface_label = '芝' if surface == '芝' else 'ダート'
-    surf_class = 'turf' if surface == '芝' else 'dirt'
-    surf_lbl = '芝' if surface == '芝' else 'ダ'
     color_same = f'同距離{surface_label}'
     color_diff = f'他距離{surface_label}'
     color_other = 'ダート' if surface == '芝' else '芝レース'
 
-    # AI読み取り用構造化データ
+    # --- AI読み取り用 構造化データ生成 ---
     structured_data = {
         'レース情報': {
             '開催日': date_label,
@@ -574,17 +428,18 @@ def generate_scatter_html(race_data, target_cushion, target_moisture, output_pat
                 'クッション値': r['cushion'],
                 '含水率': f"{r['moisture']}%",
                 '近似条件': '◎' if is_ideal else ('○' if is_near else ''),
-                '3着以内': '○' if r['good'] else '',
+                '3着以内': '✓' if r['good'] else '',
             })
         structured_data['出走馬'].append(horse_entry)
     structured_json = json.dumps(structured_data, ensure_ascii=False, indent=2)
 
+    # AI用テキストサマリー
     ai_text_lines = []
     ai_text_lines.append(f"【{date_label} {venue}{race_num}R {race_name} {surface_label}{distance}m】")
     ai_text_lines.append(f"当日条件: クッション値={target_cushion} 含水率={target_moisture}%")
     ai_text_lines.append("")
     for h in js_horses:
-        ai_text_lines.append(f"■ {h['name']}（過去{len(h['races'])}走）")
+        ai_text_lines.append(f"▼ {h['name']}（過去{len(h['races'])}走）")
         for r in h['races']:
             cv_diff = abs(r['cushion'] - target_cushion)
             m_diff = abs(r['moisture'] - target_moisture)
@@ -599,583 +454,310 @@ def generate_scatter_html(race_data, target_cushion, target_moisture, output_pat
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>{venue}{race_num}R {race_name} - クッション値×含水率</title>
+<title>クッション値×含水率 - {venue}{race_name}</title>
 <style>
-:root {{
-  --bg-start: #0a1e4a; --bg-mid: #0f2d6b; --bg-end: #0a1a3d;
-  --bg-card: rgba(255,255,255,0.07); --bg-card2: rgba(255,255,255,0.04);
-  --border: rgba(100,160,255,0.2); --border2: rgba(100,160,255,0.4);
-  --text: #e8f0ff; --text-sub: #a8c4e8; --text-muted: #7ea8d8;
-  --accent-cv: #f59e0b; --accent-moist: #38bdf8;
-  --red: #ef4444; --blue: #3b82f6; --green: #22c55e;
-  --yellow: #eab308; --gray: #64748b;
-}}
 * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-html, body {{ height: 100%; overflow: hidden; }}
 body {{
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans JP', 'Hiragino Sans', sans-serif;
-  background: linear-gradient(160deg, var(--bg-start) 0%, var(--bg-mid) 50%, var(--bg-end) 100%) fixed;
-  color: var(--text); display: flex; flex-direction: column;
-  -webkit-font-smoothing: antialiased;
+  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans JP', sans-serif;
+  background: #fff; color: #1e293b; overflow: hidden; height: 100vh;
 }}
-
-/* ── Header ── */
 .header {{
-  background: linear-gradient(135deg, rgba(30,80,160,0.55), rgba(10,45,107,0.55));
-  border-bottom: 1px solid var(--border2);
-  padding: 10px 14px; flex-shrink: 0;
-  box-shadow: 0 2px 16px rgba(0,10,60,0.5);
-  backdrop-filter: blur(8px);
+  background: #fff; border-bottom: 1px solid #e2e8f0;
+  padding: 12px 16px; z-index: 100;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex-shrink: 0;
 }}
-.header-row {{ display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }}
-.header h1 {{
-  font-size: 13px; font-weight: 900; letter-spacing: -0.3px;
-  background: linear-gradient(90deg, #ffffff, #7eb8f7);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  line-height: 1.3; white-space: nowrap;
+.header h1 {{ font-size: 16px; font-weight: 900; letter-spacing: -0.5px; }}
+.header .sub {{ font-size: 11px; color: #64748b; margin-top: 2px; }}
+.header .target {{
+  display: inline-flex; gap: 12px; margin-top: 4px;
+  font-size: 11px; font-weight: 700; font-family: monospace;
 }}
-.header .sub {{ display: none; }}
-.header-badges {{ display: none; }}
-.header-time {{ font-size: 13px; color: var(--text-muted); font-weight: 700; flex-shrink: 0; }}
-@media (max-width: 500px) {{
-  .header-row {{ gap: 4px; }}
-  .header h1 {{ font-size: 10px; letter-spacing: -0.5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }}
-  .badge {{ font-size: 10px; padding: 2px 5px; min-width: 60px; }}
-  .header-time {{ font-size: 10px; }}
-  .sbadge {{ font-size: 10px; padding: 1px 4px; }}
+.header .target span {{
+  background: #f8fafc; border: 1px solid #e2e8f0;
+  padding: 2px 8px; border-radius: 4px;
 }}
-.sbadge {{
-  font-size: 13px; font-weight: 900; padding: 2px 6px; border-radius: 6px; flex-shrink: 0;
-}}
-.sbadge.turf {{ background: rgba(34,197,94,0.2); color: #4ade80; border: 1px solid rgba(34,197,94,0.4); }}
-.sbadge.dirt {{ background: rgba(245,158,11,0.2); color: #fbbf24; border: 1px solid rgba(245,158,11,0.4); }}
-.badge {{
-  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
-  background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25);
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-  padding: 3px 8px; border-radius: 6px; min-width: 78px; flex-shrink: 0;
-  font-size: 13px; font-weight: 700; font-family: monospace; color: #ffffff;
-}}
-.badge b {{ color: #ffffff; }}
-
-/* ── Layout ── */
-.main {{ display: flex; flex: 1; overflow: hidden; flex-direction: column; }}
-@media (min-width: 700px) {{ .main {{ flex-direction: row; }} }}
-
-/* ── Chart ── */
-.chart-wrap {{
-  position: relative; flex-shrink: 0;
-  height: 42vh; min-height: 240px;
-  background: rgba(5,15,45,0.5);
-}}
-@media (min-width: 700px) {{
-  .chart-wrap {{ flex: 1; height: auto; min-height: unset; }}
-}}
+.main {{ display: flex; flex-direction: column; flex: 1; overflow: hidden; }}
+@media (min-width: 768px) {{ .main {{ flex-direction: row; }} }}
+.chart-area {{ position: relative; width: 100%; height: 40vh; min-height: 250px; flex-shrink: 0; }}
+@media (min-width: 768px) {{ .chart-area {{ flex: 1; height: 100%; }} }}
 canvas {{ display: block; width: 100% !important; height: 100% !important; touch-action: pan-y; }}
-
-/* ── Legend ── */
-.legend {{
-  display: flex; gap: 10px; padding: 6px 14px;
-  font-size: 10px; font-weight: 700; color: var(--text-muted);
-  background: rgba(10,25,70,0.6); border-top: 1px solid var(--border);
-  flex-wrap: wrap; flex-shrink: 0; backdrop-filter: blur(4px);
-}}
-.legend-item {{ display: flex; align-items: center; gap: 4px; }}
-.ldot {{ width: 8px; height: 8px; border-radius: 50%; display: inline-block; }}
-
-/* ── Panel ── */
 .panel {{
-  background: rgba(8,20,60,0.4); overflow-y: auto; padding: 6px 6px 80px 6px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid #e2e8f0; overflow-y: auto; padding: 8px 8px 80px 8px; background: #f8fafc;
   flex: 1;
-  -webkit-overflow-scrolling: touch;
-  backdrop-filter: blur(4px);
 }}
-@media (min-width: 700px) {{
-  .panel {{
-    width: 300px; border-top: none; border-left: 1px solid var(--border2);
-    min-width: 260px;
-  }}
+@media (min-width: 768px) {{
+  .panel {{ width: 320px; border-top: none; border-left: 1px solid #e2e8f0; }}
 }}
-
-/* ── Horse button ── */
 .horse-btn {{
-  display: flex; align-items: center; gap: 8px; width: 100%;
-  padding: 9px 12px; margin-bottom: 3px;
-  border: 1px solid var(--border); border-radius: 10px;
-  background: rgba(255,255,255,0.06); cursor: pointer;
-  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
-  font-size: 13px; font-weight: 700; color: var(--text);
-  -webkit-tap-highlight-color: transparent; text-align: left;
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 10px 14px; margin-bottom: 4px; border: 1px solid #e2e8f0;
+  border-radius: 12px; background: #fff; cursor: pointer;
+  transition: all 0.2s; font-size: 14px; font-weight: 700; color: #1e293b;
+  -webkit-tap-highlight-color: transparent;
 }}
 .horse-btn:active {{ transform: scale(0.98); }}
 .horse-btn.selected {{
-  border-color: var(--accent-cv); background: rgba(245,158,11,0.12);
-  box-shadow: 0 0 0 2px rgba(245,158,11,0.25);
+  border-color: #f59e0b; background: #fffbeb;
+  box-shadow: 0 0 0 2px rgba(245,158,11,0.2);
 }}
-.horse-btn.no-data {{ opacity: 0.45; }}
-.h-dot {{ width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }}
-.h-num {{
-  font-size: 10px; font-weight: 800; color: #fff;
-  background: var(--text-muted); border-radius: 4px;
-  padding: 1px 5px; min-width: 20px; text-align: center; flex-shrink: 0;
+.horse-btn .count {{ font-size: 10px; color: #94a3b8; font-weight: 600; margin-left: auto; }}
+.horse-btn .dot {{ width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }}
+.horse-btn .horse-num {{ font-size: 11px; font-weight: 700; color: #fff; background: #64748b; border-radius: 4px; padding: 1px 5px; min-width: 20px; text-align: center; flex-shrink: 0; }}
+.rating-row {{
+  display: flex; gap: 4px; padding: 4px 14px 8px 22px;
 }}
-.h-count {{ font-size: 10px; color: var(--text-muted); font-weight: 600; margin-left: auto; white-space: nowrap; }}
-.h-odds {{ font-size: 9px; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }}
-.h-odds .pop1 {{ color: #ef4444; font-weight: 900; }}
-.h-odds .pop2 {{ color: #f59e0b; font-weight: 800; }}
-.h-odds .pop3 {{ color: #60a5fa; font-weight: 700; }}
-.h-odds .odds-low {{ color: #ef4444; font-weight: 800; }}
-
-/* ── Rating row ── */
-.rating-row {{ display: flex; gap: 4px; padding: 3px 12px 6px 22px; }}
 .rating-btn {{
-  width: 30px; height: 26px; border: 1.5px solid var(--border);
-  border-radius: 6px; background: var(--bg-card); cursor: pointer;
-  font-size: 11px; font-weight: 800; color: var(--text-muted);
-  transition: all 0.12s; -webkit-tap-highlight-color: transparent;
+  width: 32px; height: 28px; border: 1.5px solid #cbd5e1; border-radius: 6px;
+  background: #fff; cursor: pointer; font-size: 12px; font-weight: 800;
+  color: #94a3b8; transition: all 0.15s; -webkit-tap-highlight-color: transparent;
 }}
-.rating-btn:active {{ transform: scale(0.9); }}
+.rating-btn:active {{ transform: scale(0.92); }}
 .rating-btn.rated-S {{ background: #dc2626; border-color: #dc2626; color: #fff; }}
 .rating-btn.rated-A {{ background: #f59e0b; border-color: #f59e0b; color: #fff; }}
 .rating-btn.rated-B {{ background: #3b82f6; border-color: #3b82f6; color: #fff; }}
-.rating-btn.rated-C {{ background: #22c55e; border-color: #22c55e; color: #1e293b; }}
-.rating-btn.rated-D {{ background: #64748b; border-color: #64748b; color: #fff; }}
-
-/* ── Horse detail ── */
-.horse-detail {{ display: none; padding: 4px 2px 4px 2px; }}
+.rating-btn.rated-C {{ background: #22c55e; border-color: #22c55e; color: #fff; }}
+.rating-btn.rated-D {{ background: #94a3b8; border-color: #94a3b8; color: #fff; }}
+.race-mark-row {{ display:flex; gap:4px; margin-top:4px; justify-content:flex-end; }}
+.race-mark-btn {{ width:28px; height:24px; border:1.5px solid #cbd5e1; border-radius:5px; background:#fff; cursor:pointer; font-size:11px; font-weight:800; color:#94a3b8; transition:all 0.15s; -webkit-tap-highlight-color:transparent; padding:0; }}
+.race-mark-btn:active {{ transform:scale(0.92); }}
+.race-mark-btn.marked-◎ {{ background:#dc2626; border-color:#dc2626; color:#fff; }}
+.race-mark-btn.marked-○ {{ background:#f59e0b; border-color:#f59e0b; color:#fff; }}
+.race-mark-btn.marked-× {{ background:#94a3b8; border-color:#94a3b8; color:#fff; }}
+.horse-detail {{ display: none; padding: 8px 4px; }}
 .horse-detail.show {{ display: block; }}
-.race-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 4px; }}
-.race-card {{
-  padding: 8px 9px; border-radius: 8px; border: 1px solid var(--border);
-  background: rgba(255,255,255,0.05); font-size: 10px; cursor: pointer;
-  transition: border-color 0.12s;
+.race-card {{ display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }}
+.race-item {{
+  padding: 8px 10px; border-radius: 10px; border: 1px solid #e2e8f0;
+  background: #fff; font-size: 10px; cursor: pointer;
 }}
-.race-card.ideal {{ background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.4); }}
-.race-card.highlighted {{ border-color: var(--accent-cv) !important; box-shadow: 0 0 0 2px rgba(245,158,11,0.3); }}
-.rc-date {{ color: var(--text-muted); font-weight: 600; font-family: monospace; font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
-.rc-name {{ color: var(--text); font-weight: 700; font-size: 10px; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
-.rc-mid-row {{ display: flex; justify-content: space-between; align-items: center; margin-top: 3px; }}
-.rc-agari {{ font-size: 11px; color: var(--text-muted); }}
-.rc-result {{ font-size: 13px; font-weight: 900; }}
-.rc-winner {{ font-size: 11px; color: var(--text-muted); text-align: right; }}
-.rc-sub {{ font-size: 11px; color: var(--text-muted); margin-top: 2px; }}
-.race-mark-row {{ display: flex; gap: 3px; margin-top: 4px; justify-content: flex-end; }}
-.race-mark-btn {{
-  width: 26px; height: 22px; border: 1.5px solid var(--border);
-  border-radius: 5px; background: var(--bg-card); cursor: pointer;
-  font-size: 10px; font-weight: 800; color: var(--text-muted);
-  transition: all 0.12s; -webkit-tap-highlight-color: transparent; padding: 0;
+.race-item.ideal {{ background: #ecfdf5; border-color: #a7f3d0; }}
+.race-item.highlighted {{ border-color: #f59e0b; box-shadow: 0 0 0 2px rgba(245,158,11,0.3); }}
+.race-item .date {{ color: #94a3b8; font-weight: 600; font-family: monospace; }}
+.race-item .rname {{ color: #1e293b; font-weight: 700; font-size: 10px; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
+.race-item .result {{ font-size: 13px; font-weight: 900; }}
+.race-item .cond {{ color: #64748b; font-weight: 700; }}
+.legend {{
+  display: flex; gap: 12px; padding: 8px 16px; font-size: 10px;
+  font-weight: 700; color: #94a3b8; border-top: 1px solid #e2e8f0; flex-wrap: wrap;
 }}
-.race-mark-btn:active {{ transform: none; }}
-.race-mark-btn.marked-○ {{ background: #dc2626; border-color: #dc2626; color: #fff; }}
-.race-mark-btn.marked-▲ {{ background: #f59e0b; border-color: #f59e0b; color: #fff; }}
-.race-mark-btn.marked-× {{ background: #64748b; border-color: #64748b; color: #fff; }}
-
-/* ── Tooltip ── */
+.legend span {{ display: flex; align-items: center; gap: 4px; }}
+.legend .dot {{ width: 8px; height: 8px; border-radius: 50%; display: inline-block; }}
 .tooltip {{
-  display: none; position: fixed;
-  background: rgba(5,20,70,0.97); color: var(--text);
-  border: 1px solid var(--border2);
-  padding: 10px 13px; border-radius: 10px;
-  font-size: 12px; line-height: 1.7; pointer-events: none;
-  z-index: 300; max-width: 240px;
-  box-shadow: 0 8px 32px rgba(0,10,60,0.7);
-  backdrop-filter: blur(8px);
+  display: none; position: fixed; background: rgba(15,23,42,0.95); color: #fff;
+  padding: 10px 14px; border-radius: 10px; font-size: 12px; line-height: 1.6;
+  pointer-events: none; z-index: 200; max-width: 250px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }}
 .tooltip.show {{ display: block; }}
-.tooltip-title {{ font-weight: 900; color: var(--accent-cv); margin-bottom: 2px; }}
-.tooltip-result {{ font-weight: 900; font-size: 14px; }}
-.tooltip-diff {{ font-size: 10px; color: var(--text-muted); margin-top: 2px; }}
 </style>
 </head>
-<body>
-
+<body style="display:flex;flex-direction:column;">
 <div class="header">
-  <div class="header-row">
-    <h1>{venue}{race_num}R　{race_name}　{surf_lbl}{distance}m　CV {target_cushion}　含水率 {target_moisture}%{f"　{start_time}" if start_time else ""}</h1>
+  <h1>{venue}{race_num}R {race_name} {surface}{distance}m</h1>
+  <div class="sub">出走馬 クッション値×含水率 解析</div>
+  <div class="target">
+    <span>CV: <b style="color:#d97706">{target_cushion}</b></span>
+    <span>含水率: <b style="color:#2563eb">{target_moisture}%</b></span>
+    <span style="color:#94a3b8">{date_label} {venue}</span>
   </div>
 </div>
-
 <div class="main">
-  <div class="chart-wrap">
-    <canvas id="chart"></canvas>
-    <div class="tooltip" id="tooltip"></div>
-  </div>
+  <div class="chart-area"><canvas id="chart"></canvas><div class="tooltip" id="tooltip"></div></div>
   <div class="panel" id="panel"></div>
 </div>
-
 <div class="legend">
-  <div class="legend-item"><span class="ldot" style="background:#ef4444"></span>{color_same}</div>
-  <div class="legend-item"><span class="ldot" style="background:#3b82f6"></span>{color_diff}</div>
-  <div class="legend-item"><span class="ldot" style="background:#475569"></span>{color_other}</div>
-  <div class="legend-item">○=3着以内　×=4着以下</div>
+  <span><span class="dot" style="background:#dc2626"></span> {color_same}</span>
+  <span><span class="dot" style="background:#2563eb"></span> {color_diff}</span>
+  <span><span class="dot" style="background:#94a3b8"></span> {color_other}</span>
+  <span>○ 3着以内 / × 4着以下</span>
 </div>
-
+<!-- AI読み取り用 構造化データ（Gemini/ChatGPT対応） -->
 <script type="application/json" id="race-data">
 {structured_json}
 </script>
-<div id="ai-readable" style="display:none" aria-hidden="true"><pre>{ai_text_summary}</pre></div>
-
+<div id="ai-readable" style="display:none" aria-hidden="true">
+<pre>{ai_text_summary}</pre>
+</div>
 <script>
 const HORSES = {horses_json};
-const RACE_ID = '{race_id_str}';
 const TX = {target_cushion};
 const TY = {target_moisture};
-const WEATHER_RANGE = {weather_range_json};
 const LINE_X = 9.5;
 const LINE_Y = 12.0;
 const TDIST = {distance};
 const SURFACE = '{surface}';
-const COLORS = {{ same_dist:'#ef4444', diff_dist:'#3b82f6', diff_surface:'#475569', target:'#f59e0b' }};
-const RANK_COLORS = {{S:'#dc2626',A:'#f59e0b',B:'#3b82f6',C:'#22c55e',D:'#64748b'}};
+const COLORS = {{ same_dist:'#dc2626', diff_dist:'#2563eb', diff_surface:'#94a3b8', target:'#d97706' }};
 const X_MIN = 7.0, X_MAX = 12.0;
 const Y_MIN = 0, Y_MAX = 22;
-
 let selectedHorses = new Set();
 let highlightedPoints = new Set();
 const canvas = document.getElementById('chart');
 const ctx = canvas.getContext('2d');
 const tooltipEl = document.getElementById('tooltip');
-const horseColors = HORSES.map(h => h.waku_color || '#888888');
-
-const STORAGE_KEY = 'v2_ratings_{venue}_{race_num}R_{race_name}';
-const ratings = (function() {{ try {{ const s = localStorage.getItem(STORAGE_KEY); return s ? JSON.parse(s) : {{}}; }} catch(e) {{ return {{}}; }} }})();
-function saveRatings() {{ try {{ localStorage.setItem(STORAGE_KEY, JSON.stringify(ratings)); }} catch(e) {{}} }}
-
-const RR_KEY = 'v2_raceRatings_{venue}_{race_num}R_{race_name}';
-const raceRatings = (function() {{ try {{ const s = localStorage.getItem(RR_KEY); return s ? JSON.parse(s) : {{}}; }} catch(e) {{ return {{}}; }} }})();
-function saveRaceRatings() {{ try {{ localStorage.setItem(RR_KEY, JSON.stringify(raceRatings)); }} catch(e) {{}} }}
-
-function getW() {{ return canvas.width / (window.devicePixelRatio || 1); }}
-function getH() {{ return canvas.height / (window.devicePixelRatio || 1); }}
-const PAD = {{ l: 46, r: 16, t: 18, b: 36 }};
-
-function toX(v) {{ const w = getW() - PAD.l - PAD.r; return PAD.l + (v - X_MIN) / (X_MAX - X_MIN) * w; }}
-function toY(v) {{ const h = getH() - PAD.t - PAD.b; return PAD.t + (1 - (v - Y_MIN) / (Y_MAX - Y_MIN)) * h; }}
+const hueStep = 360 / Math.max(HORSES.length, 1);
+const horseColors = HORSES.map((_, i) => `hsl(${{i * hueStep}}, 65%, 55%)`);
 
 function resize() {{
   const rect = canvas.parentElement.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  draw();
+  canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); draw();
 }}
+function toCanvasX(v) {{ const p=50; const w=canvas.width/(window.devicePixelRatio||1)-p*2; return p+(v-X_MIN)/(X_MAX-X_MIN)*w; }}
+function toCanvasY(v) {{ const pt=20,pb=40; const h=canvas.height/(window.devicePixelRatio||1)-pt-pb; return pt+(1-(v-Y_MIN)/(Y_MAX-Y_MIN))*h; }}
 
 function draw() {{
-  const W = getW(), H = getH();
-  ctx.clearRect(0, 0, W, H);
-
-  // background
-  ctx.fillStyle = '#0f172a';
-  ctx.fillRect(0, 0, W, H);
-
-
-  // grid lines
-  ctx.lineWidth = 1;
-  for (let x = Math.ceil(X_MIN * 2) / 2; x <= X_MAX; x += 0.5) {{
-    const px = toX(x);
-    const isMajor = Number.isInteger(x);
-    ctx.strokeStyle = isMajor ? '#1e3a5f' : '#1a2d3f';
-    ctx.beginPath(); ctx.moveTo(px, PAD.t); ctx.lineTo(px, H - PAD.b); ctx.stroke();
-    if (isMajor || x % 1 === 0) {{
-      ctx.fillStyle = '#475569'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
-      ctx.fillText(x.toFixed(1), px, H - PAD.b + 14);
-    }}
-  }}
-  for (let y = 0; y <= Y_MAX; y += 2) {{
-    const py = toY(y);
-    const isMajor = y % 4 === 0;
-    ctx.strokeStyle = isMajor ? '#1e3a5f' : '#1a2d3f';
-    ctx.beginPath(); ctx.moveTo(PAD.l, py); ctx.lineTo(W - PAD.r, py); ctx.stroke();
-    ctx.fillStyle = '#475569'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
-    ctx.fillText(y + '%', PAD.l - 4, py + 4);
-  }}
-
-  // axis labels
-  ctx.fillStyle = '#64748b'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText('クッション値', PAD.l + (W - PAD.l - PAD.r) / 2, H - 4);
-  ctx.save(); ctx.translate(11, PAD.t + (H - PAD.t - PAD.b) / 2);
-  ctx.rotate(-Math.PI / 2); ctx.fillText('含水率（ゴール前）%', 0, 0); ctx.restore();
-
-  // reference lines
-  ctx.setLineDash([6, 4]); ctx.lineWidth = 1.5;
-  if (SURFACE === '芝') {{
-    ctx.strokeStyle = 'rgba(99,102,241,0.5)';
-    const lx = toX(LINE_X);
-    ctx.beginPath(); ctx.moveTo(lx, PAD.t); ctx.lineTo(lx, H - PAD.b); ctx.stroke();
-    ctx.strokeStyle = 'rgba(20,184,166,0.5)';
-    const ly = toY(LINE_Y);
-    ctx.beginPath(); ctx.moveTo(PAD.l, ly); ctx.lineTo(W - PAD.r, ly); ctx.stroke();
-  }} else {{
-    [5, 10, 15].forEach(pct => {{
-      ctx.strokeStyle = 'rgba(20,184,166,0.4)';
-      const py = toY(pct);
-      ctx.beginPath(); ctx.moveTo(PAD.l, py); ctx.lineTo(W - PAD.r, py); ctx.stroke();
-    }});
+  const W=canvas.width/(window.devicePixelRatio||1), H=canvas.height/(window.devicePixelRatio||1);
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='#f1f5f9'; ctx.lineWidth=1;
+  for(let x=Math.ceil(X_MIN);x<=X_MAX;x+=0.5){{ const px=toCanvasX(x); ctx.beginPath();ctx.moveTo(px,20);ctx.lineTo(px,H-40);ctx.stroke(); ctx.fillStyle='#94a3b8';ctx.font='10px monospace';ctx.textAlign='center';ctx.fillText(x.toFixed(1),px,H-25); }}
+  for(let y=0;y<=Y_MAX;y+=2){{ const py=toCanvasY(y); ctx.beginPath();ctx.moveTo(50,py);ctx.lineTo(W-50,py);ctx.stroke(); ctx.fillStyle='#94a3b8';ctx.font='10px monospace';ctx.textAlign='right';ctx.fillText(y+'%',45,py+4); }}
+  ctx.fillStyle='#64748b';ctx.font='bold 11px sans-serif';ctx.textAlign='center';
+  ctx.fillText('クッション値',W/2,H-5);
+  ctx.save();ctx.translate(12,H/2);ctx.rotate(-Math.PI/2);ctx.fillText('含水率（ゴール前）%',0,0);ctx.restore();
+  ctx.setLineDash([6,3]);ctx.strokeStyle='#94a3b8';ctx.lineWidth=2;
+  if(SURFACE==='芝'){{
+    ctx.beginPath();ctx.moveTo(toCanvasX(LINE_X),20);ctx.lineTo(toCanvasX(LINE_X),H-40);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(50,toCanvasY(LINE_Y));ctx.lineTo(W-50,toCanvasY(LINE_Y));ctx.stroke();
+  }}else{{
+    [5,10,15].forEach(pct=>{{ctx.beginPath();ctx.moveTo(50,toCanvasY(pct));ctx.lineTo(W-50,toCanvasY(pct));ctx.stroke();}});
   }}
   ctx.setLineDash([]);
-
-  // data points
-  const hlDeferred = [];
-  HORSES.forEach((h, hi) => {{
-    const isSel = selectedHorses.has(h.name);
-    const dimmed = selectedHorses.size > 0 && !isSel;
-    const alpha = dimmed ? 0.07 : (isSel ? 1.0 : 0.75);
-    h.races.forEach((r, ri) => {{
-      const isHL = highlightedPoints.has(hi + '-' + ri);
-      if (isHL) {{ hlDeferred.push({{h, hi, r, ri, isSel, dimmed, alpha}}); return; }}
-      drawPoint(r, isSel ? 15 : 10, alpha, COLORS[r.cat], false);
-      if (!dimmed) drawLabel(r, isSel ? 13 : 9, COLORS[r.cat]);
+  const hlDeferred=[];
+  HORSES.forEach((h,hi)=>{{
+    const isSel=selectedHorses.has(h.name), dimmed=selectedHorses.size>0&&!isSel;
+    const alpha=dimmed?0.08:(isSel?1.0:0.7);
+    h.races.forEach((r,ri)=>{{
+      const isHL=highlightedPoints.has(hi+'-'+ri);
+      if(isHL){{hlDeferred.push({{h,hi,r,ri,isSel,dimmed,alpha}});return;}}
+      const px=toCanvasX(r.cushion),py=toCanvasY(r.moisture),color=COLORS[r.cat];
+      const sz=isSel?15:10;
+      ctx.globalAlpha=alpha;
+      if(r.good){{ ctx.beginPath();ctx.arc(px,py,sz,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle=color;ctx.lineWidth=isSel?3.5:2;ctx.stroke(); }}
+      else{{ ctx.strokeStyle=color;ctx.lineWidth=isSel?3.5:2;ctx.beginPath();ctx.moveTo(px-sz,py-sz);ctx.lineTo(px+sz,py+sz);ctx.stroke();ctx.beginPath();ctx.moveTo(px+sz,py-sz);ctx.lineTo(px-sz,py+sz);ctx.stroke(); }}
+      if(!dimmed){{ ctx.fillStyle=color;ctx.font=`bold ${{isSel?11:8}}px Arial`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.strokeStyle='#fff';ctx.lineWidth=2.5;ctx.strokeText(r.result||'?',px,py+1);ctx.fillText(r.result||'?',px,py+1); }}
     }});
   }});
-
-  // highlighted points on top
-  hlDeferred.forEach(item => {{
-    const {{r, isSel}} = item;
-    const sz = 18;
-    ctx.globalAlpha = 1;
-    ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.arc(toX(r.cushion), toY(r.moisture), sz + 5, 0, Math.PI * 2); ctx.stroke();
-    drawPoint(r, sz, 1.0, COLORS[r.cat], true);
-    drawLabel(r, 13, '#f59e0b');
+  hlDeferred.forEach(({{h,hi,r,ri}})=>{{
+    const px=toCanvasX(r.cushion),py=toCanvasY(r.moisture),color=COLORS[r.cat];
+    const sz=18;
+    ctx.globalAlpha=1.0;
+    ctx.strokeStyle='#f59e0b';ctx.lineWidth=5;ctx.beginPath();ctx.arc(px,py,sz+6,0,Math.PI*2);ctx.stroke();
+    if(r.good){{ ctx.beginPath();ctx.arc(px,py,sz,0,Math.PI*2);ctx.fillStyle='#fffbeb';ctx.fill();ctx.strokeStyle='#f59e0b';ctx.lineWidth=4;ctx.stroke(); }}
+    else{{ ctx.strokeStyle='#f59e0b';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(px-sz,py-sz);ctx.lineTo(px+sz,py+sz);ctx.stroke();ctx.beginPath();ctx.moveTo(px+sz,py-sz);ctx.lineTo(px-sz,py+sz);ctx.stroke(); }}
+    ctx.fillStyle='#f59e0b';ctx.font='bold 13px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.strokeStyle='#fff';ctx.lineWidth=2.5;ctx.strokeText(r.result||'?',px,py+1);ctx.fillText(r.result||'?',px,py+1);
   }});
-
-  // rating marks on points
-  ctx.globalAlpha = 1;
-  HORSES.forEach((h, hi) => {{
-    if (!ratings[h.name]) return;
-    const rank = ratings[h.name];
-    const rc = RANK_COLORS[rank];
-    h.races.forEach(r => {{
-      const alpha = selectedHorses.size > 0 && !selectedHorses.has(h.name) ? 0.15 : 1;
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = rc; ctx.font = 'bold 8px Arial'; ctx.textAlign = 'left';
-      ctx.fillText(rank, toX(r.cushion) + 10, toY(r.moisture) - 8);
-    }});
-  }});
-
-  // target star
-  ctx.globalAlpha = 1;
-  const starX = toX(TX), starY = toY(TY);
-  ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 22px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 3;
-  ctx.strokeText('◆', starX, starY); ctx.fillText('◆', starX, starY);
-  ctx.textBaseline = 'alphabetic';
-}}
-
-function drawPoint(r, sz, alpha, color, highlighted) {{
-  const px = toX(r.cushion), py = toY(r.moisture);
-  ctx.globalAlpha = alpha;
-  if (r.good) {{
-    ctx.beginPath(); ctx.arc(px, py, sz, 0, Math.PI * 2);
-    ctx.fillStyle = highlighted ? '#1c2a1a' : '#0f172a';
-    ctx.fill();
-    ctx.strokeStyle = color; ctx.lineWidth = highlighted ? 3 : 2;
-    ctx.stroke();
-  }} else {{
-    ctx.strokeStyle = color; ctx.lineWidth = highlighted ? 3 : 2;
-    ctx.beginPath(); ctx.moveTo(px - sz, py - sz); ctx.lineTo(px + sz, py + sz); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(px + sz, py - sz); ctx.lineTo(px - sz, py + sz); ctx.stroke();
-  }}
-}}
-
-function drawLabel(r, fs, color) {{
-  const px = toX(r.cushion), py = toY(r.moisture);
-  ctx.fillStyle = color; ctx.font = `bold ${{fs}}px Arial`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 2.5;
-  ctx.strokeText(r.result !== null ? r.result : '?', px, py + 1);
-  ctx.fillText(r.result !== null ? r.result : '?', px, py + 1);
-  ctx.textBaseline = 'alphabetic'; ctx.globalAlpha = 1;
-}}
-
-function buildPanel() {{
-  const panel = document.getElementById('panel');
-  const RANKS = ['S', 'A', 'B', 'C', 'D'];
-  let html = '';
-  HORSES.forEach((h, i) => {{
-    const cnt = h.races.length;
-    const noData = cnt === 0;
-    const numColor = h.waku_color || '#888888';
-    const textColor = ['#FFFFFF','#F5C518','#F3A3BD'].includes(numColor) ? '#222' : '#fff';
-    html += `<button class="horse-btn${{noData ? ' no-data' : ''}}" id="btn-${{i}}">
-      <span class="h-num" style="background:${{numColor}};color:${{textColor}}">${{h.horse_num}}</span>
-      <span>${{h.name}}</span>
-      <span class="h-odds" id="odds-${{h.horse_num}}"></span>
-      <span class="h-count">${{cnt > 0 ? cnt + '走' : 'なし'}}</span>
-    </button>`;
-    html += `<div class="rating-row" id="rate-${{i}}">`;
-    RANKS.forEach(r => {{ html += `<button class="rating-btn" data-horse="${{i}}" data-rank="${{r}}">${{r}}</button>`; }});
-    html += `</div>`;
-    html += `<div class="horse-detail" id="detail-${{i}}">`;
-    if (cnt > 0) {{
-      html += `<div class="race-grid">`;
-      h.races.forEach((r, ri) => {{
-        const inIdeal = Math.abs(r.cushion - TX) <= 0.2 && Math.abs(r.moisture - TY) <= 1.5;
-        const rrKey = h.name + '_' + ri;
-        const distLabel = r.distance === TDIST ? '同' : (r.distance > TDIST ? '短' : '延');
-        const resultColor = COLORS[r.cat] || '#888888';
-        html += `<div class="race-card${{inIdeal ? ' ideal' : ''}}" data-horse="${{i}}" data-ri="${{ri}}" style="border-left:3px solid ${{numColor}}">
-          <div class="rc-date">${{r.date}}　${{r.venue}}　CV${{r.cushion}}/${{r.moisture}}%</div>
-          <div class="rc-name">${{r.race_name}}　${{r.surface}}${{r.distance}}m（${{distLabel}}）</div>
-          <div class="rc-mid-row">
-            <span class="rc-agari">${{(r.agari || r.passage) ? (r.agari ? '上がり ' + r.agari : '') + (r.agari && r.passage ? '　' : '') + (r.passage ? '通過 ' + r.passage : '') : ''}}</span>
-            <span class="rc-result" style="color:${{resultColor}}">${{r.result !== null ? r.result + '着' : '取消'}}</span>
-          </div>
-          ${{r.winner ? `<div class="rc-winner">${{r.winner}}${{r.time_diff ? ' (' + r.time_diff + ')' : ''}}</div>` : ''}}
-          <div class="race-mark-row" data-rrkey="${{rrKey}}">
-            <button class="race-mark-btn" data-mark="○">○</button>
-            <button class="race-mark-btn" data-mark="▲">▲</button>
-            <button class="race-mark-btn" data-mark="×">×</button>
-          </div>
-        </div>`;
+  ctx.globalAlpha=1;
+  const RANK_COLORS={{S:'#dc2626',A:'#f59e0b',B:'#3b82f6',C:'#22c55e',D:'#94a3b8'}};
+  HORSES.forEach((h,hi)=>{{
+    if(ratings[h.name]){{
+      const rank=ratings[h.name];const rc=RANK_COLORS[rank];
+      h.races.forEach(r=>{{
+        const px=toCanvasX(r.cushion),py=toCanvasY(r.moisture);
+        ctx.globalAlpha=selectedHorses.size>0&&!selectedHorses.has(h.name)?0.15:1;
+        ctx.fillStyle=rc;ctx.font='bold 9px Arial';ctx.textAlign='left';
+        ctx.fillText(rank,px+10,py-8);
       }});
-      html += `</div>`;
     }}
-    html += `</div>`;
   }});
-  panel.innerHTML = html;
-
-  HORSES.forEach((h, i) => {{
-    document.getElementById('btn-' + i).addEventListener('click', () => {{
-      const detail = document.getElementById('detail-' + i);
-      if (selectedHorses.has(h.name)) {{
-        selectedHorses.delete(h.name);
-        detail.classList.remove('show');
-        document.getElementById('btn-' + i).classList.remove('selected');
-      }} else {{
-        selectedHorses.add(h.name);
-        detail.classList.add('show');
-        document.getElementById('btn-' + i).classList.add('selected');
-      }}
-      requestAnimationFrame(draw);
-    }});
+  ctx.globalAlpha=1;
+  const tx=toCanvasX(TX),ty=toCanvasY(TY);
+  ctx.fillStyle=COLORS.target;ctx.font='bold 22px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.strokeText('★',tx,ty);ctx.fillText('★',tx,ty);
+  ctx.textBaseline='alphabetic';
+}}
+const STORAGE_KEY='ratings_{venue}_{race_num}R_{race_name}';
+const ratings=(function(){{try{{const s=localStorage.getItem(STORAGE_KEY);return s?JSON.parse(s):{{}};}}catch(e){{return {{}};}}}})();
+function saveRatings(){{try{{localStorage.setItem(STORAGE_KEY,JSON.stringify(ratings));}}catch(e){{}}}};
+const RR_KEY='raceRatings_{venue}_{race_num}R_{race_name}';
+const raceRatings=(function(){{try{{const s=localStorage.getItem(RR_KEY);return s?JSON.parse(s):{{}};}}catch(e){{return {{}};}}}})();
+function saveRaceRatings(){{try{{localStorage.setItem(RR_KEY,JSON.stringify(raceRatings));}}catch(e){{}}}};
+function buildPanel(){{
+  const panel=document.getElementById('panel');
+  const RANKS=['S','A','B','C','D'];
+  let html='';
+  HORSES.forEach((h,i)=>{{
+    const cnt=h.races.length;
+    html+=`<button class="horse-btn" id="btn-${{i}}"><span class="dot" style="background:${{horseColors[i]}}"></span><span class="horse-num">${{h.horse_num}}</span>${{h.name}}<span class="count">${{cnt>0?cnt+'走':'データなし'}}</span></button>`;
+    html+=`<div class="rating-row" id="rate-${{i}}">`;
+    RANKS.forEach(r=>{{html+=`<button class="rating-btn" data-horse="${{i}}" data-rank="${{r}}">${{r}}</button>`;}});
+    html+=`</div>`;
+    html+=`<div class="horse-detail" id="detail-${{i}}"><div class="race-card">${{h.races.map((r,ri)=>{{const inIdeal=Math.abs(r.cushion-TX)<=0.2&&Math.abs(r.moisture-TY)<=1.5;const rrKey=h.name+'_'+ri;return`<div class="race-item ${{inIdeal?'ideal':''}}" data-horse="${{i}}" data-ri="${{ri}}"><div class="date">${{r.date}} ${{r.venue}}</div><div class="rname">${{r.race_name}}</div><div class="cond">${{r.surface}}${{r.distance}}m ${{r.distance===TDIST?'(同)':r.distance>TDIST?'(短)':'(延)'}}</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#94a3b8">CV${{r.cushion}} / ${{r.moisture}}%</span><span style="font-size:9px;color:#64748b;text-align:right">${{r.winner?`${{r.winner}}${{r.time_diff?'('+r.time_diff+')':''}} `:''}}<span class="result" style="color:${{COLORS[r.cat]}}">${{r.result!==null?r.result+'着':'取消'}}</span></span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#64748b">${{r.num_horses?r.num_horses+'頭':''}}${{r.passage?'・'+r.passage:''}}</span><div class="race-mark-row" data-rrkey="${{rrKey}}"><button class="race-mark-btn" data-mark="◎">◎</button><button class="race-mark-btn" data-mark="○">○</button><button class="race-mark-btn" data-mark="×">×</button></div></div>${{r.agari?`<div style="font-size:9px;color:#64748b;margin-top:1px">${{r.agari}}</div>`:''}}</div>`}}).join('')}}</div></div>`;
   }});
-
-  document.querySelectorAll('.rating-btn').forEach(btn => {{
-    btn.addEventListener('click', e => {{
+  panel.innerHTML=html;
+  HORSES.forEach((h,i)=>{{document.getElementById('btn-'+i).addEventListener('click',()=>{{
+    const detail=document.getElementById('detail-'+i);
+    if(selectedHorses.has(h.name)){{selectedHorses.delete(h.name);detail.classList.remove('show');document.getElementById('btn-'+i).classList.remove('selected');}}
+    else{{selectedHorses.add(h.name);detail.classList.add('show');document.getElementById('btn-'+i).classList.add('selected');}}
+    requestAnimationFrame(()=>{{draw();}});
+  }});}});
+  document.querySelectorAll('.rating-btn').forEach(btn=>{{
+    btn.addEventListener('click',(e)=>{{
       e.stopPropagation();
-      const hi = parseInt(btn.dataset.horse);
-      const rank = btn.dataset.rank;
-      const name = HORSES[hi].name;
-      if (ratings[name] === rank) {{ delete ratings[name]; }} else {{ ratings[name] = rank; }}
+      const hi=parseInt(btn.dataset.horse);
+      const rank=btn.dataset.rank;
+      const name=HORSES[hi].name;
+      if(ratings[name]===rank){{delete ratings[name];}}
+      else{{ratings[name]=rank;}}
       updateRatings();
     }});
   }});
-
-  document.querySelectorAll('.race-card').forEach(el => {{
-    el.addEventListener('click', e => {{
-      if (e.target.classList.contains('race-mark-btn')) return;
+  document.querySelectorAll('.race-item').forEach(el=>{{
+    el.addEventListener('click',(e)=>{{
+      if(e.target.classList.contains('race-mark-btn'))return;
       e.stopPropagation();
       el.classList.toggle('highlighted');
-      const key = el.dataset.horse + '-' + el.dataset.ri;
-      if (highlightedPoints.has(key)) highlightedPoints.delete(key);
-      else highlightedPoints.add(key);
-      requestAnimationFrame(draw);
+      const key=el.dataset.horse+'-'+el.dataset.ri;
+      if(highlightedPoints.has(key))highlightedPoints.delete(key);else highlightedPoints.add(key);
+      requestAnimationFrame(()=>{{draw();}});
     }});
   }});
-
-  document.querySelectorAll('.race-mark-btn').forEach(btn => {{
-    btn.addEventListener('click', e => {{
+  document.querySelectorAll('.race-mark-btn').forEach(btn=>{{
+    btn.addEventListener('click',(e)=>{{
       e.stopPropagation();
-      const row = btn.closest('.race-mark-row');
-      const rrKey = row.dataset.rrkey;
-      const mark = btn.dataset.mark;
-      if (raceRatings[rrKey] === mark) {{ delete raceRatings[rrKey]; }} else {{ raceRatings[rrKey] = mark; }}
+      const row=btn.closest('.race-mark-row');
+      const rrKey=row.dataset.rrkey;
+      const mark=btn.dataset.mark;
+      if(raceRatings[rrKey]===mark){{delete raceRatings[rrKey];}}
+      else{{raceRatings[rrKey]=mark;}}
       updateRaceMarks();
       saveRaceRatings();
     }});
   }});
 }}
-
-function updateRatings() {{
-  document.querySelectorAll('.rating-btn').forEach(btn => {{
-    const hi = parseInt(btn.dataset.horse);
-    const rank = btn.dataset.rank;
-    const name = HORSES[hi].name;
-    btn.className = 'rating-btn' + (ratings[name] === rank ? ' rated-' + rank : '');
+function updateRaceMarks(){{
+  document.querySelectorAll('.race-mark-btn').forEach(btn=>{{
+    const row=btn.closest('.race-mark-row');
+    const rrKey=row.dataset.rrkey;
+    const mark=btn.dataset.mark;
+    btn.className='race-mark-btn'+(raceRatings[rrKey]===mark?' marked-'+mark:'');
+  }});
+}}
+function updateRatings(){{
+  document.querySelectorAll('.rating-btn').forEach(btn=>{{
+    const hi=parseInt(btn.dataset.horse);
+    const rank=btn.dataset.rank;
+    const name=HORSES[hi].name;
+    btn.className='rating-btn'+(ratings[name]===rank?' rated-'+rank:'');
   }});
   saveRatings();
   draw();
 }}
-
-function updateRaceMarks() {{
-  document.querySelectorAll('.race-mark-btn').forEach(btn => {{
-    const row = btn.closest('.race-mark-row');
-    const rrKey = row.dataset.rrkey;
-    const mark = btn.dataset.mark;
-    btn.className = 'race-mark-btn' + (raceRatings[rrKey] === mark ? ' marked-' + mark : '');
-  }});
-}}
-
-const isMobile = 'ontouchstart' in window;
-
-function getPointAt(cx, cy) {{
-  let closest = null, minDist = isMobile ? 36 : 22;
-  HORSES.forEach(h => {{
-    if (selectedHorses.size > 0 && !selectedHorses.has(h.name)) return;
-    h.races.forEach(r => {{
-      const px = toX(r.cushion), py = toY(r.moisture);
-      const d = Math.sqrt((cx - px) ** 2 + (cy - py) ** 2);
-      if (d < minDist) {{ minDist = d; closest = {{...r, horse: h.name}}; }}
-    }});
-  }});
+const isMobile='ontouchstart' in window;
+function getPointAt(cx,cy){{
+  let closest=null,minDist=isMobile?35:20;
+  HORSES.forEach(h=>{{if(selectedHorses.size>0&&!selectedHorses.has(h.name))return;h.races.forEach(r=>{{const px=toCanvasX(r.cushion),py=toCanvasY(r.moisture),d=Math.sqrt((cx-px)**2+(cy-py)**2);if(d<minDist){{minDist=d;closest={{...r,horse:h.name}};}}}});}});
   return closest;
 }}
-
-function showTooltip(pt, sx, sy) {{
-  if (!pt) {{ tooltipEl.classList.remove('show'); return; }}
-  const cvDiff = (pt.cushion - TX).toFixed(2);
-  const mDiff = (pt.moisture - TY).toFixed(1);
-  const cvSign = cvDiff >= 0 ? '+' : '';
-  const mSign = mDiff >= 0 ? '+' : '';
-  const resultColor = pt.result === 1 ? '#f59e0b' : pt.result !== null && pt.result <= 3 ? '#22c55e' : '#ef4444';
-  tooltipEl.innerHTML = `<div class="tooltip-title">${{pt.horse}}</div>
-    ${{pt.date}} ${{pt.venue}} ${{pt.surface}}${{pt.distance}}m<br>
-    ${{pt.race_name}}<br>
-    <span class="tooltip-result" style="color:${{resultColor}}">${{pt.result !== null ? pt.result + '着' : '取消'}}</span>
-    　CV: <b>${{pt.cushion}}</b>　含水率: <b>${{pt.moisture}}%</b>
-    <div class="tooltip-diff">当日比: CV ${{cvSign}}${{cvDiff}} / 含水率 ${{mSign}}${{mDiff}}%</div>`;
-  const left = Math.min(sx + 14, window.innerWidth - 260);
-  const top = Math.max(sy - 50, 8);
-  tooltipEl.style.left = left + 'px';
-  tooltipEl.style.top = top + 'px';
-  tooltipEl.classList.add('show');
-}}
-
-canvas.addEventListener('mousemove', e => {{
-  const rect = canvas.getBoundingClientRect();
-  showTooltip(getPointAt(e.clientX - rect.left, e.clientY - rect.top), e.clientX, e.clientY);
-}});
-canvas.addEventListener('mouseleave', () => tooltipEl.classList.remove('show'));
-
-let touchTimer = null;
-canvas.addEventListener('touchstart', e => {{
-  const t = e.touches[0];
-  const rect = canvas.getBoundingClientRect();
-  showTooltip(getPointAt(t.clientX - rect.left, t.clientY - rect.top), t.clientX, t.clientY);
-}}, {{ passive: true }});
-canvas.addEventListener('touchmove', e => {{
-  const t = e.touches[0];
-  const rect = canvas.getBoundingClientRect();
-  showTooltip(getPointAt(t.clientX - rect.left, t.clientY - rect.top), t.clientX, t.clientY);
-}}, {{ passive: true }});
-canvas.addEventListener('touchend', () => {{
-  if (touchTimer) clearTimeout(touchTimer);
-  touchTimer = setTimeout(() => tooltipEl.classList.remove('show'), 2200);
-}});
-canvas.addEventListener('click', e => {{
-  const rect = canvas.getBoundingClientRect();
-  showTooltip(getPointAt(e.clientX - rect.left, e.clientY - rect.top), e.clientX, e.clientY);
-}});
-
-window.addEventListener('resize', resize);
-buildPanel();
-updateRatings();
-updateRaceMarks();
-resize();
-
+canvas.addEventListener('mousemove',(e)=>{{const rect=canvas.getBoundingClientRect();const x=e.clientX-rect.left,y=e.clientY-rect.top;const pt=getPointAt(x,y);if(pt){{tooltipEl.innerHTML=`<b>${{pt.horse}}</b><br>${{pt.date}} ${{pt.venue}} ${{pt.surface}}${{pt.distance}}m<br>${{pt.race_name}}<br><b>${{pt.result}}着</b><br>CV: ${{pt.cushion}} / 含水率: ${{pt.moisture}}%`;tooltipEl.style.left=(e.clientX+15)+'px';tooltipEl.style.top=(e.clientY-10)+'px';tooltipEl.classList.add('show');}}else{{tooltipEl.classList.remove('show');}}}});
+canvas.addEventListener('mouseleave',()=>tooltipEl.classList.remove('show'));
+let touchTimer=null;
+function showTooltipAt(cx,cy,tx,ty){{const pt=getPointAt(cx,cy);if(pt){{tooltipEl.innerHTML=`<b>${{pt.horse}}</b><br>${{pt.date}} ${{pt.venue}} ${{pt.surface}}${{pt.distance}}m<br>${{pt.race_name}}<br><b>${{pt.result!==null?pt.result+'着':'取消'}}</b><br>CV: ${{pt.cushion}} / 含水率: ${{pt.moisture}}%`;const left=Math.min(tx+15,window.innerWidth-260);const top=Math.max(ty-40,10);tooltipEl.style.left=left+'px';tooltipEl.style.top=top+'px';tooltipEl.classList.add('show');}}else{{tooltipEl.classList.remove('show');}}}}
+canvas.addEventListener('touchstart',(e)=>{{const t=e.touches[0];const rect=canvas.getBoundingClientRect();showTooltipAt(t.clientX-rect.left,t.clientY-rect.top,t.clientX,t.clientY);}},{{passive:true}});
+canvas.addEventListener('touchmove',(e)=>{{const t=e.touches[0];const rect=canvas.getBoundingClientRect();showTooltipAt(t.clientX-rect.left,t.clientY-rect.top,t.clientX,t.clientY);}},{{passive:true}});
+canvas.addEventListener('touchend',()=>{{if(touchTimer)clearTimeout(touchTimer);touchTimer=setTimeout(()=>tooltipEl.classList.remove('show'),2000);}});
+canvas.addEventListener('click',(e)=>{{const rect=canvas.getBoundingClientRect();showTooltipAt(e.clientX-rect.left,e.clientY-rect.top,e.clientX,e.clientY);}});
+window.addEventListener('resize',resize); buildPanel(); updateRatings(); updateRaceMarks(); resize();
 </script>
 </body></html>"""
 
@@ -1187,229 +769,295 @@ resize();
     return total_pts, horses_with_data, len(js_horses)
 
 
-# ===== インデックスページ生成 (ダークテーマ v2) =====
+# ===== メインパイプライン =====
+def main():
+    parser = argparse.ArgumentParser(description='競馬クッション値×含水率 散布図 一括生成')
+    parser.add_argument('date', help='開催日 (YYYYMMDD)')
+    parser.add_argument('--venue', help='競馬場で絞り込み (東京/京都/小倉 等)')
+    parser.add_argument('--race', type=int, help='レース番号で絞り込み (例: 11)')
+    parser.add_argument('--no-scrape', action='store_true', help='キャッシュ済みデータのみ使用')
+    parser.add_argument('--output', default=None, help='出力先ディレクトリ')
+    parser.add_argument('--deploy', action='store_true', help='GitHub Pagesへ自動デプロイ')
+    parser.add_argument('--manual', action='store_true', help='クッション値・含水率を会場別に手入力')
+    parser.add_argument('--force-update', action='store_true', help='既存キーの上書きを許可')
+    parser.add_argument('--cleanup', action='store_true', help='旧フォーマットファイルをGitHubから削除')
+    args = parser.parse_args()
+
+    date_str = args.date
+    _weekdays = ['月', '火', '水', '木', '金', '土', '日']
+    _dt = datetime(int(date_str[:4]), int(date_str[4:6]), int(date_str[6:]))
+    date_label = f"{int(date_str[4:6])}/{int(date_str[6:])}（{_weekdays[_dt.weekday()]}）"
+    out_dir = args.output or os.path.join(OUTPUT_DIR, date_str)
+    os.makedirs(out_dir, exist_ok=True)
+    os.makedirs(CACHE_DIR, exist_ok=True)
+
+    # Step 1: レース一覧取得
+    print("=" * 60)
+    print(f"[Step 1] レース一覧取得 ({date_str})")
+    print("=" * 60)
+    races = get_race_list(date_str)
+
+    # フィルタリング
+    if args.venue:
+        races = [r for r in races if r['venue'] == args.venue]
+    if args.race:
+        races = [r for r in races if r['race_num'] == args.race]
+
+    # 障害レースを除外
+    races = [r for r in races if r['surface'] != '障']
+
+    print(f"  対象: {len(races)}レース")
+    for r in races:
+        print(f"    {r['venue']}{r['race_num']}R {r['race_name']} {r['surface']}{r['distance']}m")
+    print()
+
+    # Step 2: クッション値・含水率
+    print("=" * 60)
+    print(f"[Step 2] クッション値・含水率 取得")
+    print("=" * 60)
+    manual_mode = args.manual
+    if manual_mode:
+        venues_in_races = sorted(set(r['venue'] for r in races))
+        jra_live = {}
+        print(f"  *** 手入力モード ({len(venues_in_races)}会場) ***")
+        print()
+        for v in venues_in_races:
+            print(f"  [{v}]")
+            cv = input(f"    クッション値 (例: 9.5): ")
+            mt = input(f"    芝 含水率% (例: 12.0): ")
+            md = input(f"    ダート 含水率% (例: 5.0): ")
+            jra_live[v] = {
+                'cushion': float(cv),
+                'turf_moisture': float(mt),
+                'dirt_moisture': float(md),
+            }
+            print(f"    → CV={cv} 芝={mt}% ダ={md}%")
+            print()
+    else:
+        jra_live = fetch_jra_live()
+        for venue, data in jra_live.items():
+            c = data.get('cushion', '?')
+            tm = data.get('turf_moisture', '?')
+            dm = data.get('dirt_moisture', '?')
+            print(f"  {venue}: CV={c}  芝={tm}%  ダ={dm}%")
+    print()
+
+    # Step 3: クッション値DB読み込み
+    print("=" * 60)
+    print(f"[Step 3] クッション値DB読み込み")
+    print("=" * 60)
+    with open(CUSHION_DB_PATH, encoding='utf-8') as f:
+        cushion_db = json.load(f)
+    print(f"  DB件数: {len(cushion_db)}")
+
+    # 当日データをDBに自動蓄積
+    date_fmt = f"{date_str[:4]}/{date_str[4:6]}/{date_str[6:8]}"
+    today = datetime.now().strftime('%Y%m%d')
+    is_today = (date_str == today)
+    added = 0
+
+    if not is_today and not manual_mode:
+        print(f"  ※ 指定日({date_str})は今日({today})ではないためDB蓄積をスキップします")
+        print(f"    （JRAライブ値は今日の値であり、{date_str}の正しい値ではありません）")
+        print(f"    散布図の表示にはライブ値をそのまま使用します")
+    else:
+        for venue, data in jra_live.items():
+            key = f"{date_fmt}_{venue}"
+            cushion_val = data.get('cushion')
+
+            if cushion_val is None or cushion_val == 0.0:
+                print(f"  ※ 警告: {venue}のクッション値が不正({cushion_val})のためDB保存をスキップします")
+                continue
+
+            if key not in cushion_db or args.force_update:
+                if key in cushion_db and args.force_update:
+                    print(f"  ※ {key} を上書きします（--force-update）")
+                cushion_db[key] = {
+                    'date': date_fmt,
+                    'venue': venue,
+                    'cushion': cushion_val,
+                    'turf_goal': data.get('turf_moisture'),
+                    'dirt_goal': data.get('dirt_moisture'),
+                }
+                added += 1
+        if added > 0:
+            with open(CUSHION_DB_PATH, 'w', encoding='utf-8') as f:
+                json.dump(cushion_db, f, ensure_ascii=False, indent=2)
+            print(f"  ✓ {added}件追加（DB更新: {len(cushion_db)}件）")
+        else:
+            print(f"  ✓ 既存データのため追加なし")
+    print()
+
+    # Step 4: 各レース処理
+    print("=" * 60)
+    print(f"[Step 4] 各レース処理")
+    print("=" * 60)
+    results_summary = []
+
+    for race in races:
+        rid = race['race_id']
+        venue = race['venue']
+        race_num = race['race_num']
+        surface = race['surface']
+
+        print(f"\n--- {venue} {race_num}R {race['race_name']} {surface}{race['distance']}m ---")
+
+        cache_file = os.path.join(CACHE_DIR, f'race_{rid}.json')
+        if args.no_scrape and os.path.exists(cache_file):
+            print(f"  キャッシュ使用: {cache_file}")
+            with open(cache_file, encoding='utf-8') as f:
+                race_data = json.load(f)
+        else:
+            print(f"  netkeiba スクレイピング中...")
+            race_data = scrape_race_data(rid)
+            if race_data is None:
+                print(f"  SKIP: データ取得失敗")
+                continue
+            with open(cache_file, 'w', encoding='utf-8') as f:
+                json.dump(race_data, f, ensure_ascii=False, indent=2)
+            print(f"  キャッシュ保存: {cache_file}")
+
+        if not race_data.get('race_info', {}).get('race_name'):
+            race_data.setdefault('race_info', {})['race_name'] = race['race_name']
+        if not race_data['race_info'].get('surface'):
+            race_data['race_info']['surface'] = surface
+        if not race_data['race_info'].get('distance'):
+            race_data['race_info']['distance'] = race['distance']
+
+        # クッション値紐付け
+        race_data = link_cushion_data(race_data, cushion_db)
+
+        # 当日クッション値・含水率（過去日はDBから取得）
+        db_key = f"{date_fmt}_{venue}"
+        if not is_today and db_key in cushion_db:
+            db_entry = cushion_db[db_key]
+            target_cushion = db_entry.get('cushion', 9.5)
+            target_moisture = db_entry.get('dirt_goal' if surface == 'ダ' else 'turf_goal', 12.0) or 12.0
+        else:
+            target_cushion = jra_live.get(venue, {}).get('cushion', 9.5)
+            if surface == 'ダ':
+                target_moisture = jra_live.get(venue, {}).get('dirt_moisture', 5.0)
+            else:
+                target_moisture = jra_live.get(venue, {}).get('turf_moisture', 12.0)
+
+        raw_name = race['race_name']
+        clean_name = re.sub(r'(芝|ダ|障)\d+m', '', raw_name)
+        clean_name = re.sub(r'\d+頭', '', clean_name)
+        clean_name = re.sub(r'^0?\d+R', '', clean_name)
+        safe_name = clean_name.strip().replace('/', '_').replace(' ', '')
+        if not safe_name:
+            safe_name = raw_name.replace('/', '_').replace(' ', '')
+        output_file = os.path.join(out_dir, f'scatter_{date_str}_{venue}{race_num:02d}R_{safe_name}_{surface}{race["distance"]}m.html')
+
+        new_basename = os.path.basename(output_file)
+        prefix = f'scatter_{date_str}_{venue}{race_num:02d}R_'
+        for old_f in os.listdir(out_dir):
+            if old_f.startswith(prefix) and old_f.endswith('.html') and old_f != new_basename:
+                os.remove(os.path.join(out_dir, old_f))
+                print(f"  旧ファイル削除: {old_f}")
+
+        pts, with_data, total = generate_scatter_html(
+            race_data, target_cushion, target_moisture,
+            output_file, date_label=date_label, race_num=race_num,
+            race_date=date_str,
+        )
+        print(f"  ✓ 生成完了: {total}頭 ({with_data}頭データあり) {pts}ポイント")
+        print(f"  → {output_file}")
+        results_summary.append((venue, race_num, race['race_name'], total, pts, surface, race['distance']))
+
+    # サマリー
+    print()
+    print("=" * 60)
+    print("完了サマリー")
+    print("=" * 60)
+    for venue, rnum, rname, total, pts, surf, dist in results_summary:
+        print(f"  {venue}{rnum:2d}R {rname:20s} {surf}{dist}m {total}頭 {pts}pts")
+    print(f"\n  出力先: {out_dir}")
+    print(f"  合計: {len(results_summary)}レース")
+
+    # インデックスページ生成
+    generate_index(out_dir, results_summary, jra_live, date_label, date_str)
+
+    # デプロイ
+    if args.deploy:
+        deploy_to_github(out_dir, date_str, cleanup=args.cleanup)
+
+
 def generate_index(out_dir, results_summary, jra_live, date_label, date_str=''):
-    """レース一覧インデックスページを生成（3カラムカードレイアウト）"""
+    """レース一覧インデックスページを生成（会場横並びレイアウト）"""
     venues = {}
-    for row in results_summary:
-        venue, rnum, rname, total, pts, surf, dist = row[:7]
-        grade_sfx = row[7] if len(row) > 7 else ''
-        start_time = row[8] if len(row) > 8 else ''
+    for venue, rnum, rname, total, pts, surf, dist in results_summary:
         if venue not in venues:
             venues[venue] = []
-        venues[venue].append((rnum, rname, total, pts, surf, dist, grade_sfx, start_time))
+        venues[venue].append((rnum, rname, total, pts, surf, dist))
 
     venue_info = {}
     for venue, data in jra_live.items():
         c = data.get('cushion', '?')
-        tm = data.get('turf_moisture', data.get('turf_goal', '?'))
-        dm = data.get('dirt_moisture', data.get('dirt_goal', '?'))
-        venue_info[venue] = {'cv': c, 'turf': tm, 'dirt': dm}
-
-    # 日付ヘッダー用
-    weekday_ja = ['月', '火', '水', '木', '金', '土', '日']
-    try:
-        dt = datetime.strptime(date_str, '%Y%m%d')
-        date_header = f"{dt.month}/{dt.day}（{weekday_ja[dt.weekday()]}）"
-    except Exception:
-        date_header = date_label
-
-    # 会場座標（天気取得用）
-    VENUE_COORDS = {
-        '中山': (35.78, 139.93), '東京': (35.68, 139.50), '阪神': (34.82, 135.37),
-        '京都': (34.90, 135.72), '中京': (35.11, 136.93), '小倉': (33.87, 130.87),
-        '新潟': (37.92, 139.05), '福島': (37.75, 140.43), '函館': (41.77, 140.72),
-        '札幌': (43.07, 141.38),
-    }
+        tm = data.get('turf_moisture', '?')
+        dm = data.get('dirt_moisture', '?')
+        venue_info[venue] = {'cushion': c, 'turf': tm, 'dirt': dm}
 
     html = f'''<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{date_header} クッション値×含水率</title>
+<title>{date_label} クッション値×含水率 散布図</title>
 <style>
-:root {{
-  --bg:#132044; --bg-card:#1a2c5a; --bg-row:#152348;
-  --border:#253d72; --text:#e8eef8; --text-sub:#8da8d8; --text-muted:#4a6090;
-  --accent:#f59e0b; --green:#22c55e; --amber:#f59e0b;
-}}
-*{{margin:0;padding:0;box-sizing:border-box;}}
-body{{font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;
-  background:var(--bg);color:var(--text);padding:12px;
-  -webkit-font-smoothing:antialiased;}}
-/* ヘッダー */
-.top-header{{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:4px 0;}}
-.top-header h1{{font-size:22px;font-weight:900;letter-spacing:-0.5px;}}
-.week-badge{{background:#3b5bdb;color:#fff;font-size:11px;font-weight:800;
-  padding:3px 10px;border-radius:20px;}}
-/* グリッド */
-.venue-grid{{
-  display:grid;
-  grid-template-columns:repeat(3,minmax(320px,1fr));
-  gap:12px;
-  overflow-x:auto;
-  -webkit-overflow-scrolling:touch;
-  padding-bottom:4px;
-}}
-/* カード */
-.venue-card{{border:1px solid var(--border);border-radius:12px;overflow:hidden;}}
-.venue-head{{padding:10px 13px 8px;background:var(--bg-card);}}
-.venue-title{{display:flex;align-items:baseline;gap:8px;margin-bottom:5px;flex-wrap:wrap;}}
-.venue-title h2{{font-size:17px;font-weight:900;}}
-.cv-inline{{font-size:11px;color:var(--text-sub);font-weight:600;}}
-.cv-inline b{{color:var(--accent);}}
-.cv-inline .t{{color:var(--green);}}
-.cv-inline .d{{color:var(--amber);}}
-/* 天気 */
-.wx-row{{display:flex;gap:12px;}}
-.wx-slot{{display:flex;flex-direction:column;align-items:center;gap:1px;}}
-.wx-slot .wx-h{{font-size:9px;color:var(--text-muted);}}
-.wx-slot .wx-icon{{font-size:17px;line-height:1;}}
-/* レース行 */
-.race-list a{{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:11px 13px;border-top:1px solid var(--border);
-  background:var(--bg-row);color:var(--text);text-decoration:none;
-  transition:background 0.12s;-webkit-tap-highlight-color:transparent;
-  overflow:hidden;
-}}
-.race-list a:hover{{background:var(--bg-card);}}
-.race-left{{display:flex;align-items:center;gap:8px;min-width:0;flex:1;overflow:hidden;}}
-.race-num-wrap{{display:flex;flex-direction:column;align-items:flex-start;min-width:36px;flex-shrink:0;}}
-.race-num{{font-size:13px;font-weight:800;color:var(--text-sub);}}
-.race-time{{font-size:9px;color:var(--text-muted);font-weight:600;white-space:nowrap;}}
-.race-name{{font-size:13px;font-weight:700;white-space:nowrap;}}
-.sbadge{{font-size:10px;font-weight:800;padding:2px 7px;border-radius:5px;flex-shrink:0;white-space:nowrap;}}
-.sbadge.turf{{background:rgba(34,197,94,0.18);color:#4ade80;border:1px solid rgba(34,197,94,0.35);}}
-.sbadge.dirt{{background:rgba(245,158,11,0.18);color:#fbbf24;border:1px solid rgba(245,158,11,0.35);}}
-.race-dist{{font-size:12px;color:var(--text-sub);font-weight:600;flex-shrink:0;white-space:nowrap;}}
-.grade-badge{{font-size:9px;font-weight:900;padding:1px 5px;border-radius:4px;
-  background:rgba(220,38,38,0.25);color:#fca5a5;border:1px solid rgba(220,38,38,0.4);}}
-.arrow{{color:var(--text-muted);font-size:14px;}}
-/* ランプ */
-.lamp{{width:8px;height:8px;border-radius:50%;flex-shrink:0;
-  background:#374151;box-shadow:none;transition:background 0.3s,box-shadow 0.3s;}}
-.lamp.on{{background:#22c55e;box-shadow:0 0 6px 2px rgba(34,197,94,0.55);}}
-.lamp.soon{{background:#ef4444;box-shadow:0 0 6px 2px rgba(239,68,68,0.6);}}
+* {{ margin:0; padding:0; box-sizing:border-box; }}
+body {{ font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif; background:#0f172a; color:#f1f5f9; min-height:100vh; }}
+.header {{ padding:16px 20px 12px; border-bottom:1px solid #1e293b; }}
+.header h1 {{ font-size:18px; font-weight:900; color:#f1f5f9; }}
+.header .date {{ font-size:13px; color:#94a3b8; margin-top:2px; }}
+.grid {{ display:flex; gap:12px; padding:16px; overflow-x:auto; align-items:flex-start; }}
+.venue-col {{ flex:0 0 220px; background:#1e293b; border-radius:12px; overflow:hidden; }}
+.venue-head {{ padding:12px 14px 10px; background:#334155; }}
+.venue-head h2 {{ font-size:15px; font-weight:800; color:#f1f5f9; }}
+.cv-info {{ margin-top:4px; font-size:10px; color:#94a3b8; font-weight:600; }}
+.cv-val {{ color:#fbbf24; font-weight:700; }}
+.race-list {{ padding:6px 0; }}
+a {{ display:flex; align-items:center; gap:8px; padding:9px 14px; color:#e2e8f0; text-decoration:none; font-size:13px; font-weight:700; border-bottom:1px solid #0f172a; transition:background 0.15s; }}
+a:last-child {{ border-bottom:none; }}
+a:active, a:hover {{ background:#334155; }}
+.rnum {{ font-size:11px; font-weight:800; color:#64748b; min-width:22px; }}
+.rname {{ flex:1; font-size:13px; }}
+.surf-badge {{ font-size:10px; font-weight:800; padding:2px 6px; border-radius:5px; flex-shrink:0; }}
+.surf-turf {{ background:#166534; color:#86efac; }}
+.surf-dirt {{ background:#78350f; color:#fcd34d; }}
+.dist {{ font-size:11px; color:#64748b; flex-shrink:0; }}
 </style>
 </head>
 <body>
-<div class="top-header">
-  <h1>{date_header}</h1>
-  <span class="week-badge">今週</span>
+<div class="header">
+  <h1>クッション値×含水率 散布図</h1>
+  <div class="date">{date_label}</div>
 </div>
-<div class="venue-grid" id="grid">
+<div class="grid">
 '''
 
-    active_venues = [v for v in ['東京', '中山', '阪神', '京都', '中京', '小倉', '新潟', '福島', '函館', '札幌'] if v in venues]
-
-    for venue in active_venues:
+    for venue in ['東京', '京都', '小倉', '中山', '阪神', '中京', '新潟', '福島', '函館', '札幌']:
+        if venue not in venues:
+            continue
         info = venue_info.get(venue, {})
-        cv = info.get('cv', '?')
+        cv = info.get('cushion', '?')
         turf = info.get('turf', '?')
         dirt = info.get('dirt', '?')
-        lat, lon = VENUE_COORDS.get(venue, (35.68, 139.50))
-
-        html += f'''<div class="venue-card">
-  <div class="venue-head">
-    <div class="venue-title">
-      <h2>{venue}</h2>
-      <span class="cv-inline">CV=<b>{cv}</b>&nbsp; 芝<span class="t">{turf}%</span>&nbsp; ダ<span class="d">{dirt}%</span></span>
-    </div>
-    <div class="wx-row" id="wx-{venue}">
-      <div class="wx-slot"><span class="wx-h">9時</span><span class="wx-icon" data-h="9">—</span></div>
-      <div class="wx-slot"><span class="wx-h">12時</span><span class="wx-icon" data-h="12">—</span></div>
-      <div class="wx-slot"><span class="wx-h">15時</span><span class="wx-icon" data-h="15">—</span></div>
-    </div>
-  </div>
-  <div class="race-list">
+        html += f'''<div class="venue-col">
+<div class="venue-head">
+  <h2>{venue}</h2>
+  <div class="cv-info">CV <span class="cv-val">{cv}</span> &nbsp;芝{turf}% &nbsp;ダ{dirt}%</div>
+</div>
+<div class="race-list">
 '''
-        for row in sorted(venues[venue]):
-            rnum, rname, total, pts, surf, dist = row[:6]
-            grade_sfx = row[6] if len(row) > 6 else ''
-            stime = row[7] if len(row) > 7 else ''
-            raw_name = rname
-            clean_name = re.sub(r'(芝|ダ|障)\d+m', '', raw_name)
-            clean_name = re.sub(r'\d+頭', '', clean_name)
-            clean_name = re.sub(r'^0?\d+R', '', clean_name).strip()
-            safe_name = (clean_name or raw_name).replace('/', '_').replace(' ', '')
-            fname = f'scatter_{date_str}_{venue}{rnum:02d}R_{safe_name}_{surf}{dist}m{grade_sfx}.html'
-            surf_class = 'turf' if surf == '芝' else 'dirt'
-            grade_label = f'<span class="grade-badge">{grade_sfx[1:]}</span>' if grade_sfx else ''
-            time_label = f'<span class="race-time">{stime}</span>' if stime else ''
-            data_time = f'data-start="{date_str[:4]}-{date_str[4:6]}-{date_str[6:]}T{stime}"' if stime else ''
-            html += f'''    <a href="{fname}">
-      <div class="race-left">
-        <span class="lamp" {data_time}></span>
-        <div class="race-num-wrap"><span class="race-num">{rnum}R</span>{time_label}</div>
-        <span class="race-name">{rname}</span>
-        {grade_label}
-        <span class="sbadge {surf_class}">{surf}</span>
-        <span class="race-dist">{dist}m</span>
-      </div>
-      <span class="arrow">›</span>
-    </a>
-'''
-        html += f'  </div>\n</div>\n'
+        for rnum, rname, total, pts, surf, dist in sorted(venues[venue]):
+            safe_name = rname.replace('/', '_').replace(' ', '')
+            fname = f'scatter_{date_str}_{venue}{rnum:02d}R_{safe_name}_{surf}{dist}m.html'
+            badge_cls = 'surf-turf' if surf == '芝' else 'surf-dirt'
+            html += f'<a href="{fname}"><span class="rnum">{rnum}R</span><span class="rname">{rname}</span><span class="surf-badge {badge_cls}">{surf}</span><span class="dist">{dist}m</span></a>\n'
+        html += '</div></div>\n'
 
-    # 天気アイコン取得JS（Open-Meteo API）
-    venue_coords_js = ', '.join(
-        f'"{v}": [{VENUE_COORDS[v][0]}, {VENUE_COORDS[v][1]}]'
-        for v in active_venues if v in VENUE_COORDS
-    )
-    html += f'''</div>
-<script>
-const VENUE_COORDS = {{{venue_coords_js}}};
-const TODAY = '{date_str[:4]}-{date_str[4:6]}-{date_str[6:]}';
-function wmoIcon(c) {{
-  if (c === 0) return '☀️';
-  if (c <= 2) return '🌤️';
-  if (c <= 3) return '☁️';
-  if (c <= 49) return '🌫️';
-  if (c <= 67) return '🌧️';
-  if (c <= 77) return '❄️';
-  if (c <= 82) return '🌦️';
-  return '⛈️';
-}}
-Object.entries(VENUE_COORDS).forEach(([venue, [lat, lon]]) => {{
-  const el = document.getElementById('wx-' + venue);
-  if (!el) return;
-  const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat +
-    '&longitude=' + lon + '&hourly=weather_code&timezone=Asia%2FTokyo&forecast_days=1';
-  fetch(url).then(r => r.json()).then(data => {{
-    const times = data.hourly.time;
-    const codes = data.hourly.weather_code;
-    el.querySelectorAll('.wx-icon').forEach(slot => {{
-      const h = parseInt(slot.dataset.h);
-      const ts = TODAY + 'T' + String(h).padStart(2,'0') + ':00';
-      const idx = times.indexOf(ts);
-      if (idx >= 0) slot.textContent = wmoIcon(codes[idx]);
-    }});
-  }}).catch(() => {{}});
-}});
-// ランプ更新（30秒ごと）
-function updateLamps() {{
-  const now = new Date();
-  const lamps = Array.from(document.querySelectorAll('.lamp[data-start]'));
-  // 未来のレースのうち現在時刻に最も近いものを特定
-  let nearest = null, nearestDiff = Infinity;
-  lamps.forEach(el => {{
-    const diff = new Date(el.dataset.start) - now;
-    if (diff >= 0 && diff < nearestDiff) {{ nearestDiff = diff; nearest = el; }}
-  }});
-  lamps.forEach(el => {{
-    const diff = new Date(el.dataset.start) - now;
-    el.classList.remove('on', 'soon');
-    if (el === nearest) el.classList.add('soon');  // 直近レース: 赤
-    else if (diff > 0) el.classList.add('on');     // その他未来: 緑
-    // 発走済: グレー（デフォルト）
-  }});
-}}
-updateLamps();
-setInterval(updateLamps, 30000);
-</script>
-</body></html>'''
+    html += '</div></body></html>'
 
     index_path = os.path.join(out_dir, 'index.html')
     with open(index_path, 'w', encoding='utf-8') as f:
@@ -1420,7 +1068,6 @@ setInterval(updateLamps, 30000);
 # ===== GitHub Pages デプロイ =====
 DEPLOY_CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'deploy_config.json')
 
-
 def deploy_to_github(out_dir, date_str, cleanup=False):
     """GitHub Pages へ自動デプロイ（GitHub API使用、git不要）"""
     print()
@@ -1430,7 +1077,8 @@ def deploy_to_github(out_dir, date_str, cleanup=False):
 
     if not os.path.exists(DEPLOY_CONFIG_PATH):
         print("  deploy_config.json が見つかりません。")
-        print('  {"github_token": "ghp_xxx", "repo": "user/repo-name"} の形式で作成してください')
+        print("  以下の形式で作成してください:")
+        print('  {"github_token": "ghp_xxx", "repo": "user/repo-name"}')
         return
 
     with open(DEPLOY_CONFIG_PATH, encoding='utf-8') as f:
@@ -1449,25 +1097,12 @@ def deploy_to_github(out_dir, date_str, cleanup=False):
     }
     api_base = f'https://api.github.com/repos/{repo}/contents'
 
-    def _fetch_all_files(url, hdrs):
-        result = {}
-        page = 1
-        while True:
-            r = requests.get(url, headers=hdrs, params={'per_page': 100, 'page': page})
-            if r.status_code != 200:
-                break
-            items = r.json()
-            if not items:
-                break
-            for item in items:
-                result[item['name']] = item['sha']
-            if len(items) < 100:
-                break
-            page += 1
-        return result
-
     print(f"  リポジトリ: {repo}")
-    existing = _fetch_all_files(api_base, headers)
+    r = requests.get(api_base, headers=headers)
+    existing = {}
+    if r.status_code == 200:
+        for item in r.json():
+            existing[item['name']] = item['sha']
 
     html_files = [f for f in os.listdir(out_dir) if f.endswith('.html')]
     for fname in sorted(html_files):
@@ -1477,23 +1112,51 @@ def deploy_to_github(out_dir, date_str, cleanup=False):
 
         encoded_name = quote(fname)
         url = f'{api_base}/{encoded_name}'
-        payload = {'message': f'Update {fname} ({date_str})', 'content': content}
+        payload = {
+            'message': f'Update {fname} ({date_str})',
+            'content': content,
+        }
         if fname in existing:
             payload['sha'] = existing[fname]
 
         r = requests.put(url, headers=headers, json=payload)
         if r.status_code in (200, 201):
-            print(f"  OK {fname}")
+            print(f"  ✓ {fname}")
+        elif r.status_code in (409, 422):
+            # SHAが古いか未取得 → 個別に最新SHAを取得してリトライ
+            r2 = requests.get(url, headers=headers)
+            if r2.status_code == 200:
+                current_sha = r2.json().get('sha')
+                if current_sha:
+                    payload['sha'] = current_sha
+                    r3 = requests.put(url, headers=headers, json=payload)
+                    if r3.status_code in (200, 201):
+                        print(f"  ✓ {fname} (再試行)")
+                    else:
+                        try:
+                            msg = r3.json().get('message', '')
+                        except Exception:
+                            msg = r3.text[:100]
+                        print(f"  ✗ {fname}: {r3.status_code} {msg}")
+                    time.sleep(1)
+                else:
+                    print(f"  ✗ {fname}: SHA取得失敗")
+            else:
+                try:
+                    msg = r.json().get('message', '')
+                except Exception:
+                    msg = r.text[:100]
+                print(f"  ✗ {fname}: {r.status_code} {msg}")
         else:
             try:
                 msg = r.json().get('message', '')
             except Exception:
                 msg = r.text[:100]
-            print(f"  NG {fname}: {r.status_code} {msg}")
+            print(f"  ✗ {fname}: {r.status_code} {msg}")
         time.sleep(1)
 
     if cleanup:
-        print(f"\n  旧ファイル削除中...")
+        print(f"\n  旧フォーマット・重複ファイルの削除中...")
         uploaded_basenames = set(html_files)
         for fname, sha in existing.items():
             if fname.startswith('scatter_') and fname.endswith('.html'):
@@ -1512,24 +1175,129 @@ def deploy_to_github(out_dir, date_str, cleanup=False):
                     payload = {'message': f'Cleanup: {fname}', 'sha': sha}
                     r = requests.delete(url, headers=headers, json=payload)
                     if r.status_code == 200:
-                        print(f"  Del {fname}")
+                        print(f"  🗑 {fname}")
                     time.sleep(1)
 
-    # index.html をリモートに合わせて再生成してアップロード
-    all_files = _fetch_all_files(api_base, headers)
+    r = requests.get(api_base, headers=headers)
+    all_files = {}
+    if r.status_code == 200:
+        for item in r.json():
+            all_files[item['name']] = item['sha']
 
-    all_scatter = sorted([f for f in all_files if f.startswith('scatter_') and f.endswith('.html')], reverse=True)
+    all_scatter = sorted([f for f in all_files.keys()
+                          if f.startswith('scatter_') and f.endswith('.html')],
+                         reverse=True)
     date_groups = {}
     for fname in all_scatter:
         m = re.match(r'scatter_(\d{8})_(.+)\.html', fname)
         if m:
             d = m.group(1)
-            d_fmt = f"{d[:4]}/{d[4:6]}/{d[6:8]}"
+            _wdays = ['月', '火', '水', '木', '金', '土', '日']
+            _ddt = datetime(int(d[:4]), int(d[4:6]), int(d[6:]))
+            d_fmt = f"{int(d[4:6])}/{int(d[6:])}（{_wdays[_ddt.weekday()]}）"
             date_groups.setdefault(d_fmt, []).append(fname)
         else:
             date_groups.setdefault('その他', []).append(fname)
 
-    index_html = _build_remote_index(date_groups, cushion_db)
+    index_html = '''<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>クッション値×含水率 散布図</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif; background:#0f172a; color:#f1f5f9; min-height:100vh; }
+.global-header { padding:16px 20px 12px; border-bottom:1px solid #1e293b; }
+.global-header h1 { font-size:18px; font-weight:900; }
+.global-header .sub { font-size:12px; color:#64748b; margin-top:2px; }
+.date-section { margin-bottom:4px; }
+.date-header { font-size:15px; font-weight:800; padding:12px 20px; background:#1e293b; color:#f1f5f9; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border-top:1px solid #0f172a; }
+.date-header:hover { background:#273549; }
+.date-header .toggle { font-size:11px; color:#64748b; transition:transform 0.2s; }
+.date-header.open .toggle { transform:rotate(180deg); }
+.race-list { display:none; padding:12px 16px; overflow-x:auto; }
+.race-list.open { display:flex; gap:12px; align-items:flex-start; }
+.venue-col { flex:0 0 200px; background:#1e293b; border-radius:10px; overflow:hidden; }
+.venue-head { padding:10px 12px 8px; background:#334155; }
+.venue-head h3 { font-size:14px; font-weight:800; color:#f1f5f9; }
+.cv-info { margin-top:3px; font-size:10px; color:#94a3b8; }
+.cv-val { color:#fbbf24; font-weight:700; }
+a { display:flex; align-items:center; gap:6px; padding:8px 12px; color:#e2e8f0; text-decoration:none; font-size:12px; font-weight:700; border-bottom:1px solid #0f172a; transition:background 0.15s; }
+a:last-child { border-bottom:none; }
+a:hover, a:active { background:#334155; }
+.rnum { font-size:11px; color:#64748b; min-width:20px; }
+.rname { flex:1; }
+.surf-badge { font-size:9px; font-weight:800; padding:1px 5px; border-radius:4px; flex-shrink:0; }
+.surf-turf { background:#166534; color:#86efac; }
+.surf-dirt { background:#78350f; color:#fcd34d; }
+.dist { font-size:10px; color:#64748b; flex-shrink:0; }
+</style>
+</head>
+<body>
+<div class="global-header">
+  <h1>クッション値×含水率 散布図</h1>
+  <div class="sub">日付をタップで展開 → レースを選択</div>
+</div>
+'''
+    date_keys = sorted(date_groups.keys(), reverse=True)
+    for idx, d_fmt in enumerate(date_keys):
+        files_in_date = sorted(date_groups[d_fmt])
+        count = len(files_in_date)
+        open_class = ' open' if idx == 0 else ''
+        index_html += f'<div class="date-section">'
+        index_html += f'<div class="date-header{open_class}" onclick="toggleDate(this)">{d_fmt} <span style="font-size:11px;color:#64748b;font-weight:600">{count}R</span><span class="toggle">▼</span></div>\n'
+        index_html += f'<div class="race-list{open_class}">\n'
+
+        venue_groups = {}
+        for fname in files_in_date:
+            stripped = re.sub(r'^scatter_\d{8}_', '', fname)
+            vm = re.match(r'([\u4e00-\u9fff]+)\d', stripped)
+            venue_name = vm.group(1) if vm else 'その他'
+            venue_groups.setdefault(venue_name, []).append(fname)
+
+        venue_order = ['東京', '京都', '小倉', '中山', '阪神', '中京', '新潟', '福島', '函館', '札幌']
+        sorted_venues = sorted(venue_groups.keys(), key=lambda v: venue_order.index(v) if v in venue_order else 99)
+
+        for venue_name in sorted_venues:
+            vfiles = sorted(venue_groups[venue_name])
+            # cushion_db のキーは "YYYY/MM/DD_会場" 形式 — d_fmt は "M/D（曜）" なので日付部分を再構築
+            cv_info = ''
+            # ファイル名から日付を取得してDBキーを作る
+            if vfiles:
+                dm = re.match(r'scatter_(\d{8})_', vfiles[0])
+                if dm:
+                    raw_d = dm.group(1)
+                    db_key = f"{raw_d[:4]}/{raw_d[4:6]}/{raw_d[6:]}_{venue_name}"
+                    if db_key in cushion_db:
+                        e = cushion_db[db_key]
+                        cv_info = f'CV <span class="cv-val">{e.get("cushion","?")}</span> 芝{e.get("turf_goal","?")}% ダ{e.get("dirt_goal","?")}%'
+
+            index_html += f'<div class="venue-col"><div class="venue-head"><h3>{venue_name}</h3><div class="cv-info">{cv_info}</div></div>\n'
+            for fname in vfiles:
+                # ファイル名からレース番号・名前・馬場・距離を抽出
+                pm = re.match(r'scatter_\d{8}_' + re.escape(venue_name) + r'(\d{2})R_(.+)_(芝|ダ|障)(\d+)m', fname)
+                if pm:
+                    rnum = int(pm.group(1))
+                    rname = pm.group(2).replace('_', ' ')
+                    surf = pm.group(3)
+                    dist = pm.group(4)
+                    badge_cls = 'surf-turf' if surf == '芝' else 'surf-dirt'
+                    index_html += f'<a href="{fname}"><span class="rnum">{rnum}R</span><span class="rname">{rname}</span><span class="surf-badge {badge_cls}">{surf}</span><span class="dist">{dist}m</span></a>\n'
+                else:
+                    display = re.sub(r'^scatter_\d{8}_' + re.escape(venue_name), '', fname).replace('.html', '').replace('_', ' ').strip()
+                    index_html += f'<a href="{fname}">{display}</a>\n'
+            index_html += '</div>\n'
+
+        index_html += '</div></div>\n'
+
+    index_html += '''<script>
+function toggleDate(el){
+  el.classList.toggle('open');
+  el.nextElementSibling.classList.toggle('open');
+}
+</script>
+</body></html>'''
 
     encoded_name = quote('index.html')
     url = f'{api_base}/{encoded_name}'
@@ -1541,809 +1309,11 @@ def deploy_to_github(out_dir, date_str, cleanup=False):
         payload['sha'] = all_files['index.html']
     r = requests.put(url, headers=headers, json=payload)
     if r.status_code in (200, 201):
-        print(f"  OK index.html")
+        print(f"  ✓ index.html (日付別リンク付き)")
 
     pages_url = f'https://{repo.split("/")[0]}.github.io/{repo.split("/")[1]}/'
-    print(f"\n  デプロイ完了!")
-    print(f"  URL: {pages_url}")
-
-
-def _build_remote_index(date_groups, cushion_db):
-    """リモートの全ファイルから日付別インデックスHTMLを生成 (横スクロール会場カラムレイアウト)"""
-    from datetime import datetime
-    WEEKDAYS = ['月', '火', '水', '木', '金', '土', '日']
-    venue_order = ['東京', '京都', '小倉', '中山', '阪神', '中京', '新潟', '福島', '函館', '札幌']
-    FILE_RE = re.compile(r'^scatter_(\d{8})_([\u4e00-\u9fff]+)(\d{2})R_(.+)_([ダ芝障])(\d+)m(?:_(\d{4}))?(?:_(G[123]))?\.html$')
-
-    html = r'''<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>クッション値×含水率 散布図</title>
-<style>
-:root {
-  --bg-start: #0a1e4a; --bg-mid: #0f2d6b; --bg-end: #0a1a3d;
-  --bg-card: rgba(255,255,255,0.07); --bg-card2: rgba(255,255,255,0.04);
-  --border: rgba(100,160,255,0.2); --border-bright: rgba(100,160,255,0.4);
-  --text: #e8f0ff; --text-muted: #7ea8d8; --text-sub: #a8c4e8;
-  --accent: #f59e0b; --accent2: #38bdf8;
-}
-* { margin:0; padding:0; box-sizing:border-box; }
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans JP', sans-serif;
-  background: linear-gradient(160deg, var(--bg-start) 0%, var(--bg-mid) 50%, var(--bg-end) 100%);
-  background-attachment: fixed;
-  min-height: 100vh;
-  color: var(--text); padding: 14px;
-  -webkit-font-smoothing: antialiased;
-}
-/* ── Header ── */
-.page-header {
-  margin-bottom: 14px; display: flex;
-  justify-content: space-between; align-items: flex-start;
-  background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.04));
-  border: 1px solid var(--border-bright);
-  border-radius: 14px; padding: 14px 16px;
-  backdrop-filter: blur(10px);
-}
-.page-header h1 {
-  font-size: 18px; font-weight: 900;
-  background: linear-gradient(90deg, #ffffff, #7eb8f7);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-}
-.page-header .sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
-.admin-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22);
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  color: var(--text-sub); padding: 7px 12px; border-radius: 10px;
-  font-size: 12px; font-weight: 800; white-space: nowrap;
-  cursor: pointer; transition: all 0.15s; flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-}
-.admin-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(245,158,11,0.15); }
-.admin-dot { width: 7px; height: 7px; border-radius: 50%; background: #4a6a8a; flex-shrink: 0; }
-.admin-btn.online .admin-dot { background: #22c55e; animation: pulse 1.5s infinite; }
-.admin-btn.online { border-color: rgba(34,197,94,0.4); color: #22c55e; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-/* ── Filter bar ── */
-.filter-bar {
-  display: flex; align-items: center; gap: 8px;
-  margin-bottom: 14px; flex-wrap: wrap;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 14px; padding: 10px 12px;
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 2px 12px rgba(0,0,0,0.2);
-}
-.stab {
-  padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 800;
-  cursor: pointer; border: 1px solid rgba(255,255,255,0.18);
-  background: rgba(255,255,255,0.10); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-  color: var(--text-sub); transition: all 0.15s;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
-}
-.stab:hover { border-color: rgba(255,255,255,0.35); color: var(--text); background: rgba(255,255,255,0.16); }
-.stab.active { background: var(--accent); border-color: var(--accent); color: #000; backdrop-filter: none; }
-.graded-label {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 800;
-  border: 1px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.10);
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-  color: var(--text-sub); cursor: pointer; user-select: none; transition: all 0.15s;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
-}
-.graded-label input { display: none; }
-.graded-label.checked { background: rgba(124,58,237,0.3); border-color: rgba(167,139,250,0.5); color: #c4b5fd; backdrop-filter: blur(8px); }
-.venue-select {
-  margin-left: auto; padding: 6px 10px; border-radius: 8px;
-  background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22);
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  color: var(--text); font-size: 12px; font-weight: 700; cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
-}
-.venue-select option { background: #0f2d6b; }
-/* ── Date section ── */
-.date-section {
-  margin-bottom: 12px; border-radius: 14px; overflow: hidden;
-  border: 1px solid var(--border-bright);
-  box-shadow: 0 4px 24px rgba(0,30,80,0.4);
-}
-.date-header {
-  padding: 12px 16px;
-  background: linear-gradient(135deg, rgba(30,80,160,0.5), rgba(15,45,107,0.5));
-  cursor: pointer; display: flex; align-items: center; gap: 8px;
-  font-size: 15px; font-weight: 900; user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  backdrop-filter: blur(8px);
-}
-.badge-week {
-  font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 10px;
-  background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3);
-}
-.race-count { font-size: 12px; color: var(--text-muted); font-weight: 600; }
-.date-header .spacer { flex: 1; }
-.date-header .toggle { font-size: 11px; color: var(--text-muted); transition: transform 0.2s; }
-.date-header.open .toggle { transform: rotate(180deg); }
-.race-list {
-  display: none; padding: 10px;
-  background: linear-gradient(180deg, rgba(10,30,74,0.6), rgba(8,20,55,0.8));
-  backdrop-filter: blur(4px);
-}
-.race-list.open { display: block; }
-/* ── Venue grid (horizontal scroll) ── */
-.venue-grid {
-  display: flex; gap: 10px;
-  overflow-x: auto; padding-bottom: 6px;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin; scrollbar-color: rgba(100,160,255,0.3) transparent;
-}
-.venue-grid::-webkit-scrollbar { height: 4px; }
-.venue-grid::-webkit-scrollbar-track { background: transparent; }
-.venue-grid::-webkit-scrollbar-thumb { background: rgba(100,160,255,0.3); border-radius: 2px; }
-.venue-col {
-  min-width: 220px; flex-shrink: 0;
-  background: rgba(255,255,255,0.06);
-  border-radius: 10px;
-  border: 1px solid var(--border); overflow: hidden;
-  backdrop-filter: blur(6px);
-}
-.venue-col-header {
-  padding: 8px 12px;
-  background: linear-gradient(135deg, rgba(56,100,200,0.35), rgba(30,60,140,0.35));
-  border-bottom: 1px solid var(--border-bright);
-}
-.venue-head-row {
-  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
-}
-.venue-col-header .venue-name {
-  font-size: 14px; font-weight: 900;
-  color: #c8deff;
-}
-.venue-col-header .venue-cv {
-  font-size: 10px; color: var(--text-muted); font-weight: 600;
-}
-.venue-weather {
-  display: flex; gap: 6px; margin-top: 5px; flex-wrap: wrap;
-}
-.wx-slot {
-  font-size: 10px; color: #a8c4e8; font-weight: 600;
-  display: flex; flex-direction: column; align-items: center; gap: 1px;
-  min-width: 28px;
-}
-.wx-slot .wx-time { font-size: 8px; color: #7ea8d8; }
-.wx-slot .wx-icon { font-size: 16px; line-height: 1;
-  font-family: 'Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji','Twemoji Mozilla',sans-serif; }
-/* ── Race row ── */
-.race-row {
-  display: flex; align-items: center; gap: 6px;
-  padding: 10px 12px; border-bottom: 1px solid var(--border);
-  color: var(--text); text-decoration: none; font-size: 13px;
-  -webkit-tap-highlight-color: transparent; transition: background 0.1s;
-}
-.race-row:last-child { border-bottom: none; }
-.race-row:active, .race-row:hover { background: rgba(100,160,255,0.12); }
-.race-num-block { display: flex; flex-direction: column; align-items: center; min-width: 36px; flex-shrink: 0; gap: 2px; }
-.race-num { font-size: 11px; font-weight: 800; color: var(--text-muted); white-space: nowrap; }
-.race-time-row { display: flex; align-items: center; gap: 3px; }
-.race-time { font-size: 9px; color: var(--accent2); font-weight: 700; white-space: nowrap; font-family: monospace; }
-.time-lamp { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: #2d3f55; }
-.time-lamp.lamp-green { background: #22c55e; box-shadow: 0 0 4px #22c55e; }
-.time-lamp.lamp-red { background: #ef4444; box-shadow: 0 0 5px #ef4444; }
-.race-name { flex: 1; font-weight: 700; font-size: 12px; line-height: 1.3; }
-.race-dist { font-size: 10px; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
-.arrow { color: var(--text-muted); font-size: 14px; flex-shrink: 0; }
-/* ── Surface badges ── */
-.sbadge {
-  font-size: 10px; font-weight: 900; padding: 2px 6px;
-  border-radius: 6px; flex-shrink: 0;
-}
-.sbadge.turf { background: rgba(34,197,94,0.2); color: #4ade80; border: 1px solid rgba(34,197,94,0.4); }
-.sbadge.dirt { background: rgba(245,158,11,0.2); color: #fbbf24; border: 1px solid rgba(245,158,11,0.4); }
-.sbadge.hurdle { background: rgba(148,163,184,0.15); color: #94a3b8; border: 1px solid rgba(148,163,184,0.3); }
-/* ── Admin modal ── */
-.admin-overlay {
-  display: none; position: fixed; inset: 0;
-  background: rgba(0,10,40,0.75); z-index: 200;
-  align-items: center; justify-content: center;
-  backdrop-filter: blur(4px);
-}
-.admin-overlay.show { display: flex; }
-.admin-modal {
-  background: linear-gradient(135deg, rgba(20,50,120,0.95), rgba(10,30,80,0.95));
-  border: 1px solid var(--border-bright); border-radius: 16px;
-  padding: 24px; max-width: 360px; width: 90%;
-  box-shadow: 0 20px 60px rgba(0,10,50,0.7);
-  backdrop-filter: blur(12px);
-}
-.admin-modal h3 { font-size: 16px; font-weight: 900; margin-bottom: 8px; color: #c8deff; }
-.admin-modal p { font-size: 13px; color: var(--text-sub); line-height: 1.6; margin-bottom: 16px; }
-.admin-modal code {
-  display: block; background: rgba(0,0,0,0.3); border: 1px solid var(--border-bright);
-  border-radius: 8px; padding: 10px 12px; font-size: 12px;
-  color: var(--accent); font-family: monospace; margin-bottom: 16px;
-}
-.modal-btns { display: flex; gap: 8px; }
-.modal-btn {
-  flex: 1; padding: 10px; border-radius: 8px; font-size: 13px;
-  font-weight: 800; cursor: pointer; border: none; transition: all 0.15s;
-}
-.modal-btn-primary { background: var(--accent); color: #000; }
-.modal-btn-primary:hover { background: #fbbf24; }
-.modal-btn-secondary { background: rgba(255,255,255,0.1); color: var(--text); border: 1px solid var(--border); }
-.modal-btn-secondary:hover { background: rgba(255,255,255,0.15); }
-</style>
-</head>
-<body>
-
-<div class="page-header">
-  <div>
-    <h1>クッション値×含水率 散布図</h1>
-    <div class="sub">会場別レース一覧</div>
-  </div>
-  <button class="admin-btn" id="admin-btn" onclick="openAdmin()">
-    <span class="admin-dot"></span>管理ページ
-  </button>
-</div>
-
-<div class="filter-bar">
-  <button class="stab active" data-filter="all">全て</button>
-  <button class="stab" data-filter="turf">芝</button>
-  <button class="stab" data-filter="dirt">ダート</button>
-  <label class="graded-label" id="graded-label">
-    <input type="checkbox" id="graded-toggle"> 重賞
-  </label>
-  <select class="venue-select" id="venue-select">
-    <option value="">全会場</option>
-  </select>
-</div>
-
-<div id="admin-modal" class="admin-overlay">
-  <div class="admin-modal">
-    <h3>🏇 管理ダッシュボード</h3>
-    <p id="modal-msg">ローカルサーバーが起動しているか確認しています...</p>
-    <code>start_admin.bat をダブルクリックして起動</code>
-    <div class="modal-btns">
-      <button class="modal-btn modal-btn-primary" id="modal-open-btn" onclick="goAdmin()">開く</button>
-      <button class="modal-btn modal-btn-secondary" onclick="closeModal()">閉じる</button>
-    </div>
-  </div>
-</div>
-'''
-
-    from datetime import date, timedelta
-    today = date.today()
-    monday = today - timedelta(days=today.weekday())
-    this_week_dates = {
-        (monday + timedelta(5)).strftime('%Y/%m/%d'),
-        (monday + timedelta(6)).strftime('%Y/%m/%d'),
-    }
-
-    today_fmt = date.today().strftime('%Y/%m/%d')
-    date_keys = sorted(date_groups.keys(), reverse=True)
-    if today_fmt in date_keys:
-        date_keys.remove(today_fmt)
-        date_keys.insert(0, today_fmt)
-    all_venues_seen = []
-
-    for idx, d_fmt in enumerate(date_keys):
-        files_in_date = sorted(date_groups[d_fmt])
-        try:
-            dt = datetime.strptime(d_fmt, '%Y/%m/%d')
-            day_label = f"{dt.month}/{dt.day}（{WEEKDAYS[dt.weekday()]}）"
-        except ValueError:
-            day_label = d_fmt
-        count = len(files_in_date)
-        open_cls = ' open' if d_fmt == today_fmt else ''
-
-        venue_groups = {}
-        for fname in files_in_date:
-            m = FILE_RE.match(fname)
-            if m:
-                venue = m.group(2)
-            else:
-                vm = re.match(r'^scatter_\d{8}_([\u4e00-\u9fff]+)', fname)
-                venue = vm.group(1) if vm else 'その他'
-            venue_groups.setdefault(venue, []).append(fname)
-
-        sorted_venues = sorted(venue_groups.keys(), key=lambda v: venue_order.index(v) if v in venue_order else 99)
-        for v in sorted_venues:
-            if v not in all_venues_seen:
-                all_venues_seen.append(v)
-
-        html += f'<div class="date-section" data-date="{d_fmt}">\n'
-        html += f'<div class="date-header{open_cls}" onclick="toggleDate(this)">'
-        html += f'<span>{day_label}</span>'
-        if d_fmt in this_week_dates:
-            html += '<span class="badge-week">今週</span>'
-        html += '<span class="spacer"></span><span class="toggle">▼</span>'
-        html += '</div>\n'
-        html += f'<div class="race-list{open_cls}"><div class="venue-grid">\n'
-
-        for venue_name in sorted_venues:
-            vfiles = sorted(venue_groups[venue_name])
-            d_key = f"{d_fmt}_{venue_name}"
-            cv_val = 'CV未取得'
-            if d_key in cushion_db:
-                e = cushion_db[d_key]
-                cv_val = f'CV={e.get("cushion","?")}  芝{e.get("turf_goal","?")}%  ダ{e.get("dirt_goal","?")}%'
-
-            # 同一レース番号は時刻付きを優先して重複排除
-            dedup = {}
-            for fname in vfiles:
-                m = FILE_RE.match(fname)
-                key = m.group(3) if m else fname
-                if key not in dedup or (m and m.group(7)):
-                    dedup[key] = fname
-            vfiles = sorted(dedup.values())
-
-            html += f'<div class="venue-col" data-venue="{venue_name}">\n'
-            weather_html = ''
-            if d_fmt == today_fmt:
-                weather_html = (f'<div class="venue-weather" data-wxvenue="{venue_name}">'
-                                f'<span class="wx-slot"><span class="wx-time">9時</span><span class="wx-icon" data-wxh="9">…</span></span>'
-                                f'<span class="wx-slot"><span class="wx-time">12時</span><span class="wx-icon" data-wxh="12">…</span></span>'
-                                f'<span class="wx-slot"><span class="wx-time">15時</span><span class="wx-icon" data-wxh="15">…</span></span>'
-                                f'</div>')
-            html += f'<div class="venue-col-header"><div class="venue-head-row"><span class="venue-name">{venue_name}</span><span class="venue-cv">{cv_val}</span></div>{weather_html}</div>\n'
-
-            for fname in vfiles:
-                m = FILE_RE.match(fname)
-                if m:
-                    rnum = str(int(m.group(3)))
-                    rname = m.group(4)
-                    surf_char = m.group(5)
-                    dist = m.group(6)
-                    raw_time = m.group(7) or ''
-                    start_time = f'{raw_time[:2]}:{raw_time[2:]}' if len(raw_time) == 4 else ''
-                    if surf_char == '芝':
-                        surf_cls, surf_lbl, surf_data = 'turf', '芝', 'turf'
-                    elif surf_char == 'ダ':
-                        surf_cls, surf_lbl, surf_data = 'dirt', 'ダ', 'dirt'
-                    else:
-                        surf_cls, surf_lbl, surf_data = 'hurdle', '障', 'hurdle'
-                    is_graded = '1' if m.group(8) else '0'
-                    if start_time:
-                        time_inner = (f'<span class="race-time-row">'
-                                      f'<span class="time-lamp"></span>'
-                                      f'<span class="race-time">{start_time}</span>'
-                                      f'</span>')
-                    else:
-                        time_inner = ''
-                    st_attr = f' data-starttime="{raw_time}"' if raw_time else ''
-                    html += (f'<a class="race-row" href="{fname}" data-surface="{surf_data}" data-graded="{is_graded}"{st_attr}>'
-                             f'<span class="race-num-block"><span class="race-num">{rnum}R</span>{time_inner}</span>'
-                             f'<span class="race-name">{rname}</span>'
-                             f'<span class="sbadge {surf_cls}">{surf_lbl}</span>'
-                             f'<span class="race-dist">{dist}m</span>'
-                             f'<span class="arrow">›</span></a>\n')
-                else:
-                    display = fname.replace('scatter_', '').replace('.html', '')
-                    html += (f'<a class="race-row" href="{fname}" data-surface="all" data-graded="0">'
-                             f'<span class="race-name">{display}</span>'
-                             f'<span class="arrow">›</span></a>\n')
-
-            html += '</div>\n'  # venue-col
-
-        html += '</div></div></div>\n'  # venue-grid / race-list / date-section
-
-    venue_opts = ''.join(f'<option value="{v}">{v}</option>'
-                         for v in sorted(all_venues_seen, key=lambda v: venue_order.index(v) if v in venue_order else 99))
-
-    html += r'''<script>
-function toggleDate(el) {
-  el.classList.toggle('open');
-  el.nextElementSibling.classList.toggle('open');
-}
-
-// Populate venue select
-(function() {
-  var sel = document.getElementById('venue-select');
-  document.querySelectorAll('.venue-col').forEach(function(col) {
-    var v = col.dataset.venue;
-    if (v && !sel.querySelector('option[value="' + v + '"]')) {
-      var opt = document.createElement('option');
-      opt.value = v; opt.textContent = v;
-      sel.appendChild(opt);
-    }
-  });
-})();
-
-var surfaceFilter = 'all';
-var gradedOnly = false;
-var venueFilter = '';
-
-function applyFilters() {
-  document.querySelectorAll('.race-row').forEach(function(row) {
-    var surf = row.dataset.surface;
-    var graded = row.dataset.graded === '1';
-    var show = true;
-    if (surfaceFilter !== 'all' && surf !== surfaceFilter) show = false;
-    if (gradedOnly && !graded) show = false;
-    row.style.display = show ? '' : 'none';
-  });
-  document.querySelectorAll('.venue-col').forEach(function(col) {
-    var vMatch = !venueFilter || col.dataset.venue === venueFilter;
-    var hasVisible = vMatch && Array.from(col.querySelectorAll('.race-row')).some(function(r) {
-      return r.style.display !== 'none';
-    });
-    col.style.display = hasVisible ? '' : 'none';
-  });
-}
-
-document.querySelectorAll('.stab').forEach(function(btn) {
-  btn.addEventListener('click', function() {
-    document.querySelectorAll('.stab').forEach(function(b) { b.classList.remove('active'); });
-    btn.classList.add('active');
-    surfaceFilter = btn.dataset.filter;
-    applyFilters();
-  });
-});
-
-document.getElementById('graded-toggle').addEventListener('change', function(e) {
-  gradedOnly = e.target.checked;
-  document.getElementById('graded-label').classList.toggle('checked', gradedOnly);
-  applyFilters();
-});
-
-document.getElementById('venue-select').addEventListener('change', function(e) {
-  venueFilter = e.target.value;
-  applyFilters();
-});
-
-// Admin
-var ADMIN_URL = 'http://localhost:5001/';
-function checkAdmin() {
-  fetch(ADMIN_URL + 'api/status', { signal: AbortSignal.timeout(1500) })
-    .then(function(r) { if (r.ok) document.getElementById('admin-btn').classList.add('online'); })
-    .catch(function() {});
-}
-function openAdmin() {
-  document.getElementById('admin-modal').classList.add('show');
-  fetch(ADMIN_URL + 'api/status', { signal: AbortSignal.timeout(1500) })
-    .then(function(r) { return r.ok ? r.json() : null; })
-    .then(function(data) {
-      var msg = document.getElementById('modal-msg');
-      var btn = document.getElementById('modal-open-btn');
-      if (data) {
-        msg.textContent = '✅ サーバー起動中です。管理ページを開けます。';
-        msg.style.color = '#22c55e';
-      } else {
-        msg.textContent = '⚠️ サーバーが起動していません。先に start_admin.bat を実行してください。';
-        msg.style.color = '#f59e0b';
-      }
-      btn.disabled = false;
-    })
-    .catch(function() {
-      document.getElementById('modal-msg').textContent = '⚠️ サーバーが起動していません。先に start_admin.bat を実行してください。';
-      document.getElementById('modal-msg').style.color = '#f59e0b';
-    });
-}
-function goAdmin() { window.open(ADMIN_URL, '_blank'); closeModal(); }
-function closeModal() { document.getElementById('admin-modal').classList.remove('show'); }
-document.getElementById('admin-modal').addEventListener('click', function(e) {
-  if (e.target === this) closeModal();
-});
-checkAdmin();
-
-// ── Race lamps ──
-function updateLamps() {
-  var now = new Date();
-  var todayStr = now.getFullYear() + '/' +
-    String(now.getMonth()+1).padStart(2,'0') + '/' +
-    String(now.getDate()).padStart(2,'0');
-  var nowMin = now.getHours() * 60 + now.getMinutes();
-
-  // 今日のレース行を収集
-  var todayRows = [];
-  document.querySelectorAll('.date-section').forEach(function(sec) {
-    if (sec.dataset.date !== todayStr) return;
-    sec.querySelectorAll('.race-row[data-starttime]').forEach(function(row) {
-      var t = row.dataset.starttime;
-      todayRows.push({
-        row: row,
-        startMin: parseInt(t.slice(0,2),10)*60 + parseInt(t.slice(2,4),10)
-      });
-    });
-  });
-
-  // 全ランプをいったん消灯
-  document.querySelectorAll('.time-lamp').forEach(function(l) {
-    l.className = 'time-lamp';
-  });
-
-  if (todayRows.length === 0) return;
-
-  // 直近レースを特定（未開始の中で nowMin に最も近いもの）
-  var nearest = null, nearestDiff = Infinity;
-  todayRows.forEach(function(r) {
-    if (r.startMin <= nowMin) return; // 開始済みはスキップ
-    var diff = r.startMin - nowMin;
-    if (diff < nearestDiff) { nearestDiff = diff; nearest = r; }
-  });
-
-  todayRows.forEach(function(r) {
-    var lamp = r.row.querySelector('.time-lamp');
-    if (!lamp) return;
-    if (r.startMin <= nowMin) {
-      // 開始済み → 消灯
-    } else if (r === nearest) {
-      lamp.className = 'time-lamp lamp-red';  // 直近 → 赤
-    } else {
-      lamp.className = 'time-lamp lamp-green'; // 未来 → 緑
-    }
-  });
-}
-updateLamps();
-setInterval(updateLamps, 60000);
-
-// ── 天気取得 ──
-(function() {
-  var VENUE_COORDS = {
-    '東京':[35.6955,139.4903],'中山':[35.7756,139.9297],'阪神':[34.8167,135.3833],
-    '京都':[34.9000,135.7667],'中京':[35.1667,136.9333],'小倉':[33.8833,130.8333],
-    '新潟':[37.8833,138.9500],'福島':[37.7667,140.4667],'函館':[41.7500,140.6833],'札幌':[43.0000,141.3500]
-  };
-  function wmoIcon(code) {
-    if (code === 0) return '☀';
-    if (code <= 1) return '🌤';
-    if (code <= 2) return '⛅';
-    if (code <= 3) return '☁';
-    if (code <= 48) return '🌫';
-    if (code <= 57) return '🌦';
-    if (code <= 67) return '🌧';
-    if (code <= 77) return '🌨';
-    if (code <= 82) return '🌦';
-    return '⛈';
-  }
-  var today = new Date();
-  var todayStr = today.getFullYear() + '-' +
-    String(today.getMonth()+1).padStart(2,'0') + '-' +
-    String(today.getDate()).padStart(2,'0');
-  document.querySelectorAll('[data-wxvenue]').forEach(function(el) {
-    var venue = el.dataset.wxvenue;
-    var coords = VENUE_COORDS[venue];
-    if (!coords) return;
-    var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + coords[0] +
-      '&longitude=' + coords[1] + '&hourly=weather_code&timezone=Asia%2FTokyo&forecast_days=1';
-    fetch(url).then(function(r) { return r.json(); }).then(function(data) {
-      var times = data.hourly.time;
-      var codes = data.hourly.weather_code;
-      [9, 12, 15].forEach(function(h) {
-        var ts = todayStr + 'T' + String(h).padStart(2,'0') + ':00';
-        var idx = times.indexOf(ts);
-        if (idx < 0) return;
-        var icon = wmoIcon(codes[idx]);
-        el.querySelectorAll('[data-wxh]').forEach(function(slot) {
-          if (parseInt(slot.dataset.wxh) === h) slot.textContent = icon;
-        });
-      });
-    }).catch(function() {});
-  });
-})();
-</script>
-</body></html>'''
-    return html
-
-
-# ===== メインパイプライン =====
-def main():
-    parser = argparse.ArgumentParser(description='競馬クッション値×含水率 散布図 一括生成 v2')
-    parser.add_argument('date', help='開催日 (YYYYMMDD)')
-    parser.add_argument('--venue', help='競馬場で絞り込み (東京/京都/小倉 等)')
-    parser.add_argument('--race', type=int, help='レース番号で絞り込み (例: 11)')
-    parser.add_argument('--no-scrape', action='store_true', help='（廃止・互換用）キャッシュが使われる')
-    parser.add_argument('--output', default=None, help='出力先ディレクトリ')
-    parser.add_argument('--deploy', action='store_true', help='GitHub Pagesへ自動デプロイ')
-    parser.add_argument('--manual', action='store_true', help='クッション値・含水率を会場別に手動入力')
-    parser.add_argument('--force-update', action='store_true', help='既存キーの上書きを許可')
-    parser.add_argument('--cleanup', action='store_true', help='旧フォーマットファイルをGitHubから削除')
-    args = parser.parse_args()
-
-    date_str = args.date
-    date_label = f"{date_str[4:6]}/{date_str[6:8]}"
-    out_dir = args.output or os.path.join(OUTPUT_DIR, date_str)
-    os.makedirs(out_dir, exist_ok=True)
-    os.makedirs(CACHE_DIR, exist_ok=True)
-
-    print("=" * 60)
-    print(f"[Step 0] JRA重賞グレード取得")
-    print("=" * 60)
-    jra_graded = fetch_jra_graded_races()
-    print(f"  取得: {len(jra_graded)}レース {list(jra_graded.items())[:5]}")
-
-    print("=" * 60)
-    print(f"[Step 1] レース一覧取得 ({date_str})")
-    print("=" * 60)
-
-    _jra_race_data_map = {}
-    if _JRA_AVAILABLE:
-        print("  JRA公式（JRADB）から取得中...")
-        races, _jra_race_data_map = fetch_jra_races(date_str)
-    else:
-        races = []
-
-    if not races:
-        print("  JRA取得失敗 → キャッシュから復元を試みます...")
-        cache_files = [f for f in os.listdir(CACHE_DIR)
-                       if f.startswith(f'race_jra_{date_str}_') and f.endswith('.json')]
-        for cf in sorted(cache_files):
-            with open(os.path.join(CACHE_DIR, cf), encoding='utf-8') as fp:
-                cd = json.load(fp)
-            ri = cd.get('race_info', {})
-            rid = ri.get('race_id', cf.replace('race_', '').replace('.json', ''))
-            _jra_race_data_map[rid] = cd
-            races.append({
-                'race_id':    rid,
-                'venue':      ri.get('venue', '?'),
-                'race_num':   int(rid.split('_')[-1]) if rid.split('_')[-1].isdigit() else 0,
-                'race_name':  ri.get('race_name', ''),
-                'surface':    ri.get('surface', '?'),
-                'distance':   ri.get('distance', 0),
-                'start_time': ri.get('start_time', ''),
-                'text':       '',
-            })
-        if races:
-            print(f"  キャッシュから{len(races)}レース復元")
-        else:
-            print("  キャッシュもありません。終了します。")
-            sys.exit(1)
-
-    if args.venue:
-        races = [r for r in races if r['venue'] == args.venue]
-    if args.race:
-        races = [r for r in races if r['race_num'] == args.race]
-    races = [r for r in races if r['surface'] != '障']
-
-    print(f"  対象: {len(races)}レース")
-    for r in races:
-        print(f"    {r['venue']}{r['race_num']}R {r['race_name']} {r['surface']}{r['distance']}m")
-    print()
-
-    print("=" * 60)
-    print(f"[Step 2] クッション値・含水率 取得")
-    print("=" * 60)
-    if args.manual:
-        venues_in_races = sorted(set(r['venue'] for r in races))
-        jra_live = {}
-        print(f"  *** 手動入力モード ({len(venues_in_races)}会場) ***\n")
-        for v in venues_in_races:
-            print(f"  [{v}]")
-            cv = input(f"    クッション値 (例: 9.5): ")
-            mt = input(f"    芝 含水率% (例: 12.0): ")
-            md = input(f"    ダート 含水率% (例: 5.0): ")
-            jra_live[v] = {'cushion': float(cv), 'turf_moisture': float(mt), 'dirt_moisture': float(md)}
-            print(f"    → CV={cv} 芝={mt}% ダ={md}%\n")
-    else:
-        jra_live = fetch_jra_live()
-        for venue, data in jra_live.items():
-            c = data.get('cushion', '?')
-            tm = data.get('turf_moisture', '?')
-            dm = data.get('dirt_moisture', '?')
-            print(f"  {venue}: CV={c}  芝={tm}%  ダ={dm}%")
-    print()
-
-    print("=" * 60)
-    print(f"[Step 3] クッション値DB読み込み")
-    print("=" * 60)
-    with open(CUSHION_DB_PATH, encoding='utf-8') as f:
-        cushion_db = json.load(f)
-    print(f"  DB件数: {len(cushion_db)}")
-
-    date_fmt = f"{date_str[:4]}/{date_str[4:6]}/{date_str[6:8]}"
-    today = datetime.now().strftime('%Y%m%d')
-    is_today = (date_str == today)
-    added = 0
-
-    if not is_today and not args.manual:
-        print(f"  ※ {date_str}は今日({today})ではないためDB蓄積をスキップ")
-    else:
-        for venue, data in jra_live.items():
-            key = f"{date_fmt}_{venue}"
-            cushion_val = data.get('cushion')
-            if cushion_val is None or cushion_val == 0.0:
-                print(f"  ※ {venue}のクッション値が不正({cushion_val})のためスキップ")
-                continue
-            if key not in cushion_db or args.force_update:
-                cushion_db[key] = {
-                    'date': date_fmt, 'venue': venue, 'cushion': cushion_val,
-                    'turf_goal': data.get('turf_moisture'), 'dirt_goal': data.get('dirt_moisture'),
-                }
-                added += 1
-        if added > 0:
-            with open(CUSHION_DB_PATH, 'w', encoding='utf-8') as f:
-                json.dump(cushion_db, f, ensure_ascii=False, indent=2)
-            print(f"  → {added}件追加（合計: {len(cushion_db)}件）")
-        else:
-            print(f"  → 既存データのため追加なし")
-    print()
-
-    print("=" * 60)
-    print(f"[Step 4] 各レース処理")
-    print("=" * 60)
-    results_summary = []
-
-    for race in races:
-        rid = race['race_id']
-        venue = race['venue']
-        race_num = race['race_num']
-        surface = race['surface']
-
-        print(f"\n--- {venue} {race_num}R {race['race_name']} {surface}{race['distance']}m ---")
-
-        cache_file = os.path.join(CACHE_DIR, f'race_{rid}.json')
-        if rid in _jra_race_data_map:
-            race_data = _jra_race_data_map[rid]
-            with open(cache_file, 'w', encoding='utf-8') as f:
-                json.dump(race_data, f, ensure_ascii=False, indent=2)
-        elif os.path.exists(cache_file):
-            print(f"  キャッシュ使用: {cache_file}")
-            with open(cache_file, encoding='utf-8') as f:
-                race_data = json.load(f)
-        else:
-            print(f"  SKIP: JRAデータ未取得かつキャッシュなし")
-            continue
-
-        if not race_data.get('race_info', {}).get('race_name'):
-            race_data.setdefault('race_info', {})['race_name'] = race['race_name']
-        if not race_data['race_info'].get('surface'):
-            race_data['race_info']['surface'] = surface
-        if not race_data['race_info'].get('distance'):
-            race_data['race_info']['distance'] = race['distance']
-        race_data['race_info']['start_time'] = race.get('start_time', '')
-
-        race_data = link_cushion_data(race_data, cushion_db)
-
-        target_cushion = jra_live.get(venue, {}).get('cushion', 9.5)
-        if surface == 'ダ':
-            target_moisture = jra_live.get(venue, {}).get('dirt_moisture', 5.0)
-        else:
-            target_moisture = jra_live.get(venue, {}).get('turf_moisture', 12.0)
-
-        raw_name = race['race_name']
-        clean_name = re.sub(r'(芝|ダ|障)\d+m', '', raw_name)
-        clean_name = re.sub(r'\d+頭', '', clean_name)
-        clean_name = re.sub(r'^0?\d+R', '', clean_name)
-        safe_name = clean_name.strip().replace('/', '_').replace(' ', '')
-        if not safe_name:
-            safe_name = raw_name.replace('/', '_').replace(' ', '')
-        time4 = race.get('start_time', '').replace(':', '')
-        time_suffix = f'_{time4}' if time4 else ''
-        grade = match_grade(race['race_name'], jra_graded)
-        grade_suffix = f'_{grade}' if grade else ''
-        output_file = os.path.join(out_dir, f'scatter_{date_str}_{venue}{race_num:02d}R_{safe_name}_{surface}{race["distance"]}m{time_suffix}{grade_suffix}.html')
-
-        new_basename = os.path.basename(output_file)
-        prefix = f'scatter_{date_str}_{venue}{race_num:02d}R_'
-        for old_f in os.listdir(out_dir):
-            if old_f.startswith(prefix) and old_f.endswith('.html') and old_f != new_basename:
-                os.remove(os.path.join(out_dir, old_f))
-                print(f"  旧ファイル削除: {old_f}")
-
-        w_range = compute_weather_range(venue, surface, date_str)
-        pts, with_data, total = generate_scatter_html(
-            race_data, target_cushion, target_moisture,
-            output_file, date_label=date_label, race_num=race_num,
-            race_date=date_str, weather_range=w_range,
-        )
-        print(f"  → 生成: {total}頭 ({with_data}頭データあり) {pts}pts")
-        results_summary.append((venue, race_num, race['race_name'], total, pts, surface, race['distance'], grade_suffix, race.get('start_time', '')))
-
-    print()
-    print("=" * 60)
-    print("完了サマリー")
-    print("=" * 60)
-    for row in results_summary:
-        venue, rnum, rname, total, pts, surf, dist = row[:7]
-        print(f"  {venue}{rnum:2d}R {rname:20s} {surf}{dist}m {total}頭 {pts}pts")
-    print(f"\n  出力先: {out_dir}")
-    print(f"  合計: {len(results_summary)}レース")
-
-    generate_index(out_dir, results_summary, jra_live, date_label, date_str)
-
-    if args.deploy:
-        deploy_to_github(out_dir, date_str, cleanup=args.cleanup)
+    print(f"\n  デプロイ完了！")
+    print(f"  📱 スマホでアクセス: {pages_url}")
 
 
 if __name__ == '__main__':
