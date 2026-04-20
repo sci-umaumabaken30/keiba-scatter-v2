@@ -187,7 +187,8 @@ a.site-link:hover { text-decoration: underline; }
   <!-- クッション値DB更新 -->
   <div class="card">
     <h2>クッション値DB更新</h2>
-    <p style="font-size:12px;color:#64748b;margin-bottom:14px">週末前にJRA公式からクッション値・含水率を取得してDBを更新します</p>
+    <p style="font-size:12px;color:#64748b;margin-bottom:10px">週末前にJRA公式からクッション値・含水率を取得してDBを更新します</p>
+    <p style="font-size:12px;margin-bottom:14px">期間: <span id="db-range" style="color:#f59e0b;font-weight:700">読込中...</span> &nbsp;<span id="db-count" style="color:#64748b"></span></p>
     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
       <button class="btn-run" style="background:#3b82f6" onclick="runUpdateDB()">↻ DB更新</button>
       <label class="check-label">
@@ -200,6 +201,12 @@ a.site-link:hover { text-decoration: underline; }
 
 <script>
 let evtSource = null;
+
+// DB期間を取得して表示
+fetch('/api/db_info').then(r=>r.json()).then(d=>{
+  document.getElementById('db-range').textContent = d.min + ' 〜 ' + d.max;
+  document.getElementById('db-count').textContent = '(' + d.count + '件)';
+}).catch(()=>{ document.getElementById('db-range').textContent = '取得失敗'; });
 
 // 今日の日付をデフォルトに
 const today = new Date();
@@ -359,6 +366,19 @@ def api_run():
 
     return Response(generate(), mimetype='text/event-stream',
                     headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
+
+
+@app.route('/api/db_info')
+def api_db_info():
+    import json as _json
+    db_path = os.path.join(BASE_DIR, 'cushion_db_full.json')
+    try:
+        with open(db_path, encoding='utf-8') as f:
+            db = _json.load(f)
+        dates = sorted(k.split('_')[0] for k in db.keys() if '_' in k)
+        return {'min': dates[0], 'max': dates[-1], 'count': len(db)}
+    except Exception as e:
+        return {'min': '?', 'max': '?', 'count': 0}
 
 
 @app.route('/api/update_db')
