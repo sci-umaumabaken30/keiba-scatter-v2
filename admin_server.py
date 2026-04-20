@@ -9,10 +9,20 @@ import subprocess
 import sys
 import json
 import os
+import logging
 from datetime import datetime, timedelta
 from flask import Flask, Response, request, render_template_string
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# バックグラウンド起動時のためファイルにログ出力
+log_path = os.path.join(BASE_DIR, 'admin_server.log')
+logging.basicConfig(
+    filename=log_path,
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s %(message)s',
+)
+logging.getLogger('werkzeug').setLevel(logging.WARNING)
 app = Flask(__name__)
 
 ADMIN_HTML = """<!DOCTYPE html>
