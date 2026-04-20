@@ -115,6 +115,80 @@ def fetch_jra_live():
             else:
                 result[venue] = {'turf_moisture': turf_mg, 'dirt_moisture': dirt_mg, 'time_moisture': time_text}
 
+    # 天候（クッションページの天候divから取得試行）
+    try:
+        r2 = requests.get('https://www.jra.go.jp/keiba/baba/_data_cushion.html', headers=headers, timeout=8)
+        r2.encoding = 'shift_jis'
+        soup2 = BeautifulSoup(r2.text, 'html.parser')
+        for div in soup2.find_all('div', id=re.compile(r'^rc[A-Z]')):
+            venue = div.get('title', '')
+            if not venue:
+                continue
+            weather_div = div.find('div', class_=re.compile(r'weather|tenki|Weather'))
+            if not weather_div:
+                # テキスト内から天候パターン検索
+                text = div.get_text()
+                wm = re.search(r'天候[：:]\s*(晴|曇|雨|小雨|雪|小雪)', text)
+                if wm and venue in result:
+                    result[venue]['weather'] = wm.group(1)
+            else:
+                w = weather_div.get_text(strip=True)
+                if venue in result:
+                    result[venue]['weather'] = w
+    except Exception:
+        pass
+
+    return result
+
+
+# ===== 会場別時間帯天気取得（Open-Meteo API） =====
+VENUE_COORDS = {
+    '東京':  (35.684, 139.773), '中山':  (35.778, 139.932),
+    '阪神':  (34.723, 135.380), '京都':  (34.897, 135.753),
+    '中京':  (35.196, 136.964), '福島':  (37.760, 140.474),
+    '新潟':  (37.692, 139.020), '小倉':  (33.884, 130.877),
+    '札幌':  (43.062, 141.355), '函館':  (41.774, 140.729),
+}
+WMO_EMOJI = {
+    0:'☀️', 1:'🌤️', 2:'⛅', 3:'🌥️',
+    45:'🌫️', 48:'🌫️',
+    51:'🌦️', 53:'🌦️', 55:'🌦️',
+    61:'🌧️', 63:'🌧️', 65:'🌧️',
+    71:'🌨️', 73:'🌨️', 75:'🌨️',
+    80:'🌧️', 81:'🌧️', 82:'🌧️',
+    95:'⛈️', 96:'⛈️', 99:'⛈️',
+}
+
+def fetch_venue_weather(venues, date_str):
+    """Open-Meteoから会場別 9/12/15時の天気コードを取得。{venue: [emoji9, emoji12, emoji15]}"""
+    result = {}
+    y, m, d = date_str[:4], date_str[4:6], date_str[6:]
+    date_iso = f'{y}-{m}-{d}'
+    for venue in venues:
+        coord = VENUE_COORDS.get(venue)
+        if not coord:
+            continue
+        lat, lon = coord
+        try:
+            url = (
+                f'https://api.open-meteo.com/v1/forecast'
+                f'?latitude={lat}&longitude={lon}'
+                f'&hourly=weather_code&timezone=Asia%2FTokyo'
+                f'&start_date={date_iso}&end_date={date_iso}'
+            )
+            r = requests.get(url, timeout=10)
+            data = r.json()
+            times = data['hourly']['time']
+            codes = data['hourly']['weather_code']
+            time_map = {t: c for t, c in zip(times, codes)}
+            emojis = []
+            for hour in ['09', '12', '15']:
+                key = f'{date_iso}T{hour}:00'
+                code = time_map.get(key, 0)
+                emojis.append(WMO_EMOJI.get(code, '❓'))
+            result[venue] = emojis
+        except Exception:
+            pass
     return result
 
 
@@ -1089,6 +1163,26 @@ def deploy_to_github(out_dir, date_str, cleanup=False):
         with open(CUSHION_DB_PATH, encoding='utf-8') as f:
             cushion_db = json.load(f)
 
+    # JRAライブデータ（天候取得のため）
+    jra_live = {}
+    try:
+        jra_live = fetch_jra_live()
+    except Exception:
+        pass
+
+    # start_times_{YYYYMMDD}.json を全て読み込む
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    all_start_times = {}  # {date_str: {"会場_01": "HH:MM", ...}}
+    for fn in os.listdir(base_dir):
+        m = re.match(r'start_times_(\d{8})\.json', fn)
+        if m:
+            d = m.group(1)
+            try:
+                with open(os.path.join(base_dir, fn), encoding='utf-8') as f:
+                    all_start_times[d] = json.load(f)
+            except Exception:
+                pass
+
     token = config['github_token']
     repo = config['repo']
     headers = {
@@ -1207,34 +1301,45 @@ def deploy_to_github(out_dir, date_str, cleanup=False):
 <title>クッション値×含水率 散布図</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
-body { font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif; background:#0f172a; color:#f1f5f9; min-height:100vh; }
-.global-header { padding:16px 20px 12px; border-bottom:1px solid #1e293b; display:flex; align-items:center; gap:12px; }
+body { font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif; background:linear-gradient(160deg,#0a1e4a 0%,#0f2d6b 50%,#0a1a3d 100%); min-height:100vh; color:#e8f0ff; }
+.global-header { padding:12px 18px; border-bottom:1px solid rgba(100,160,255,0.4); display:flex; align-items:center; gap:12px; background:linear-gradient(135deg,rgba(30,80,160,0.55),rgba(10,45,107,0.55)); backdrop-filter:blur(8px); }
 .global-header-text { flex:1; }
-.global-header h1 { font-size:18px; font-weight:900; }
-.global-header .sub { font-size:12px; color:#64748b; margin-top:2px; }
-.admin-btn { display:inline-flex; align-items:center; gap:6px; background:#1e293b; border:1px solid #334155; color:#94a3b8; font-size:12px; font-weight:700; padding:7px 14px; border-radius:8px; text-decoration:none; transition:border-color 0.15s,color 0.15s; white-space:nowrap; flex-shrink:0; }
-.admin-btn:hover { border-color:#f59e0b; color:#f59e0b; background:#1e293b; }
+.global-header h1 { font-size:18px; font-weight:900; letter-spacing:-0.5px; }
+.global-header .sub { font-size:11px; color:#7ea8d8; margin-top:2px; }
+.admin-btn { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.08); border:1px solid rgba(100,160,255,0.3); color:#a8c4e8; font-size:12px; font-weight:700; padding:7px 14px; border-radius:8px; text-decoration:none; transition:border-color 0.15s,color 0.15s; white-space:nowrap; flex-shrink:0; }
+.admin-btn:hover { border-color:#f59e0b; color:#f59e0b; }
 .date-section { margin-bottom:4px; }
-.date-header { font-size:15px; font-weight:800; padding:12px 20px; background:#1e293b; color:#f1f5f9; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border-top:1px solid #0f172a; }
-.date-header:hover { background:#273549; }
-.date-header .toggle { font-size:11px; color:#64748b; transition:transform 0.2s; }
+.date-header { font-size:15px; font-weight:800; padding:14px 18px; background:rgba(15,30,70,0.8); color:#e8f0ff; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border-top:1px solid rgba(100,160,255,0.1); }
+.date-header:hover { background:rgba(30,60,130,0.7); }
+.date-header .toggle { font-size:11px; color:#7ea8d8; transition:transform 0.2s; }
 .date-header.open .toggle { transform:rotate(180deg); }
-.race-list { display:none; padding:12px 16px; overflow-x:auto; }
-.race-list.open { display:flex; gap:12px; align-items:flex-start; }
-.venue-col { flex:0 0 200px; background:#1e293b; border-radius:10px; overflow:hidden; }
-.venue-head { padding:10px 12px 8px; background:#334155; }
-.venue-head h3 { font-size:14px; font-weight:800; color:#f1f5f9; }
-.cv-info { margin-top:3px; font-size:10px; color:#94a3b8; }
-.cv-val { color:#fbbf24; font-weight:700; }
-a { display:flex; align-items:center; gap:6px; padding:8px 12px; color:#e2e8f0; text-decoration:none; font-size:12px; font-weight:700; border-bottom:1px solid #0f172a; transition:background 0.15s; }
+.race-list { display:none; padding:12px 14px; overflow-x:auto; background:rgba(10,20,50,0.5); }
+.race-list.open { display:flex; gap:10px; align-items:flex-start; }
+.venue-col { flex:0 0 auto; min-width:270px; background:rgba(15,30,70,0.5); border:1px solid rgba(100,160,255,0.25); border-radius:10px; overflow:hidden; }
+.venue-head { padding:8px 14px; background:rgba(20,40,90,0.6); border-bottom:1px solid rgba(100,160,255,0.2); }
+.venue-title { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+.venue-head h3 { font-size:14px; font-weight:900; color:#7ea8d8; }
+.cv-inline { font-size:10px; color:#7ea8d8; font-weight:600; }
+.weather-row { display:flex; gap:8px; margin-top:5px; }
+.weather-slot { display:flex; flex-direction:column; align-items:center; gap:1px; }
+.weather-icon { font-size:16px; line-height:1; }
+.weather-label { font-size:8px; color:#4a6090; font-weight:600; }
+a { display:flex; align-items:flex-start; gap:8px; padding:9px 14px; color:#e2e8f0; text-decoration:none; font-size:12px; font-weight:700; border-bottom:1px solid rgba(100,160,255,0.1); transition:background 0.12s; }
 a:last-child { border-bottom:none; }
-a:hover, a:active { background:#334155; }
-.rnum { font-size:11px; color:#64748b; min-width:20px; }
-.rname { flex:1; }
-.surf-badge { font-size:9px; font-weight:800; padding:1px 5px; border-radius:4px; flex-shrink:0; }
-.surf-turf { background:#166534; color:#86efac; }
-.surf-dirt { background:#78350f; color:#fcd34d; }
-.dist { font-size:10px; color:#64748b; flex-shrink:0; }
+a:hover, a:active { background:rgba(255,255,255,0.06); }
+.rinfo { display:flex; flex-direction:column; min-width:44px; flex-shrink:0; }
+.rnum { font-size:13px; font-weight:800; color:#a8c4e8; }
+.rtime { display:flex; align-items:center; gap:4px; min-height:13px; }
+.lamp { width:6px; height:6px; border-radius:50%; flex-shrink:0; margin-top:1px; }
+.lamp-green { background:#22c55e; box-shadow:0 0 6px #22c55e; }
+.lamp-red { background:#ef4444; box-shadow:0 0 6px #ef4444; }
+.lamp-gray { background:#475569; }
+.rtime-text { font-size:9px; color:#4a6090; font-weight:600; }
+.rname { flex:1; white-space:nowrap; }
+.surf-badge { font-size:9px; font-weight:800; padding:2px 6px; border-radius:4px; flex-shrink:0; margin-top:1px; }
+.surf-turf { background:rgba(34,197,94,0.18); color:#4ade80; border:1px solid rgba(34,197,94,0.35); }
+.surf-dirt { background:rgba(245,158,11,0.18); color:#fbbf24; border:1px solid rgba(245,158,11,0.35); }
+.dist { font-size:11px; color:#a8c4e8; font-weight:600; flex-shrink:0; margin-top:1px; }
 </style>
 </head>
 <body>
@@ -1265,23 +1370,53 @@ a:hover, a:active { background:#334155; }
         venue_order = ['東京', '京都', '小倉', '中山', '阪神', '中京', '新潟', '福島', '函館', '札幌']
         sorted_venues = sorted(venue_groups.keys(), key=lambda v: venue_order.index(v) if v in venue_order else 99)
 
+        # この日付の全会場の天気をまとめて取得
+        raw_date_for_group = ''
+        for vf in venue_groups.values():
+            dm2 = re.match(r'scatter_(\d{8})_', sorted(vf)[0])
+            if dm2:
+                raw_date_for_group = dm2.group(1)
+                break
+        weather_by_venue = {}
+        try:
+            weather_by_venue = fetch_venue_weather(list(sorted_venues), raw_date_for_group)
+        except Exception:
+            pass
+
         for venue_name in sorted_venues:
             vfiles = sorted(venue_groups[venue_name])
-            # cushion_db のキーは "YYYY/MM/DD_会場" 形式 — d_fmt は "M/D（曜）" なので日付部分を再構築
-            cv_info = ''
-            # ファイル名から日付を取得してDBキーを作る
+            raw_date = ''
+            cv_inline = ''
             if vfiles:
                 dm = re.match(r'scatter_(\d{8})_', vfiles[0])
                 if dm:
-                    raw_d = dm.group(1)
-                    db_key = f"{raw_d[:4]}/{raw_d[4:6]}/{raw_d[6:]}_{venue_name}"
+                    raw_date = dm.group(1)
+                    db_key = f"{raw_date[:4]}/{raw_date[4:6]}/{raw_date[6:]}_{venue_name}"
                     if db_key in cushion_db:
                         e = cushion_db[db_key]
-                        cv_info = f'CV <span class="cv-val">{e.get("cushion","?")}</span> 芝{e.get("turf_goal","?")}% ダ{e.get("dirt_goal","?")}%'
+                        cv_inline = f'CV {e.get("cushion","?")} 芝{e.get("turf_goal","?")}% ダ{e.get("dirt_goal","?")}%'
 
-            index_html += f'<div class="venue-col"><div class="venue-head"><h3>{venue_name}</h3><div class="cv-info">{cv_info}</div></div>\n'
+            # 9/12/15時の天気アイコン
+            wemojis = weather_by_venue.get(venue_name, [])
+            weather_row_html = ''
+            if wemojis:
+                slots = zip(['9時', '12時', '15時'], wemojis)
+                weather_row_html = '<div class="weather-row">' + ''.join(
+                    f'<div class="weather-slot"><span class="weather-icon">{em}</span><span class="weather-label">{lbl}</span></div>'
+                    for lbl, em in slots
+                ) + '</div>'
+
+            cv_html = f'<span class="cv-inline">{cv_inline}</span>' if cv_inline else ''
+            index_html += (
+                f'<div class="venue-col"><div class="venue-head">'
+                f'<div class="venue-title"><h3>{venue_name}</h3>{cv_html}</div>'
+                f'{weather_row_html}</div>\n'
+            )
+
+            # この日のstart_timesを取得
+            st_map = all_start_times.get(raw_date, {})
+
             for fname in vfiles:
-                # ファイル名からレース番号・名前・馬場・距離を抽出
                 pm = re.match(r'scatter_\d{8}_' + re.escape(venue_name) + r'(\d{2})R_(.+)_(芝|ダ|障)(\d+)m', fname)
                 if pm:
                     rnum = int(pm.group(1))
@@ -1289,7 +1424,18 @@ a:hover, a:active { background:#334155; }
                     surf = pm.group(3)
                     dist = pm.group(4)
                     badge_cls = 'surf-turf' if surf == '芝' else 'surf-dirt'
-                    index_html += f'<a href="{fname}"><span class="rnum">{rnum}R</span><span class="rname">{rname}</span><span class="surf-badge {badge_cls}">{surf}</span><span class="dist">{dist}m</span></a>\n'
+                    st_key = f'{venue_name}_{rnum:02d}'
+                    start_time = st_map.get(st_key, '')
+                    lamp_html = f'<span class="lamp" data-time="{start_time}"></span>' if start_time else ''
+                    time_html = f'<span class="rtime-text">{start_time}</span>' if start_time else ''
+                    index_html += (
+                        f'<a href="{fname}" data-venue="{venue_name}" data-rnum="{rnum}" data-date="{raw_date}">'
+                        f'<span class="rinfo"><span class="rnum">{rnum}R</span>'
+                        f'<span class="rtime">{lamp_html}{time_html}</span></span>'
+                        f'<span class="rname">{rname}</span>'
+                        f'<span class="surf-badge {badge_cls}">{surf}</span>'
+                        f'<span class="dist">{dist}m</span></a>\n'
+                    )
                 else:
                     display = re.sub(r'^scatter_\d{8}_' + re.escape(venue_name), '', fname).replace('.html', '').replace('_', ' ').strip()
                     index_html += f'<a href="{fname}">{display}</a>\n'
@@ -1302,6 +1448,56 @@ function toggleDate(el){
   el.classList.toggle('open');
   el.nextElementSibling.classList.toggle('open');
 }
+
+function todayStr(){
+  var d = new Date();
+  var y = d.getFullYear();
+  var m = String(d.getMonth()+1).padStart(2,'0');
+  var day = String(d.getDate()).padStart(2,'0');
+  return y+m+day;
+}
+
+function updateLamps(){
+  var now = new Date();
+  var today = todayStr();
+  var venueGroups = {};
+
+  document.querySelectorAll('a[data-venue]').forEach(function(a){
+    var lamp = a.querySelector('.lamp');
+    if(!lamp) return;
+    var raceDate = a.getAttribute('data-date') || '';
+    // 当日以外は全てグレー
+    if(raceDate !== today){
+      lamp.className = 'lamp lamp-gray';
+      return;
+    }
+    var t = lamp.getAttribute('data-time');
+    if(!t) return;
+    var parts = t.split(':');
+    var race = new Date(now); race.setHours(+parts[0], +parts[1], 0, 0);
+    var venue = a.getAttribute('data-venue');
+    if(!venueGroups[venue]) venueGroups[venue] = [];
+    venueGroups[venue].push({lamp:lamp, race:race, diff:Math.abs(race-now)});
+  });
+
+  Object.keys(venueGroups).forEach(function(venue){
+    var items = venueGroups[venue];
+    var minDiff = Math.min.apply(null, items.map(function(x){return x.diff;}));
+    items.forEach(function(item){
+      item.lamp.className = 'lamp';
+      if(item.diff === minDiff){
+        item.lamp.classList.add('lamp-red');
+      } else if(item.race > now){
+        item.lamp.classList.add('lamp-green');
+      } else {
+        item.lamp.classList.add('lamp-gray');
+      }
+    });
+  });
+}
+
+updateLamps();
+setInterval(updateLamps, 30000);
 </script>
 </body></html>'''
 
