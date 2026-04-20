@@ -184,6 +184,18 @@ a.site-link:hover { text-decoration: underline; }
     <div class="dates-grid" id="quick-dates"></div>
   </div>
 
+  <!-- クッション値DB更新 -->
+  <div class="card">
+    <h2>クッション値DB更新</h2>
+    <p style="font-size:12px;color:#64748b;margin-bottom:14px">週末前にJRA公式からクッション値・含水率を取得してDBを更新します</p>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <button class="btn-run" style="background:#3b82f6" onclick="runUpdateDB()">↻ DB更新</button>
+      <label class="check-label">
+        <input type="checkbox" id="chk-year"> 過去データも取得（時間がかかります）
+      </label>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -272,6 +284,25 @@ function stopPipeline(){
   setStatus('','停止');
   document.getElementById('btn-run').disabled=false;
 }
+
+function runUpdateDB(){
+  if(evtSource){ evtSource.close(); evtSource=null; }
+  document.getElementById('log').innerHTML='';
+  setStatus('running','DB更新中...');
+  const withYear = document.getElementById('chk-year').checked;
+  evtSource = new EventSource('/api/update_db?with_year=' + withYear);
+  evtSource.onmessage = e => {
+    const line = JSON.parse(e.data);
+    let cls='';
+    if(line.includes('追加') || line.includes('完了')) cls='ok';
+    else if(line.includes('ERROR') || line.includes('エラー')) cls='err';
+    else if(line.startsWith('===')) cls='head';
+    if(line==='__DONE__'){ setStatus('done','DB更新完了'); evtSource.close(); evtSource=null; }
+    else if(line==='__ERROR__'){ setStatus('error','エラー'); evtSource.close(); evtSource=null; }
+    else { appendLog(line, cls); }
+  };
+  evtSource.onerror = ()=>{ setStatus('error','接続エラー'); evtSource.close(); evtSource=null; };
+}
 </script>
 </body>
 </html>
@@ -315,6 +346,36 @@ def api_run():
                 cwd=BASE_DIR,
                 encoding='utf-8',
                 errors='replace',
+            )
+            for line in _current_proc.stdout:
+                yield f'data: {json.dumps(line.rstrip())}\n\n'
+            _current_proc.wait()
+            rc = _current_proc.returncode
+            _current_proc = None
+            yield f'data: {json.dumps("__DONE__" if rc == 0 else "__ERROR__")}\n\n'
+        except Exception as e:
+            yield f'data: {json.dumps(str(e))}\n\n'
+            yield f'data: {json.dumps("__ERROR__")}\n\n'
+
+    return Response(generate(), mimetype='text/event-stream',
+                    headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
+
+
+@app.route('/api/update_db')
+def api_update_db():
+    with_year = request.args.get('with_year', 'false') == 'true'
+    cmd = [sys.executable, '-X', 'utf8',
+           os.path.join(BASE_DIR, 'update_cushion_db.py')]
+    if with_year:
+        import datetime as dt
+        cmd.extend(['--year', str(dt.datetime.now().year)])
+
+    def generate():
+        global _current_proc
+        try:
+            _current_proc = subprocess.Popen(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                cwd=BASE_DIR, encoding='utf-8', errors='replace',
             )
             for line in _current_proc.stdout:
                 yield f'data: {json.dumps(line.rstrip())}\n\n'
