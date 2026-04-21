@@ -1,7 +1,10 @@
 import io
 import os
 import sys
+from dotenv import load_dotenv
 from groq import Groq
+
+load_dotenv()
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
