@@ -102,10 +102,10 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
 }
 .race-item.ideal { background: linear-gradient(180deg,rgba(255,255,255,0.08) 0%,rgba(255,255,255,0.01) 100%),#0e4030; border-color: rgba(52,211,153,0.5); border-top-color: rgba(52,211,153,0.7); }
 .race-item.highlighted { border-color: #f59e0b; box-shadow: 0 0 0 2px rgba(245,158,11,0.3); }
-.race-item .date { color: #90b4d8; font-weight: 600; font-family: monospace; }
-.race-item .rname { color: #ffffff; font-weight: 700; font-size: 10px; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.race-item .result { font-size: 13px; font-weight: 900; }
-.race-item .cond { color: #a0c0e0; font-weight: 700; }
+.race-item .date { color: #c8e4ff; font-weight: 600; font-family: monospace; }
+.race-item .rname { color: #ffffff; font-weight: 700; font-size: 10px; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+.race-item .result { font-size: 13px; font-weight: 900; text-shadow: 0 1px 4px rgba(0,0,0,0.6); }
+.race-item .cond { color: #c8e4ff; font-weight: 700; }
 .legend {
   display: flex; gap: 12px; padding: 8px 16px; font-size: 10px;
   font-weight: 700; color: #3a5880; border-top: 1px solid rgba(60,100,200,0.25); flex-wrap: wrap;
@@ -1494,7 +1494,7 @@ const LINE_X = 9.5;
 const LINE_Y = 12.0;
 const TDIST = 1800;
 const SURFACE = 'ダ';
-const COLORS = { same_dist:'#dc2626', diff_dist:'#2563eb', diff_surface:'#94a3b8', target:'#d97706' };
+const COLORS = { same_dist:'#f87171', diff_dist:'#60a5fa', diff_surface:'#cbd5e1', target:'#fbbf24' };
 const X_MIN = 7.0, X_MAX = 12.0;
 const Y_MIN = 0, Y_MAX = 22;
 let selectedHorses = new Set();
@@ -1517,7 +1517,11 @@ function toCanvasY(v) { const pt=20,pb=40; const h=canvas.height/(window.deviceP
 function draw() {
   const W=canvas.width/(window.devicePixelRatio||1), H=canvas.height/(window.devicePixelRatio||1);
   ctx.clearRect(0,0,W,H);
-  ctx.fillStyle='#162d58'; ctx.fillRect(0,0,W,H);
+  const bg=ctx.createLinearGradient(0,0,W,H);
+  bg.addColorStop(0,'#1e3a72');
+  bg.addColorStop(0.45,'#162d58');
+  bg.addColorStop(1,'#0e1f3d');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
   ctx.strokeStyle='rgba(60,100,200,0.18)'; ctx.lineWidth=1;
   for(let x=Math.ceil(X_MIN);x<=X_MAX;x+=0.5){ const px=toCanvasX(x); ctx.beginPath();ctx.moveTo(px,20);ctx.lineTo(px,H-40);ctx.stroke(); ctx.fillStyle='#3a5880';ctx.font='10px monospace';ctx.textAlign='center';ctx.fillText(x.toFixed(1),px,H-25); }
   for(let y=0;y<=Y_MAX;y+=2){ const py=toCanvasY(y); ctx.beginPath();ctx.moveTo(50,py);ctx.lineTo(W-50,py);ctx.stroke(); ctx.fillStyle='#3a5880';ctx.font='10px monospace';ctx.textAlign='right';ctx.fillText(y+'%',45,py+4); }
@@ -1591,7 +1595,7 @@ function buildPanel(){
     html+=`<div class="rating-row" id="rate-${i}">`;
     RANKS.forEach(r=>{html+=`<button class="rating-btn" data-horse="${i}" data-rank="${r}">${r}</button>`;});
     html+=`</div>`;
-    html+=`<div class="horse-detail" id="detail-${i}"><div class="race-card">${h.races.map((r,ri)=>{const inIdeal=Math.abs(r.cushion-TX)<=0.2&&Math.abs(r.moisture-TY)<=1.5;const rrKey=h.name+'_'+ri;return`<div class="race-item ${inIdeal?'ideal':''}" data-horse="${i}" data-ri="${ri}"><div class="date">${r.date} ${r.venue}</div><div class="rname">${r.race_name}</div><div class="cond">${r.surface}${r.distance}m ${r.distance===TDIST?'(同)':r.distance>TDIST?'(短)':'(延)'}</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#94a3b8">CV${r.cushion} / ${r.moisture}%</span><span style="font-size:9px;color:#64748b;text-align:right">${r.winner?`${r.winner}${r.time_diff?'('+r.time_diff+')':''} `:''}<span class="result" style="color:${COLORS[r.cat]}">${r.result!==null?r.result+'着':'取消'}</span></span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#64748b">${r.num_horses?r.num_horses+'頭':''}${r.passage?'・'+r.passage:''}</span><div class="race-mark-row" data-rrkey="${rrKey}"><button class="race-mark-btn" data-mark="◎">◎</button><button class="race-mark-btn" data-mark="○">○</button><button class="race-mark-btn" data-mark="×">×</button></div></div>${r.agari?`<div style="font-size:9px;color:#64748b;margin-top:1px">${r.agari}</div>`:''}</div>`}).join('')}</div></div>`;
+    html+=`<div class="horse-detail" id="detail-${i}"><div class="race-card">${h.races.map((r,ri)=>{const inIdeal=Math.abs(r.cushion-TX)<=0.2&&Math.abs(r.moisture-TY)<=1.5;const rrKey=h.name+'_'+ri;return`<div class="race-item ${inIdeal?'ideal':''}" data-horse="${i}" data-ri="${ri}"><div class="date">${r.date} ${r.venue}</div><div class="rname">${r.race_name}</div><div class="cond">${r.surface}${r.distance}m ${r.distance===TDIST?'(同)':r.distance>TDIST?'(短)':'(延)'}</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#b8d8f8">CV${r.cushion} / ${r.moisture}%</span><span style="font-size:9px;color:#b8d8f8;text-align:right">${r.winner?`${r.winner}${r.time_diff?'('+r.time_diff+')':''} `:''}<span class="result" style="color:${COLORS[r.cat]}">${r.result!==null?r.result+'着':'取消'}</span></span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#b8d8f8">${r.num_horses?r.num_horses+'頭':''}${r.passage?'・'+r.passage:''}</span><div class="race-mark-row" data-rrkey="${rrKey}"><button class="race-mark-btn" data-mark="◎">◎</button><button class="race-mark-btn" data-mark="○">○</button><button class="race-mark-btn" data-mark="×">×</button></div></div>${r.agari?`<div style="font-size:9px;color:#b8d8f8;margin-top:1px">${r.agari}</div>`:''}</div>`}).join('')}</div></div>`;
   });
   panel.innerHTML=html;
   HORSES.forEach((h,i)=>{document.getElementById('btn-'+i).addEventListener('click',()=>{
