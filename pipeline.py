@@ -672,7 +672,6 @@ canvas {{ display: block; width: 100% !important; height: 100% !important; touch
   background: linear-gradient(180deg,rgba(255,255,255,0.08) 0%,rgba(255,255,255,0.01) 100%),#1a5276; font-size: 10px; cursor: pointer;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.15),0 2px 8px rgba(0,0,0,0.25);
 }}
-.race-item.ideal {{ background: linear-gradient(180deg,rgba(255,255,255,0.08) 0%,rgba(255,255,255,0.01) 100%),#0e4030; border-color: rgba(52,211,153,0.5); border-top-color: rgba(52,211,153,0.7); }}
 .race-item.highlighted {{ border-color: #f59e0b; box-shadow: 0 0 0 2px rgba(245,158,11,0.3); }}
 .race-item .date {{ color: #c8e4ff; font-weight: 600; font-family: monospace; }}
 .race-item .rname {{ color: #ffffff; font-weight: 700; font-size: 10px; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }}
@@ -698,8 +697,8 @@ canvas {{ display: block; width: 100% !important; height: 100% !important; touch
   <h1>{venue}{race_num}R {race_name} {surface}{distance}m</h1>
   <div class="sub">出走馬 クッション値×含水率 解析</div>
   <div class="target">
-    <span>CV: <b style="color:#d97706">{target_cushion}</b></span>
-    <span>含水率: <b style="color:#2563eb">{target_moisture}%</b></span>
+    <span>CV: <b style="color:#94a3b8">{target_cushion}</b></span>
+    <span>含水率: <b style="color:#94a3b8">{target_moisture}%</b></span>
     <span style="color:#94a3b8">{date_label} {venue}</span>
   </div>
 </div>
@@ -773,6 +772,13 @@ function draw() {{
     [5,10,15].forEach(pct=>{{ctx.beginPath();ctx.moveTo(50,toCanvasY(pct));ctx.lineTo(W-50,toCanvasY(pct));ctx.stroke();}});
   }}
   ctx.setLineDash([]);
+  const tx=toCanvasX(TX),ty=toCanvasY(TY);
+  ctx.save();
+  ctx.shadowColor='#fbbf24';ctx.shadowBlur=20;
+  ctx.fillStyle='#fbbf24';ctx.font='bold 22px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('★',tx,ty);ctx.fillText('★',tx,ty);
+  ctx.restore();
+  ctx.textBaseline='alphabetic';
   const hlDeferred=[];
   HORSES.forEach((h,hi)=>{{
     const isSel=selectedHorses.has(h.name), dimmed=selectedHorses.size>0&&!isSel;
@@ -811,9 +817,6 @@ function draw() {{
     }}
   }});
   ctx.globalAlpha=1;
-  const tx=toCanvasX(TX),ty=toCanvasY(TY);
-  ctx.fillStyle=COLORS.target;ctx.font='bold 22px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.strokeText('★',tx,ty);ctx.fillText('★',tx,ty);
   ctx.textBaseline='alphabetic';
 }}
 const STORAGE_KEY='ratings_{venue}_{race_num}R_{race_name}';
@@ -833,7 +836,7 @@ function buildPanel(){{
     html+=`<div class="rating-row" id="rate-${{i}}">`;
     RANKS.forEach(r=>{{html+=`<button class="rating-btn" data-horse="${{i}}" data-rank="${{r}}">${{r}}</button>`;}});
     html+=`</div>`;
-    html+=`<div class="horse-detail" id="detail-${{i}}"><div class="race-card">${{h.races.map((r,ri)=>{{const inIdeal=Math.abs(r.cushion-TX)<=0.2&&Math.abs(r.moisture-TY)<=1.5;const rrKey=h.name+'_'+ri;return`<div class="race-item ${{inIdeal?'ideal':''}}" data-horse="${{i}}" data-ri="${{ri}}"><div class="date">${{r.date}} ${{r.venue}}</div><div class="rname">${{r.race_name}}</div><div class="cond">${{r.surface}}${{r.distance}}m ${{r.distance===TDIST?'(同)':r.distance>TDIST?'(短)':'(延)'}}</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#b8d8f8">CV${{r.cushion}} / ${{r.moisture}}%</span><span style="font-size:9px;color:#b8d8f8;text-align:right">${{r.winner?`${{r.winner}}${{r.time_diff?'('+r.time_diff+')':''}} `:''}}<span class="result" style="color:${{COLORS[r.cat]}}">${{r.result!==null?r.result+'着':'取消'}}</span></span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#b8d8f8">${{r.num_horses?r.num_horses+'頭':''}}${{r.passage?'・'+r.passage:''}}</span><div class="race-mark-row" data-rrkey="${{rrKey}}"><button class="race-mark-btn" data-mark="◎">◎</button><button class="race-mark-btn" data-mark="○">○</button><button class="race-mark-btn" data-mark="×">×</button></div></div>${{r.agari?`<div style="font-size:9px;color:#b8d8f8;margin-top:1px">${{r.agari}}</div>`:''}}</div>`}}).join('')}}</div></div>`;
+    html+=`<div class="horse-detail" id="detail-${{i}}"><div class="race-card">${{h.races.map((r,ri)=>{{const rrKey=h.name+'_'+ri;return`<div class="race-item" style="border-width:2px;border-color:${{_wc.bg}}66;border-top-color:${{_wc.bg}}bb;box-shadow:inset 0 1px 0 ${{_wc.bg}}44,0 2px 8px rgba(0,0,0,0.25)" data-horse="${{i}}" data-ri="${{ri}}"><div class="date">${{r.date}} ${{r.venue}}</div><div class="rname">${{r.race_name}}</div><div class="cond">${{r.surface}}${{r.distance}}m ${{r.distance===TDIST?'(同)':r.distance>TDIST?'(短)':'(延)'}}</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#b8d8f8">CV${{r.cushion}} / ${{r.moisture}}%</span><span style="font-size:9px;color:#b8d8f8;text-align:right">${{r.winner?`${{r.winner}}${{r.time_diff?'('+r.time_diff+')':''}} `:''}}<span class="result" style="color:${{COLORS[r.cat]}}">${{r.result!==null?r.result+'着':'取消'}}</span></span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#b8d8f8">${{r.num_horses?r.num_horses+'頭':''}}${{r.passage?'・'+r.passage:''}}</span><div class="race-mark-row" data-rrkey="${{rrKey}}"><button class="race-mark-btn" data-mark="◎">◎</button><button class="race-mark-btn" data-mark="○">○</button><button class="race-mark-btn" data-mark="×">×</button></div></div>${{r.agari?`<div style="font-size:9px;color:#b8d8f8;margin-top:1px">${{r.agari}}</div>`:''}}</div>`}}).join('')}}</div></div>`;
   }});
   panel.innerHTML=html;
   HORSES.forEach((h,i)=>{{document.getElementById('btn-'+i).addEventListener('click',()=>{{
@@ -1419,6 +1422,7 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif; b
 .global-header { position:sticky; top:0; z-index:100; padding:12px 18px; border-bottom:1px solid rgba(255,255,255,0.12); display:flex; align-items:center; gap:12px; background:linear-gradient(180deg,rgba(255,255,255,0.10) 0%,rgba(255,255,255,0.02) 100%),#2d4a68; box-shadow:inset 0 1px 0 rgba(255,255,255,0.22),0 4px 20px rgba(0,0,0,0.5); }
 .global-header-text { flex:1; }
 .global-header h1 { font-size:18px; font-weight:900; letter-spacing:-0.5px; color:#fff; }
+.global-header h1.sci-title { background:linear-gradient(135deg,#f5d97a 0%,#e4b820 40%,#f9e89a 60%,#c8920c 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; text-shadow:none; filter:drop-shadow(0 1px 3px rgba(200,146,12,0.5)); }
 .global-header .sub { font-size:11px; color:#a8c8e8; margin-top:2px; }
 .admin-btn { display:inline-flex; align-items:center; gap:6px; background:linear-gradient(180deg,rgba(255,255,255,0.15) 0%,rgba(255,255,255,0.05) 100%),#3a6d9a; border:1px solid rgba(255,255,255,0.25); border-top:1px solid rgba(255,255,255,0.4); color:#fff; font-size:12px; font-weight:700; padding:7px 14px; border-radius:8px; text-decoration:none; transition:all 0.15s; white-space:nowrap; flex-shrink:0; box-shadow:inset 0 1px 0 rgba(255,255,255,0.2),0 3px 10px rgba(0,0,0,0.3); }
 .admin-btn:hover { background:linear-gradient(180deg,rgba(255,255,255,0.22) 0%,rgba(255,255,255,0.08) 100%),#3a6d9a; border-color:rgba(255,255,255,0.5); }
@@ -1431,8 +1435,8 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif; b
 .graded-center { font-size:clamp(8px,2vw,13px); font-weight:800; color:#e8f4ff; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; line-height:1.8; }
 .hdr-badge { font-size:clamp(7px,1.6vw,10px); font-weight:900; padding:1px 4px; border-radius:3px; vertical-align:middle; display:inline-block; line-height:1.4; }
 .hdr-g1 { background:rgba(239,68,68,0.3); color:#fca5a5; border:1px solid rgba(239,68,68,0.6); }
-.hdr-g2 { background:rgba(168,85,247,0.3); color:#d8b4fe; border:1px solid rgba(168,85,247,0.6); }
-.hdr-g3 { background:rgba(58,109,154,0.5); color:#bdd8f0; border:1px solid rgba(58,109,154,0.8); }
+.hdr-g2 { background:rgba(234,179,8,0.3); color:#fde68a; border:1px solid rgba(234,179,8,0.6); }
+.hdr-g3 { background:rgba(168,85,247,0.3); color:#d8b4fe; border:1px solid rgba(168,85,247,0.6); }
 .race-list { display:none; padding:12px 14px; overflow-x:auto; background:rgba(22,45,88,0.6); }
 .race-list.open { display:flex; gap:10px; align-items:flex-start; }
 .venue-col { flex:0 0 auto; min-width:270px; background:linear-gradient(180deg,rgba(255,255,255,0.07) 0%,rgba(255,255,255,0.01) 100%),#2d4a68; border:1px solid rgba(255,255,255,0.14); border-top:1px solid rgba(255,255,255,0.25); border-radius:10px; overflow:hidden; box-shadow:inset 0 1px 0 rgba(255,255,255,0.15),0 4px 16px rgba(0,0,0,0.35); }
@@ -1461,8 +1465,8 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 .surf-dirt { background:rgba(245,158,11,0.22); color:#fbbf24; border:1px solid rgba(245,158,11,0.45); }
 .dist { font-size:11px; color:#b0cce8; font-weight:600; flex-shrink:0; }
 .grade-g1 { font-size:9px; font-weight:900; padding:1px 5px; border-radius:4px; flex-shrink:0; background:rgba(239,68,68,0.3); color:#fca5a5; border:1px solid rgba(239,68,68,0.6); }
-.grade-g2 { font-size:9px; font-weight:900; padding:1px 5px; border-radius:4px; flex-shrink:0; background:rgba(168,85,247,0.3); color:#d8b4fe; border:1px solid rgba(168,85,247,0.6); }
-.grade-g3 { font-size:9px; font-weight:900; padding:1px 5px; border-radius:4px; flex-shrink:0; background:rgba(58,109,154,0.5); color:#bdd8f0; border:1px solid rgba(58,109,154,0.8); }
+.grade-g2 { font-size:9px; font-weight:900; padding:1px 5px; border-radius:4px; flex-shrink:0; background:rgba(234,179,8,0.3); color:#fde68a; border:1px solid rgba(234,179,8,0.6); }
+.grade-g3 { font-size:9px; font-weight:900; padding:1px 5px; border-radius:4px; flex-shrink:0; background:rgba(168,85,247,0.3); color:#d8b4fe; border:1px solid rgba(168,85,247,0.6); }
 .week-badge { font-size:9px; font-weight:800; padding:2px 7px; border-radius:10px; margin-left:6px; background:rgba(34,197,94,0.22); color:#4ade80; border:1px solid rgba(34,197,94,0.45); }
 .week-badge-last { background:rgba(100,116,139,0.2); color:#94a3b8; border:1px solid rgba(100,116,139,0.3); }
 </style>
@@ -1470,8 +1474,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <body>
 <div class="global-header">
   <div class="global-header-text">
-    <h1>クッション値×含水率 散布図</h1>
-    <div class="sub">日付をタップで展開 → レースを選択</div>
+    <h1 class="sci-title">走破コンフォート指数（SCI）</h1>
   </div>
   <a class="admin-btn" href="http://localhost:5000" target="_blank">⚙ 管理</a>
 </div>
