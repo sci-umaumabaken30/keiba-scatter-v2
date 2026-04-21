@@ -607,48 +607,64 @@ body {{
 @media (min-width: 768px) {{ .chart-area {{ flex: 1; height: 100%; }} }}
 canvas {{ display: block; width: 100% !important; height: 100% !important; touch-action: pan-y; }}
 .panel {{
-  border-top: 1px solid rgba(255,255,255,0.12); overflow-y: auto; padding: 8px 8px 80px 8px; background: #2d4a68;
+  border-top: 1px solid rgba(255,255,255,0.12); overflow-y: auto; padding: 8px 8px 80px 8px; background: linear-gradient(180deg,rgba(255,255,255,0.04) 0%,rgba(0,0,0,0.05) 100%),#2d4a68;
   flex: 1;
 }}
 @media (min-width: 768px) {{
-  .panel {{ width: 320px; border-top: none; border-left: 1px solid rgba(60,100,200,0.3); }}
+  .panel {{ width: 320px; border-top: none; border-left: 1px solid rgba(255,255,255,0.12); }}
 }}
 .horse-btn {{
   display: flex; align-items: center; gap: 10px; width: 100%;
-  padding: 10px 14px; margin-bottom: 4px; border: 1px solid rgba(255,255,255,0.15); border-top: 1px solid rgba(255,255,255,0.28);
-  border-radius: 12px; background: linear-gradient(180deg,rgba(255,255,255,0.10) 0%,rgba(255,255,255,0.02) 100%),#1a5276; cursor: pointer;
-  transition: all 0.2s; font-size: 14px; font-weight: 700; color: #ddeeff;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18),0 3px 10px rgba(0,0,0,0.3);
+  padding: 10px 14px; margin-bottom: 4px;
+  border: 1px solid rgba(255,255,255,0.16); border-top: 1px solid rgba(255,255,255,0.30);
+  border-radius: 12px;
+  background: linear-gradient(180deg,rgba(255,255,255,0.11) 0%,rgba(255,255,255,0.03) 100%),#1a5276;
+  cursor: pointer; transition: all 0.2s; font-size: 14px; font-weight: 700; color: #ddeeff;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.20), 0 3px 12px rgba(0,0,0,0.35);
   -webkit-tap-highlight-color: transparent;
 }}
+.horse-btn:hover {{ background: linear-gradient(180deg,rgba(255,255,255,0.17) 0%,rgba(255,255,255,0.06) 100%),#1a5276; }}
 .horse-btn:active {{ transform: scale(0.98); }}
 .horse-btn.selected {{
-  border-color: #f59e0b; background: rgba(245,158,11,0.1);
-  box-shadow: 0 0 0 2px rgba(245,158,11,0.2);
+  border-color: rgba(245,158,11,0.8); border-top-color: #f59e0b;
+  background: linear-gradient(180deg,rgba(245,158,11,0.18) 0%,rgba(245,158,11,0.06) 100%),#1a5276;
+  box-shadow: inset 0 1px 0 rgba(245,158,11,0.4), 0 0 0 1px rgba(245,158,11,0.3);
 }}
-.horse-btn .count {{ font-size: 10px; color: #3a5880; font-weight: 600; margin-left: auto; }}
-.horse-btn .dot {{ width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }}
-.horse-btn .horse-num {{ font-size: 11px; font-weight: 700; color: #fff; background: #1e3a6e; border-radius: 4px; padding: 1px 5px; min-width: 20px; text-align: center; flex-shrink: 0; }}
+.horse-btn .count {{ font-size: 10px; color: #7aa8c8; font-weight: 600; margin-left: auto; }}
+.horse-btn .dot {{ width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 4px currentColor; }}
+.horse-btn .horse-num {{ font-size: 11px; font-weight: 700; color: #fff; background: linear-gradient(180deg,rgba(255,255,255,0.15) 0%,rgba(0,0,0,0.1) 100%),#2d4a68; border-radius: 4px; padding: 1px 5px; min-width: 20px; text-align: center; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.2); }}
 .rating-row {{
-  display: flex; gap: 4px; padding: 4px 14px 8px 22px;
+  display: flex; gap: 5px; padding: 4px 14px 10px 22px;
 }}
 .rating-btn {{
-  width: 32px; height: 28px; border: 1.5px solid rgba(60,100,200,0.35); border-radius: 6px;
-  background: rgba(8,15,40,0.7); cursor: pointer; font-size: 12px; font-weight: 800;
-  color: #3a5880; transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+  width: 34px; height: 28px;
+  border: 1px solid rgba(255,255,255,0.20); border-top: 1px solid rgba(255,255,255,0.35);
+  border-radius: 7px;
+  background: linear-gradient(180deg,rgba(255,255,255,0.10) 0%,rgba(255,255,255,0.02) 100%),#2d4a68;
+  cursor: pointer; font-size: 12px; font-weight: 800;
+  color: #a8c8e8; transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 2px 6px rgba(0,0,0,0.3);
 }}
 .rating-btn:active {{ transform: scale(0.92); }}
-.rating-btn.rated-S {{ background: #dc2626; border-color: #dc2626; color: #fff; }}
-.rating-btn.rated-A {{ background: #f59e0b; border-color: #f59e0b; color: #fff; }}
-.rating-btn.rated-B {{ background: #3b82f6; border-color: #3b82f6; color: #fff; }}
-.rating-btn.rated-C {{ background: #22c55e; border-color: #22c55e; color: #fff; }}
-.rating-btn.rated-D {{ background: #475569; border-color: #475569; color: #fff; }}
+.rating-btn.rated-S {{ background: linear-gradient(180deg,rgba(255,255,255,0.2) 0%,rgba(255,255,255,0.05) 100%),#dc2626; border-color: rgba(255,255,255,0.3); color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 0 8px rgba(220,38,38,0.5); }}
+.rating-btn.rated-A {{ background: linear-gradient(180deg,rgba(255,255,255,0.2) 0%,rgba(255,255,255,0.05) 100%),#f59e0b; border-color: rgba(255,255,255,0.3); color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 0 8px rgba(245,158,11,0.5); }}
+.rating-btn.rated-B {{ background: linear-gradient(180deg,rgba(255,255,255,0.2) 0%,rgba(255,255,255,0.05) 100%),#3b82f6; border-color: rgba(255,255,255,0.3); color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 0 8px rgba(59,130,246,0.5); }}
+.rating-btn.rated-C {{ background: linear-gradient(180deg,rgba(255,255,255,0.2) 0%,rgba(255,255,255,0.05) 100%),#22c55e; border-color: rgba(255,255,255,0.3); color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 0 8px rgba(34,197,94,0.5); }}
+.rating-btn.rated-D {{ background: linear-gradient(180deg,rgba(255,255,255,0.15) 0%,rgba(255,255,255,0.03) 100%),#3a6d9a; border-color: rgba(255,255,255,0.25); color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,0.2); }}
 .race-mark-row {{ display:flex; gap:4px; margin-top:4px; justify-content:flex-end; }}
-.race-mark-btn {{ width:28px; height:24px; border:1.5px solid rgba(60,100,200,0.35); border-radius:5px; background:rgba(8,15,40,0.7); cursor:pointer; font-size:11px; font-weight:800; color:#3a5880; transition:all 0.15s; -webkit-tap-highlight-color:transparent; padding:0; }}
+.race-mark-btn {{
+  width:30px; height:26px;
+  border:1px solid rgba(255,255,255,0.20); border-top:1px solid rgba(255,255,255,0.35);
+  border-radius:6px;
+  background: linear-gradient(180deg,rgba(255,255,255,0.10) 0%,rgba(255,255,255,0.02) 100%),#2d4a68;
+  cursor:pointer; font-size:11px; font-weight:800; color:#a8c8e8;
+  transition:all 0.15s; -webkit-tap-highlight-color:transparent; padding:0;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 2px 6px rgba(0,0,0,0.3);
+}}
 .race-mark-btn:active {{ transform:scale(0.92); }}
-.race-mark-btn.marked-◎ {{ background:#dc2626; border-color:#dc2626; color:#fff; }}
-.race-mark-btn.marked-○ {{ background:#f59e0b; border-color:#f59e0b; color:#fff; }}
-.race-mark-btn.marked-× {{ background:#475569; border-color:#475569; color:#fff; }}
+.race-mark-btn.marked-◎ {{ background:linear-gradient(180deg,rgba(255,255,255,0.2) 0%,rgba(255,255,255,0.05) 100%),#dc2626; border-color:rgba(255,255,255,0.3); color:#fff; box-shadow:inset 0 1px 0 rgba(255,255,255,0.3),0 0 8px rgba(220,38,38,0.4); }}
+.race-mark-btn.marked-○ {{ background:linear-gradient(180deg,rgba(255,255,255,0.2) 0%,rgba(255,255,255,0.05) 100%),#f59e0b; border-color:rgba(255,255,255,0.3); color:#fff; box-shadow:inset 0 1px 0 rgba(255,255,255,0.3),0 0 8px rgba(245,158,11,0.4); }}
+.race-mark-btn.marked-× {{ background:linear-gradient(180deg,rgba(255,255,255,0.15) 0%,rgba(255,255,255,0.03) 100%),#3a6d9a; border-color:rgba(255,255,255,0.25); color:#fff; }}
 .horse-detail {{ display: none; padding: 8px 4px; }}
 .horse-detail.show {{ display: block; }}
 .race-card {{ display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }}
@@ -659,10 +675,10 @@ canvas {{ display: block; width: 100% !important; height: 100% !important; touch
 }}
 .race-item.ideal {{ background: linear-gradient(180deg,rgba(255,255,255,0.08) 0%,rgba(255,255,255,0.01) 100%),#0e4030; border-color: rgba(52,211,153,0.5); border-top-color: rgba(52,211,153,0.7); }}
 .race-item.highlighted {{ border-color: #f59e0b; box-shadow: 0 0 0 2px rgba(245,158,11,0.3); }}
-.race-item .date {{ color: #90b4d8; font-weight: 600; font-family: monospace; }}
-.race-item .rname {{ color: #ffffff; font-weight: 700; font-size: 10px; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
+.race-item .date {{ color: #c8e4ff; font-weight: 600; font-family: monospace; }}
+.race-item .rname {{ color: #ffffff; font-weight: 700; font-size: 10px; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }}
 .race-item .result {{ font-size: 13px; font-weight: 900; }}
-.race-item .cond {{ color: #a0c0e0; font-weight: 700; }}
+.race-item .cond {{ color: #c8e4ff; font-weight: 700; }}
 .legend {{
   display: flex; gap: 12px; padding: 8px 16px; font-size: 10px;
   font-weight: 700; color: #3a5880; border-top: 1px solid rgba(60,100,200,0.25); flex-wrap: wrap;
@@ -810,7 +826,7 @@ function buildPanel(){{
     html+=`<div class="rating-row" id="rate-${{i}}">`;
     RANKS.forEach(r=>{{html+=`<button class="rating-btn" data-horse="${{i}}" data-rank="${{r}}">${{r}}</button>`;}});
     html+=`</div>`;
-    html+=`<div class="horse-detail" id="detail-${{i}}"><div class="race-card">${{h.races.map((r,ri)=>{{const inIdeal=Math.abs(r.cushion-TX)<=0.2&&Math.abs(r.moisture-TY)<=1.5;const rrKey=h.name+'_'+ri;return`<div class="race-item ${{inIdeal?'ideal':''}}" data-horse="${{i}}" data-ri="${{ri}}"><div class="date">${{r.date}} ${{r.venue}}</div><div class="rname">${{r.race_name}}</div><div class="cond">${{r.surface}}${{r.distance}}m ${{r.distance===TDIST?'(同)':r.distance>TDIST?'(短)':'(延)'}}</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#94a3b8">CV${{r.cushion}} / ${{r.moisture}}%</span><span style="font-size:9px;color:#64748b;text-align:right">${{r.winner?`${{r.winner}}${{r.time_diff?'('+r.time_diff+')':''}} `:''}}<span class="result" style="color:${{COLORS[r.cat]}}">${{r.result!==null?r.result+'着':'取消'}}</span></span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#64748b">${{r.num_horses?r.num_horses+'頭':''}}${{r.passage?'・'+r.passage:''}}</span><div class="race-mark-row" data-rrkey="${{rrKey}}"><button class="race-mark-btn" data-mark="◎">◎</button><button class="race-mark-btn" data-mark="○">○</button><button class="race-mark-btn" data-mark="×">×</button></div></div>${{r.agari?`<div style="font-size:9px;color:#64748b;margin-top:1px">${{r.agari}}</div>`:''}}</div>`}}).join('')}}</div></div>`;
+    html+=`<div class="horse-detail" id="detail-${{i}}"><div class="race-card">${{h.races.map((r,ri)=>{{const inIdeal=Math.abs(r.cushion-TX)<=0.2&&Math.abs(r.moisture-TY)<=1.5;const rrKey=h.name+'_'+ri;return`<div class="race-item ${{inIdeal?'ideal':''}}" data-horse="${{i}}" data-ri="${{ri}}"><div class="date">${{r.date}} ${{r.venue}}</div><div class="rname">${{r.race_name}}</div><div class="cond">${{r.surface}}${{r.distance}}m ${{r.distance===TDIST?'(同)':r.distance>TDIST?'(短)':'(延)'}}</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#b8d8f8">CV${{r.cushion}} / ${{r.moisture}}%</span><span style="font-size:9px;color:#b8d8f8;text-align:right">${{r.winner?`${{r.winner}}${{r.time_diff?'('+r.time_diff+')':''}} `:''}}<span class="result" style="color:${{COLORS[r.cat]}}">${{r.result!==null?r.result+'着':'取消'}}</span></span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#b8d8f8">${{r.num_horses?r.num_horses+'頭':''}}${{r.passage?'・'+r.passage:''}}</span><div class="race-mark-row" data-rrkey="${{rrKey}}"><button class="race-mark-btn" data-mark="◎">◎</button><button class="race-mark-btn" data-mark="○">○</button><button class="race-mark-btn" data-mark="×">×</button></div></div>${{r.agari?`<div style="font-size:9px;color:#b8d8f8;margin-top:1px">${{r.agari}}</div>`:''}}</div>`}}).join('')}}</div></div>`;
   }});
   panel.innerHTML=html;
   HORSES.forEach((h,i)=>{{document.getElementById('btn-'+i).addEventListener('click',()=>{{
