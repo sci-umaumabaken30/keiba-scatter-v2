@@ -2138,8 +2138,12 @@ function draw() {
   }
   ctx.setLineDash([]);
   const tx=toCanvasX(TX),ty=toCanvasY(TY);
-  ctx.fillStyle=COLORS.target;ctx.font='bold 22px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.strokeText('★',tx,ty);ctx.fillText('★',tx,ty);
+  ctx.save();
+  ctx.shadowColor='#fbbf24';ctx.shadowBlur=20;
+  ctx.fillStyle='#fbbf24';ctx.font='bold 22px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.strokeStyle='rgba(0,0,0,0.8)';ctx.lineWidth=5;ctx.strokeText('★',tx,ty);
+  ctx.fillText('★',tx,ty);ctx.fillText('★',tx,ty);
+  ctx.restore();
   ctx.textBaseline='alphabetic';
   const hlDeferred=[];
   HORSES.forEach((h,hi)=>{
