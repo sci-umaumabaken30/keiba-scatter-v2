@@ -99,7 +99,6 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
   background: linear-gradient(180deg,rgba(255,255,255,0.08) 0%,rgba(255,255,255,0.01) 100%),#1a5276; font-size: 10px; cursor: pointer;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.15),0 2px 8px rgba(0,0,0,0.25);
 }
-.race-item.ideal { background: linear-gradient(180deg,rgba(255,255,255,0.08) 0%,rgba(255,255,255,0.01) 100%),#0e4030; border-color: rgba(52,211,153,0.5); border-top-color: rgba(52,211,153,0.7); }
 .race-item.highlighted { border-color: #f59e0b; box-shadow: 0 0 0 2px rgba(245,158,11,0.3); }
 .race-item .date { color: #c8e4ff; font-weight: 600; font-family: monospace; }
 .race-item .rname { color: #ffffff; font-weight: 700; font-size: 10px; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
@@ -1810,7 +1809,6 @@ function draw() {
   ctx.save();
   ctx.shadowColor='#fbbf24';ctx.shadowBlur=20;
   ctx.fillStyle='#fbbf24';ctx.font='bold 22px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.strokeStyle='rgba(0,0,0,0.8)';ctx.lineWidth=5;ctx.strokeText('★',tx,ty);
   ctx.fillText('★',tx,ty);ctx.fillText('★',tx,ty);
   ctx.restore();
   ctx.textBaseline='alphabetic';
@@ -1871,7 +1869,7 @@ function buildPanel(){
     html+=`<div class="rating-row" id="rate-${i}">`;
     RANKS.forEach(r=>{html+=`<button class="rating-btn" data-horse="${i}" data-rank="${r}">${r}</button>`;});
     html+=`</div>`;
-    html+=`<div class="horse-detail" id="detail-${i}"><div class="race-card">${h.races.map((r,ri)=>{const inIdeal=Math.abs(r.cushion-TX)<=0.2&&Math.abs(r.moisture-TY)<=1.5;const rrKey=h.name+'_'+ri;return`<div class="race-item ${inIdeal?'ideal':''}" data-horse="${i}" data-ri="${ri}"><div class="date">${r.date} ${r.venue}</div><div class="rname">${r.race_name}</div><div class="cond">${r.surface}${r.distance}m ${r.distance===TDIST?'(同)':r.distance>TDIST?'(短)':'(延)'}</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#b8d8f8">CV${r.cushion} / ${r.moisture}%</span><span style="font-size:9px;color:#b8d8f8;text-align:right">${r.winner?`${r.winner}${r.time_diff?'('+r.time_diff+')':''} `:''}<span class="result" style="color:${COLORS[r.cat]}">${r.result!==null?r.result+'着':'取消'}</span></span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#b8d8f8">${r.num_horses?r.num_horses+'頭':''}${r.passage?'・'+r.passage:''}</span><div class="race-mark-row" data-rrkey="${rrKey}"><button class="race-mark-btn" data-mark="◎">◎</button><button class="race-mark-btn" data-mark="○">○</button><button class="race-mark-btn" data-mark="×">×</button></div></div>${r.agari?`<div style="font-size:9px;color:#b8d8f8;margin-top:1px">${r.agari}</div>`:''}</div>`}).join('')}</div></div>`;
+    html+=`<div class="horse-detail" id="detail-${i}"><div class="race-card">${h.races.map((r,ri)=>{const rrKey=h.name+'_'+ri;return`<div class="race-item" style="border-color:${_wc.bg}55;border-top-color:${_wc.bg}99;box-shadow:inset 0 1px 0 ${_wc.bg}33,0 2px 8px rgba(0,0,0,0.25)" data-horse="${i}" data-ri="${ri}"><div class="date">${r.date} ${r.venue}</div><div class="rname">${r.race_name}</div><div class="cond">${r.surface}${r.distance}m ${r.distance===TDIST?'(同)':r.distance>TDIST?'(短)':'(延)'}</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#b8d8f8">CV${r.cushion} / ${r.moisture}%</span><span style="font-size:9px;color:#b8d8f8;text-align:right">${r.winner?`${r.winner}${r.time_diff?'('+r.time_diff+')':''} `:''}<span class="result" style="color:${COLORS[r.cat]}">${r.result!==null?r.result+'着':'取消'}</span></span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#b8d8f8">${r.num_horses?r.num_horses+'頭':''}${r.passage?'・'+r.passage:''}</span><div class="race-mark-row" data-rrkey="${rrKey}"><button class="race-mark-btn" data-mark="◎">◎</button><button class="race-mark-btn" data-mark="○">○</button><button class="race-mark-btn" data-mark="×">×</button></div></div>${r.agari?`<div style="font-size:9px;color:#b8d8f8;margin-top:1px">${r.agari}</div>`:''}</div>`}).join('')}</div></div>`;
   });
   panel.innerHTML=html;
   HORSES.forEach((h,i)=>{document.getElementById('btn-'+i).addEventListener('click',()=>{
