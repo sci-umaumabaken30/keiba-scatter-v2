@@ -4004,6 +4004,10 @@ function draw() {
     [5,10,15].forEach(pct=>{ctx.beginPath();ctx.moveTo(50,toCanvasY(pct));ctx.lineTo(W-50,toCanvasY(pct));ctx.stroke();});
   }
   ctx.setLineDash([]);
+  const tx=toCanvasX(TX),ty=toCanvasY(TY);
+  ctx.fillStyle=COLORS.target;ctx.font='bold 22px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.strokeText('★',tx,ty);ctx.fillText('★',tx,ty);
+  ctx.textBaseline='alphabetic';
   const hlDeferred=[];
   HORSES.forEach((h,hi)=>{
     const isSel=selectedHorses.has(h.name), dimmed=selectedHorses.size>0&&!isSel;
@@ -4042,9 +4046,6 @@ function draw() {
     }
   });
   ctx.globalAlpha=1;
-  const tx=toCanvasX(TX),ty=toCanvasY(TY);
-  ctx.fillStyle=COLORS.target;ctx.font='bold 22px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.strokeText('★',tx,ty);ctx.fillText('★',tx,ty);
   ctx.textBaseline='alphabetic';
 }
 const STORAGE_KEY='ratings_福島_9R_飯盛山特別';
