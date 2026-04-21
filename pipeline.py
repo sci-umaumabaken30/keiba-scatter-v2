@@ -581,22 +581,22 @@ def generate_scatter_html(race_data, target_cushion, target_moisture, output_pat
 * {{ margin: 0; padding: 0; box-sizing: border-box; }}
 body {{
   font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans JP', sans-serif;
-  background: #fff; color: #1e293b; overflow: hidden; height: 100vh;
+  background: linear-gradient(160deg,#050b1c 0%,#07102a 50%,#030810 100%); color: #c8d8ff; overflow: hidden; height: 100vh;
 }}
 .header {{
-  background: #fff; border-bottom: 1px solid #e2e8f0;
+  background: rgba(5,11,28,0.95); border-bottom: 1px solid rgba(60,100,200,0.35);
   padding: 12px 16px; z-index: 100;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex-shrink: 0;
+  box-shadow: 0 1px 12px rgba(0,0,0,0.5); flex-shrink: 0;
 }}
-.header h1 {{ font-size: 16px; font-weight: 900; letter-spacing: -0.5px; }}
-.header .sub {{ font-size: 11px; color: #64748b; margin-top: 2px; }}
+.header h1 {{ font-size: 16px; font-weight: 900; letter-spacing: -0.5px; color: #e8f0ff; }}
+.header .sub {{ font-size: 11px; color: #4a6898; margin-top: 2px; }}
 .header .target {{
   display: inline-flex; gap: 12px; margin-top: 4px;
   font-size: 11px; font-weight: 700; font-family: monospace;
 }}
 .header .target span {{
-  background: #f8fafc; border: 1px solid #e2e8f0;
-  padding: 2px 8px; border-radius: 4px;
+  background: rgba(20,45,100,0.6); border: 1px solid rgba(80,130,220,0.4);
+  padding: 2px 8px; border-radius: 4px; color: #a0b8e8;
 }}
 .main {{ display: flex; flex-direction: column; flex: 1; overflow: hidden; }}
 @media (min-width: 768px) {{ .main {{ flex-direction: row; }} }}
@@ -604,71 +604,71 @@ body {{
 @media (min-width: 768px) {{ .chart-area {{ flex: 1; height: 100%; }} }}
 canvas {{ display: block; width: 100% !important; height: 100% !important; touch-action: pan-y; }}
 .panel {{
-  border-top: 1px solid #e2e8f0; overflow-y: auto; padding: 8px 8px 80px 8px; background: #f8fafc;
+  border-top: 1px solid rgba(60,100,200,0.3); overflow-y: auto; padding: 8px 8px 80px 8px; background: rgba(4,9,22,0.8);
   flex: 1;
 }}
 @media (min-width: 768px) {{
-  .panel {{ width: 320px; border-top: none; border-left: 1px solid #e2e8f0; }}
+  .panel {{ width: 320px; border-top: none; border-left: 1px solid rgba(60,100,200,0.3); }}
 }}
 .horse-btn {{
   display: flex; align-items: center; gap: 10px; width: 100%;
-  padding: 10px 14px; margin-bottom: 4px; border: 1px solid #e2e8f0;
-  border-radius: 12px; background: #fff; cursor: pointer;
-  transition: all 0.2s; font-size: 14px; font-weight: 700; color: #1e293b;
+  padding: 10px 14px; margin-bottom: 4px; border: 1px solid rgba(60,100,200,0.3);
+  border-radius: 12px; background: rgba(8,15,40,0.7); cursor: pointer;
+  transition: all 0.2s; font-size: 14px; font-weight: 700; color: #c8d8ff;
   -webkit-tap-highlight-color: transparent;
 }}
 .horse-btn:active {{ transform: scale(0.98); }}
 .horse-btn.selected {{
-  border-color: #f59e0b; background: #fffbeb;
+  border-color: #f59e0b; background: rgba(245,158,11,0.1);
   box-shadow: 0 0 0 2px rgba(245,158,11,0.2);
 }}
-.horse-btn .count {{ font-size: 10px; color: #94a3b8; font-weight: 600; margin-left: auto; }}
+.horse-btn .count {{ font-size: 10px; color: #3a5880; font-weight: 600; margin-left: auto; }}
 .horse-btn .dot {{ width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }}
-.horse-btn .horse-num {{ font-size: 11px; font-weight: 700; color: #fff; background: #64748b; border-radius: 4px; padding: 1px 5px; min-width: 20px; text-align: center; flex-shrink: 0; }}
+.horse-btn .horse-num {{ font-size: 11px; font-weight: 700; color: #fff; background: #1e3a6e; border-radius: 4px; padding: 1px 5px; min-width: 20px; text-align: center; flex-shrink: 0; }}
 .rating-row {{
   display: flex; gap: 4px; padding: 4px 14px 8px 22px;
 }}
 .rating-btn {{
-  width: 32px; height: 28px; border: 1.5px solid #cbd5e1; border-radius: 6px;
-  background: #fff; cursor: pointer; font-size: 12px; font-weight: 800;
-  color: #94a3b8; transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+  width: 32px; height: 28px; border: 1.5px solid rgba(60,100,200,0.35); border-radius: 6px;
+  background: rgba(8,15,40,0.7); cursor: pointer; font-size: 12px; font-weight: 800;
+  color: #3a5880; transition: all 0.15s; -webkit-tap-highlight-color: transparent;
 }}
 .rating-btn:active {{ transform: scale(0.92); }}
 .rating-btn.rated-S {{ background: #dc2626; border-color: #dc2626; color: #fff; }}
 .rating-btn.rated-A {{ background: #f59e0b; border-color: #f59e0b; color: #fff; }}
 .rating-btn.rated-B {{ background: #3b82f6; border-color: #3b82f6; color: #fff; }}
 .rating-btn.rated-C {{ background: #22c55e; border-color: #22c55e; color: #fff; }}
-.rating-btn.rated-D {{ background: #94a3b8; border-color: #94a3b8; color: #fff; }}
+.rating-btn.rated-D {{ background: #475569; border-color: #475569; color: #fff; }}
 .race-mark-row {{ display:flex; gap:4px; margin-top:4px; justify-content:flex-end; }}
-.race-mark-btn {{ width:28px; height:24px; border:1.5px solid #cbd5e1; border-radius:5px; background:#fff; cursor:pointer; font-size:11px; font-weight:800; color:#94a3b8; transition:all 0.15s; -webkit-tap-highlight-color:transparent; padding:0; }}
+.race-mark-btn {{ width:28px; height:24px; border:1.5px solid rgba(60,100,200,0.35); border-radius:5px; background:rgba(8,15,40,0.7); cursor:pointer; font-size:11px; font-weight:800; color:#3a5880; transition:all 0.15s; -webkit-tap-highlight-color:transparent; padding:0; }}
 .race-mark-btn:active {{ transform:scale(0.92); }}
 .race-mark-btn.marked-◎ {{ background:#dc2626; border-color:#dc2626; color:#fff; }}
 .race-mark-btn.marked-○ {{ background:#f59e0b; border-color:#f59e0b; color:#fff; }}
-.race-mark-btn.marked-× {{ background:#94a3b8; border-color:#94a3b8; color:#fff; }}
+.race-mark-btn.marked-× {{ background:#475569; border-color:#475569; color:#fff; }}
 .horse-detail {{ display: none; padding: 8px 4px; }}
 .horse-detail.show {{ display: block; }}
 .race-card {{ display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }}
 .race-item {{
-  padding: 8px 10px; border-radius: 10px; border: 1px solid #e2e8f0;
-  background: #fff; font-size: 10px; cursor: pointer;
+  padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(60,100,200,0.25);
+  background: rgba(8,15,40,0.6); font-size: 10px; cursor: pointer;
 }}
-.race-item.ideal {{ background: #ecfdf5; border-color: #a7f3d0; }}
+.race-item.ideal {{ background: rgba(20,80,50,0.3); border-color: rgba(52,211,153,0.4); }}
 .race-item.highlighted {{ border-color: #f59e0b; box-shadow: 0 0 0 2px rgba(245,158,11,0.3); }}
-.race-item .date {{ color: #94a3b8; font-weight: 600; font-family: monospace; }}
-.race-item .rname {{ color: #1e293b; font-weight: 700; font-size: 10px; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
+.race-item .date {{ color: #3a5880; font-weight: 600; font-family: monospace; }}
+.race-item .rname {{ color: #c8d8ff; font-weight: 700; font-size: 10px; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
 .race-item .result {{ font-size: 13px; font-weight: 900; }}
-.race-item .cond {{ color: #64748b; font-weight: 700; }}
+.race-item .cond {{ color: #4a6898; font-weight: 700; }}
 .legend {{
   display: flex; gap: 12px; padding: 8px 16px; font-size: 10px;
-  font-weight: 700; color: #94a3b8; border-top: 1px solid #e2e8f0; flex-wrap: wrap;
+  font-weight: 700; color: #3a5880; border-top: 1px solid rgba(60,100,200,0.25); flex-wrap: wrap;
 }}
 .legend span {{ display: flex; align-items: center; gap: 4px; }}
 .legend .dot {{ width: 8px; height: 8px; border-radius: 50%; display: inline-block; }}
 .tooltip {{
-  display: none; position: fixed; background: rgba(15,23,42,0.95); color: #fff;
+  display: none; position: fixed; background: rgba(4,9,22,0.97); color: #c8d8ff;
   padding: 10px 14px; border-radius: 10px; font-size: 12px; line-height: 1.6;
   pointer-events: none; z-index: 200; max-width: 250px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6); border: 1px solid rgba(80,130,220,0.3);
 }}
 .tooltip.show {{ display: block; }}
 </style>
@@ -731,13 +731,14 @@ function toCanvasY(v) {{ const pt=20,pb=40; const h=canvas.height/(window.device
 function draw() {{
   const W=canvas.width/(window.devicePixelRatio||1), H=canvas.height/(window.devicePixelRatio||1);
   ctx.clearRect(0,0,W,H);
-  ctx.strokeStyle='#f1f5f9'; ctx.lineWidth=1;
-  for(let x=Math.ceil(X_MIN);x<=X_MAX;x+=0.5){{ const px=toCanvasX(x); ctx.beginPath();ctx.moveTo(px,20);ctx.lineTo(px,H-40);ctx.stroke(); ctx.fillStyle='#94a3b8';ctx.font='10px monospace';ctx.textAlign='center';ctx.fillText(x.toFixed(1),px,H-25); }}
-  for(let y=0;y<=Y_MAX;y+=2){{ const py=toCanvasY(y); ctx.beginPath();ctx.moveTo(50,py);ctx.lineTo(W-50,py);ctx.stroke(); ctx.fillStyle='#94a3b8';ctx.font='10px monospace';ctx.textAlign='right';ctx.fillText(y+'%',45,py+4); }}
-  ctx.fillStyle='#64748b';ctx.font='bold 11px sans-serif';ctx.textAlign='center';
+  ctx.fillStyle='#060d20'; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(60,100,200,0.18)'; ctx.lineWidth=1;
+  for(let x=Math.ceil(X_MIN);x<=X_MAX;x+=0.5){{ const px=toCanvasX(x); ctx.beginPath();ctx.moveTo(px,20);ctx.lineTo(px,H-40);ctx.stroke(); ctx.fillStyle='#3a5880';ctx.font='10px monospace';ctx.textAlign='center';ctx.fillText(x.toFixed(1),px,H-25); }}
+  for(let y=0;y<=Y_MAX;y+=2){{ const py=toCanvasY(y); ctx.beginPath();ctx.moveTo(50,py);ctx.lineTo(W-50,py);ctx.stroke(); ctx.fillStyle='#3a5880';ctx.font='10px monospace';ctx.textAlign='right';ctx.fillText(y+'%',45,py+4); }}
+  ctx.fillStyle='#2a4060';ctx.font='bold 11px sans-serif';ctx.textAlign='center';
   ctx.fillText('クッション値',W/2,H-5);
   ctx.save();ctx.translate(12,H/2);ctx.rotate(-Math.PI/2);ctx.fillText('含水率（ゴール前）%',0,0);ctx.restore();
-  ctx.setLineDash([6,3]);ctx.strokeStyle='#94a3b8';ctx.lineWidth=2;
+  ctx.setLineDash([6,3]);ctx.strokeStyle='rgba(100,150,255,0.45)';ctx.lineWidth=2;
   if(SURFACE==='芝'){{
     ctx.beginPath();ctx.moveTo(toCanvasX(LINE_X),20);ctx.lineTo(toCanvasX(LINE_X),H-40);ctx.stroke();
     ctx.beginPath();ctx.moveTo(50,toCanvasY(LINE_Y));ctx.lineTo(W-50,toCanvasY(LINE_Y));ctx.stroke();
@@ -755,7 +756,7 @@ function draw() {{
       const px=toCanvasX(r.cushion),py=toCanvasY(r.moisture),color=COLORS[r.cat];
       const sz=isSel?15:10;
       ctx.globalAlpha=alpha;
-      if(r.good){{ ctx.beginPath();ctx.arc(px,py,sz,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle=color;ctx.lineWidth=isSel?3.5:2;ctx.stroke(); }}
+      if(r.good){{ ctx.beginPath();ctx.arc(px,py,sz,0,Math.PI*2);ctx.fillStyle='#060d20';ctx.fill();ctx.strokeStyle=color;ctx.lineWidth=isSel?3.5:2;ctx.stroke(); }}
       else{{ ctx.strokeStyle=color;ctx.lineWidth=isSel?3.5:2;ctx.beginPath();ctx.moveTo(px-sz,py-sz);ctx.lineTo(px+sz,py+sz);ctx.stroke();ctx.beginPath();ctx.moveTo(px+sz,py-sz);ctx.lineTo(px-sz,py+sz);ctx.stroke(); }}
       if(!dimmed){{ ctx.fillStyle=color;ctx.font=`bold ${{isSel?11:8}}px Arial`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.strokeStyle='#fff';ctx.lineWidth=2.5;ctx.strokeText(r.result||'?',px,py+1);ctx.fillText(r.result||'?',px,py+1); }}
     }});
@@ -765,7 +766,7 @@ function draw() {{
     const sz=18;
     ctx.globalAlpha=1.0;
     ctx.strokeStyle='#f59e0b';ctx.lineWidth=5;ctx.beginPath();ctx.arc(px,py,sz+6,0,Math.PI*2);ctx.stroke();
-    if(r.good){{ ctx.beginPath();ctx.arc(px,py,sz,0,Math.PI*2);ctx.fillStyle='#fffbeb';ctx.fill();ctx.strokeStyle='#f59e0b';ctx.lineWidth=4;ctx.stroke(); }}
+    if(r.good){{ ctx.beginPath();ctx.arc(px,py,sz,0,Math.PI*2);ctx.fillStyle='#060d20';ctx.fill();ctx.strokeStyle='#f59e0b';ctx.lineWidth=4;ctx.stroke(); }}
     else{{ ctx.strokeStyle='#f59e0b';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(px-sz,py-sz);ctx.lineTo(px+sz,py+sz);ctx.stroke();ctx.beginPath();ctx.moveTo(px+sz,py-sz);ctx.lineTo(px-sz,py+sz);ctx.stroke(); }}
     ctx.fillStyle='#f59e0b';ctx.font='bold 13px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.strokeStyle='#fff';ctx.lineWidth=2.5;ctx.strokeText(r.result||'?',px,py+1);ctx.fillText(r.result||'?',px,py+1);
   }});
@@ -1161,20 +1162,20 @@ def generate_index(out_dir, results_summary, jra_live, date_label, date_str=''):
 <title>{date_label} クッション値×含水率 散布図</title>
 <style>
 * {{ margin:0; padding:0; box-sizing:border-box; }}
-body {{ font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif; background:#0f172a; color:#f1f5f9; min-height:100vh; }}
-.header {{ padding:16px 20px 12px; border-bottom:1px solid #1e293b; }}
-.header h1 {{ font-size:18px; font-weight:900; color:#f1f5f9; }}
-.header .date {{ font-size:13px; color:#94a3b8; margin-top:2px; }}
+body {{ font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif; background:linear-gradient(160deg,#050b1c 0%,#07102a 50%,#030810 100%); color:#c8d8ff; min-height:100vh; }}
+.header {{ padding:16px 20px 12px; border-bottom:1px solid rgba(60,100,200,0.3); }}
+.header h1 {{ font-size:18px; font-weight:900; color:#e8f0ff; }}
+.header .date {{ font-size:13px; color:#5a78a0; margin-top:2px; }}
 .grid {{ display:flex; gap:12px; padding:16px; overflow-x:auto; align-items:flex-start; }}
-.venue-col {{ flex:0 0 220px; background:#1e293b; border-radius:12px; overflow:hidden; }}
-.venue-head {{ padding:12px 14px 10px; background:#334155; }}
-.venue-head h2 {{ font-size:15px; font-weight:800; color:#f1f5f9; }}
-.cv-info {{ margin-top:4px; font-size:10px; color:#94a3b8; font-weight:600; }}
+.venue-col {{ flex:0 0 220px; background:rgba(8,15,38,0.9); border:1px solid rgba(60,100,200,0.25); border-radius:12px; overflow:hidden; }}
+.venue-head {{ padding:12px 14px 10px; background:linear-gradient(135deg,#0e1f45,#0a1530); border-bottom:1px solid rgba(60,100,200,0.2); }}
+.venue-head h2 {{ font-size:15px; font-weight:800; color:#c8d8ff; }}
+.cv-info {{ margin-top:4px; font-size:10px; color:#4a6898; font-weight:600; }}
 .cv-val {{ color:#fbbf24; font-weight:700; }}
 .race-list {{ padding:6px 0; }}
-a {{ display:flex; align-items:center; gap:8px; padding:9px 14px; color:#e2e8f0; text-decoration:none; font-size:13px; font-weight:700; border-bottom:1px solid #0f172a; transition:background 0.15s; }}
+a {{ display:flex; align-items:center; gap:8px; padding:9px 14px; color:#c8d8ff; text-decoration:none; font-size:13px; font-weight:700; border-bottom:1px solid rgba(40,70,150,0.2); transition:background 0.15s; }}
 a:last-child {{ border-bottom:none; }}
-a:active, a:hover {{ background:#334155; }}
+a:active, a:hover {{ background:rgba(20,50,120,0.4); }}
 .rnum {{ font-size:11px; font-weight:800; color:#64748b; min-width:22px; }}
 .rname {{ flex:1; font-size:13px; }}
 .surf-badge {{ font-size:10px; font-weight:800; padding:2px 6px; border-radius:5px; flex-shrink:0; }}
@@ -1384,21 +1385,26 @@ def deploy_to_github(out_dir, date_str, cleanup=False):
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>クッション値×含水率 散布図</title>
 <style>
-* { margin:0; padding:0; box-sizing:border-box; }
-body { font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif; background:linear-gradient(160deg,#0a1e4a 0%,#0f2d6b 50%,#0a1a3d 100%); min-height:100vh; color:#e8f0ff; }
-.global-header { padding:12px 18px; border-bottom:1px solid rgba(100,160,255,0.4); display:flex; align-items:center; gap:12px; background:linear-gradient(135deg,rgba(30,80,160,0.55),rgba(10,45,107,0.55)); backdrop-filter:blur(8px); }
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body { font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif; background:linear-gradient(160deg,#050b1c 0%,#07102a 50%,#030810 100%); min-height:100vh; color:#e8f0ff; }
+.content { padding-top:10px; }
+.global-header { position:sticky; top:0; z-index:100; padding:12px 18px; border-bottom:1px solid rgba(100,160,255,0.4); display:flex; align-items:center; gap:12px; background:linear-gradient(135deg,rgba(40,100,200,0.7),rgba(15,55,130,0.7)); backdrop-filter:blur(12px); }
 .global-header-text { flex:1; }
 .global-header h1 { font-size:18px; font-weight:900; letter-spacing:-0.5px; }
 .global-header .sub { font-size:11px; color:#7ea8d8; margin-top:2px; }
-.admin-btn { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.08); border:1px solid rgba(100,160,255,0.3); color:#a8c4e8; font-size:12px; font-weight:700; padding:7px 14px; border-radius:8px; text-decoration:none; transition:border-color 0.15s,color 0.15s; white-space:nowrap; flex-shrink:0; }
-.admin-btn:hover { border-color:#f59e0b; color:#f59e0b; }
-.date-section { margin-bottom:4px; }
-.date-header { font-size:15px; font-weight:800; padding:14px 18px; background:rgba(15,30,70,0.8); color:#e8f0ff; cursor:pointer; display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:12px; border-top:1px solid rgba(100,160,255,0.1); }
-.date-header:hover { background:rgba(30,60,130,0.7); }
+.admin-btn { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.12); backdrop-filter:blur(8px); border:1px solid rgba(150,200,255,0.4); color:#c8daff; font-size:12px; font-weight:700; padding:7px 14px; border-radius:8px; text-decoration:none; transition:border-color 0.15s,color 0.15s,background 0.15s; white-space:nowrap; flex-shrink:0; }
+.admin-btn:hover { background:rgba(255,255,255,0.2); border-color:#f59e0b; color:#f59e0b; }
+.date-section { margin-bottom:8px; padding:0 10px; }
+.date-header { font-size:15px; font-weight:800; padding:14px 18px; background:linear-gradient(135deg,#0e2260 0%,#152d7a 50%,#091840 100%); color:#c8d8ff; cursor:pointer; display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:12px; border:1px solid rgba(80,130,255,0.45); border-top:1px solid rgba(120,170,255,0.6); border-radius:12px; box-shadow:0 6px 28px rgba(0,0,0,0.5),inset 0 1px 0 rgba(150,190,255,0.2); transition:background 0.2s,border-color 0.2s,box-shadow 0.2s; }
+.date-header:hover,.date-header:active { background:linear-gradient(135deg,#142b7a 0%,#1d3d9a 50%,#0e2255 100%); border-color:rgba(120,170,255,0.7); box-shadow:0 8px 32px rgba(0,0,0,0.6),inset 0 1px 0 rgba(180,210,255,0.3); }
 .date-header .toggle { font-size:11px; color:#7ea8d8; transition:transform 0.2s; }
 .date-header.open .toggle { transform:rotate(180deg); }
 .date-left { white-space:nowrap; }
-.graded-center { font-size:clamp(9px,2.5vw,15px); font-weight:800; color:#e8f0ff; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.graded-center { font-size:clamp(8px,2vw,13px); font-weight:800; color:#e8f0ff; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; line-height:1.8; }
+.hdr-badge { font-size:clamp(7px,1.6vw,10px); font-weight:900; padding:1px 4px; border-radius:3px; vertical-align:middle; display:inline-block; line-height:1.4; }
+.hdr-g1 { background:rgba(239,68,68,0.25); color:#fca5a5; border:1px solid rgba(239,68,68,0.5); }
+.hdr-g2 { background:rgba(168,85,247,0.25); color:#d8b4fe; border:1px solid rgba(168,85,247,0.5); }
+.hdr-g3 { background:rgba(59,130,246,0.25); color:#93c5fd; border:1px solid rgba(59,130,246,0.5); }
 .race-list { display:none; padding:12px 14px; overflow-x:auto; background:rgba(10,20,50,0.5); }
 .race-list.open { display:flex; gap:10px; align-items:flex-start; }
 .venue-col { flex:0 0 auto; min-width:270px; background:rgba(15,30,70,0.5); border:1px solid rgba(100,160,255,0.25); border-radius:10px; overflow:hidden; }
@@ -1441,16 +1447,28 @@ a:hover, a:active { background:rgba(255,255,255,0.06); }
   </div>
   <a class="admin-btn" href="http://localhost:5000" target="_blank">⚙ 管理</a>
 </div>
+<div class="content">
 '''
     from datetime import datetime as _dt
     _today = _dt.now()
     _today_week = _today.isocalendar()[1]
     _today_year = _today.isocalendar()[0]
 
-    date_keys = sorted(date_groups.keys(), reverse=True)
+    _today_str = _today.strftime('%Y%m%d')
+    def _date_sort_key(d_fmt_key):
+        for fn in date_groups[d_fmt_key]:
+            dm = re.match(r'scatter_(\d{8})_', fn)
+            if dm:
+                d = dm.group(1)
+                if d >= _today_str:
+                    return (0, d)
+                else:
+                    return (1, str(99999999 - int(d)))
+        return (2, d_fmt_key)
+    date_keys = sorted(date_groups.keys(), key=_date_sort_key)
     for idx, d_fmt in enumerate(date_keys):
         files_in_date = sorted(date_groups[d_fmt])
-        open_class = ' open' if idx == 0 else ''
+        open_class = ''
 
         # 日付文字列を取得（ファイル名から）
         raw_date_hdr = ''
@@ -1480,7 +1498,10 @@ a:hover, a:active { background:rgba(255,255,255,0.06); }
         for key, (rn, gr) in list(grades_for_date.items())[:3]:
             venue_r, rnum_r = key.split('_')
             gr_roman = roman.get(gr, gr)
-            graded_parts.append(f'{venue_r}{int(rnum_r)}R\u3000{gr_roman}\u3000{rn}')
+            gcls = 'hdr-g1' if gr == 'G1' else ('hdr-g2' if gr == 'G2' else 'hdr-g3')
+            graded_parts.append(
+                f'{venue_r}{int(rnum_r)}R\u2009<span class="hdr-badge {gcls}">{gr_roman}</span>\u2009{rn}'
+            )
         graded_html = (
             '<span class="graded-in-date">' +
             '\u3000/\u3000'.join(graded_parts) +
@@ -1642,7 +1663,7 @@ function updateLamps(){
 updateLamps();
 setInterval(updateLamps, 30000);
 </script>
-</body></html>'''
+</div></body></html>'''
 
     encoded_name = quote('index.html')
     url = f'{api_base}/{encoded_name}'
