@@ -724,7 +724,7 @@ function draw() {
       ctx.globalAlpha=alpha;
       if(r.good){ ctx.beginPath();ctx.arc(px,py,sz,0,Math.PI*2);ctx.fillStyle='#060d20';ctx.fill();ctx.strokeStyle=color;ctx.lineWidth=isSel?3.5:2;ctx.stroke(); }
       else{ ctx.strokeStyle=color;ctx.lineWidth=isSel?3.5:2;ctx.beginPath();ctx.moveTo(px-sz,py-sz);ctx.lineTo(px+sz,py+sz);ctx.stroke();ctx.beginPath();ctx.moveTo(px+sz,py-sz);ctx.lineTo(px-sz,py+sz);ctx.stroke(); }
-      if(!dimmed){ ctx.fillStyle=color;ctx.font=`bold ${isSel?11:8}px Arial`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.strokeStyle='#fff';ctx.lineWidth=2.5;ctx.strokeText(r.result||'?',px,py+1);ctx.fillText(r.result||'?',px,py+1); }
+      if(!dimmed){ ctx.font=`bold ${isSel?11:8}px Arial`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.strokeStyle='#060d20';ctx.lineWidth=3;ctx.strokeText(r.result||'?',px,py+1);ctx.fillStyle='#ffffff';ctx.fillText(r.result||'?',px,py+1); }
     });
   });
   hlDeferred.forEach(({h,hi,r,ri})=>{
@@ -734,7 +734,7 @@ function draw() {
     ctx.strokeStyle='#f59e0b';ctx.lineWidth=5;ctx.beginPath();ctx.arc(px,py,sz+6,0,Math.PI*2);ctx.stroke();
     if(r.good){ ctx.beginPath();ctx.arc(px,py,sz,0,Math.PI*2);ctx.fillStyle='#060d20';ctx.fill();ctx.strokeStyle='#f59e0b';ctx.lineWidth=4;ctx.stroke(); }
     else{ ctx.strokeStyle='#f59e0b';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(px-sz,py-sz);ctx.lineTo(px+sz,py+sz);ctx.stroke();ctx.beginPath();ctx.moveTo(px+sz,py-sz);ctx.lineTo(px-sz,py+sz);ctx.stroke(); }
-    ctx.fillStyle='#f59e0b';ctx.font='bold 13px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.strokeStyle='#fff';ctx.lineWidth=2.5;ctx.strokeText(r.result||'?',px,py+1);ctx.fillText(r.result||'?',px,py+1);
+    ctx.font='bold 13px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.strokeStyle='#060d20';ctx.lineWidth=3;ctx.strokeText(r.result||'?',px,py+1);ctx.fillStyle='#ffffff';ctx.fillText(r.result||'?',px,py+1);
   });
   ctx.globalAlpha=1;
   const RANK_COLORS={S:'#dc2626',A:'#f59e0b',B:'#3b82f6',C:'#22c55e',D:'#94a3b8'};
