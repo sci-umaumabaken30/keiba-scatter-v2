@@ -1469,6 +1469,14 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 .grade-g3 { font-size:9px; font-weight:900; padding:1px 5px; border-radius:4px; flex-shrink:0; background:rgba(168,85,247,0.3); color:#d8b4fe; border:1px solid rgba(168,85,247,0.6); }
 .week-badge { font-size:9px; font-weight:800; padding:2px 7px; border-radius:10px; margin-left:6px; background:rgba(34,197,94,0.22); color:#4ade80; border:1px solid rgba(34,197,94,0.45); }
 .week-badge-last { background:rgba(100,116,139,0.2); color:#94a3b8; border:1px solid rgba(100,116,139,0.3); }
+.month-section { margin-bottom:8px; padding:0 10px; }
+.month-header { font-size:14px; font-weight:800; padding:12px 18px; background:linear-gradient(180deg,rgba(255,255,255,0.07) 0%,rgba(255,255,255,0.01) 100%),#2d4a68; color:#a8c8e8; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border:1px solid rgba(255,255,255,0.12); border-top:1px solid rgba(255,255,255,0.22); border-radius:12px; box-shadow:inset 0 1px 0 rgba(255,255,255,0.18),0 4px 14px rgba(0,0,0,0.4); transition:all 0.2s; }
+.month-header:hover { background:linear-gradient(180deg,rgba(255,255,255,0.11) 0%,rgba(255,255,255,0.03) 100%),#2d4a68; border-color:rgba(255,255,255,0.25); }
+.month-header .toggle { font-size:11px; color:#7aa8c8; transition:transform 0.2s; }
+.month-header.open .toggle { transform:rotate(180deg); }
+.month-body { display:none; padding:6px 0 0; }
+.month-body.open { display:block; }
+.month-count { font-size:11px; color:#7aa8c8; margin-left:8px; font-weight:600; }
 </style>
 </head>
 <body>
@@ -1497,7 +1505,9 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
                     return (1, str(99999999 - int(d)))
         return (2, d_fmt_key)
     date_keys = sorted(date_groups.keys(), key=_date_sort_key)
+    _date_chunks = []
     for idx, d_fmt in enumerate(date_keys):
+        _dc = ''
         files_in_date = sorted(date_groups[d_fmt])
         open_class = ''
 
@@ -1539,14 +1549,14 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
             '</span>'
         ) if graded_parts else ''
 
-        index_html += f'<div class="date-section">'
-        index_html += (
+        _dc += f'<div class="date-section">'
+        _dc += (
             f'<div class="date-header{open_class}" onclick="toggleDate(this)">'
             f'<span class="date-left">{d_fmt}{week_badge_html}</span>'
             f'<span class="graded-center">{graded_html}</span>'
             f'<span class="toggle">▼</span></div>\n'
         )
-        index_html += f'<div class="race-list{open_class}">\n'
+        _dc += f'<div class="race-list{open_class}">\n'
 
         venue_groups = {}
         for fname in files_in_date:
@@ -1595,7 +1605,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
                 ) + '</div>'
 
             cv_html = f'<span class="cv-inline">{cv_inline}</span>' if cv_inline else ''
-            index_html += (
+            _dc += (
                 f'<div class="venue-col"><div class="venue-head">'
                 f'<div class="venue-title"><h3>{venue_name}</h3>{cv_html}</div>'
                 f'{weather_row_html}</div>\n'
@@ -1622,7 +1632,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
                         _, gr = grades_for_date[st_key]
                         gcls = 'grade-g1' if gr == 'G1' else ('grade-g2' if gr == 'G2' else 'grade-g3')
                         grade_html = f'<span class="{gcls}">{gr}</span>'
-                    index_html += (
+                    _dc += (
                         f'<a href="{fname}" data-venue="{venue_name}" data-rnum="{rnum}" data-date="{raw_date}">'
                         f'<span class="rinfo"><span class="rnum">{rnum}R</span>'
                         f'<span class="rtime">{lamp_html}{time_html}</span></span>'
@@ -1633,13 +1643,38 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
                     )
                 else:
                     display = re.sub(r'^scatter_\d{8}_' + re.escape(venue_name), '', fname).replace('.html', '').replace('_', ' ').strip()
-                    index_html += f'<a href="{fname}">{display}</a>\n'
-            index_html += '</div>\n'
+                    _dc += f'<a href="{fname}">{display}</a>\n'
+            _dc += '</div>\n'
 
-        index_html += '</div></div>\n'
+        _dc += '</div></div>\n'
+        _date_chunks.append({'raw_date': raw_date_hdr, 'chunk': _dc})
+
+    # 今月は通常表示、過去月はタブにまとめる
+    _cur_month = _today.strftime('%Y%m')
+    _past_by_month = {}
+    for _item in _date_chunks:
+        _rd = _item['raw_date']
+        if not _rd or _rd[:6] >= _cur_month:
+            index_html += _item['chunk']
+        else:
+            _mlabel = f"{int(_rd[:4])}年{int(_rd[4:6])}月"
+            _past_by_month.setdefault(_mlabel, []).append(_item['chunk'])
+    for _mlabel, _chunks in _past_by_month.items():
+        _cnt = len(_chunks)
+        index_html += (
+            f'<div class="month-section">'
+            f'<div class="month-header" onclick="toggleMonth(this)">'
+            f'<span>{_mlabel}<span class="month-count">（{_cnt}日）</span></span>'
+            f'<span class="toggle">▼</span></div>'
+            f'<div class="month-body">{"".join(_chunks)}</div></div>\n'
+        )
 
     index_html += '''<script>
 function toggleDate(el){
+  el.classList.toggle('open');
+  el.nextElementSibling.classList.toggle('open');
+}
+function toggleMonth(el){
   el.classList.toggle('open');
   el.nextElementSibling.classList.toggle('open');
 }

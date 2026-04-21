@@ -194,6 +194,35 @@ a.site-link:hover { text-decoration: underline; }
     <div class="log-area" id="log"></div>
   </div>
 
+  <!-- 過去データ一括取得 -->
+  <div class="card">
+    <h2>過去データ一括取得（AI学習用）</h2>
+    <p style="font-size:12px;color:#7aa8c8;margin-bottom:14px">日付範囲を指定して過去レースデータを一括スクレイピングします。馬の過去成績キャッシュが蓄積されAI予測の精度向上に使えます。</p>
+    <div class="form-row">
+      <div class="form-group">
+        <label>取得開始日</label>
+        <input type="date" id="batch-from">
+      </div>
+      <div class="form-group">
+        <label>取得終了日</label>
+        <input type="date" id="batch-to">
+      </div>
+    </div>
+    <div class="checks" style="margin-bottom:14px">
+      <label class="check-label">
+        <input type="checkbox" id="chk-batch-weekend" checked> 土日のみ（JRA開催日）
+      </label>
+      <label class="check-label">
+        <input type="checkbox" id="chk-batch-deploy"> GitHubへデプロイ
+      </label>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <button class="btn-run" id="btn-batch" style="background:linear-gradient(180deg,rgba(255,255,255,0.18) 0%,rgba(255,255,255,0.05) 100%),#7c3aed" onclick="runBatch()">▶ 一括取得開始</button>
+      <button class="btn-open" onclick="stopPipeline()">■ 停止</button>
+      <span id="batch-progress" style="font-size:12px;color:#a8c8e8"></span>
+    </div>
+  </div>
+
   <!-- クッション値DB更新 -->
   <div class="card">
     <h2>クッション値DB更新</h2>
@@ -218,6 +247,13 @@ let evtSource = null;
 const today = new Date();
 const pad = n => String(n).padStart(2,'0');
 document.getElementById('date-input').value =
+  `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+
+// 一括取得: デフォルト3ヶ月前〜今日
+const threeMonthsAgo = new Date(today); threeMonthsAgo.setMonth(threeMonthsAgo.getMonth()-3);
+document.getElementById('batch-from').value =
+  `${threeMonthsAgo.getFullYear()}-${pad(threeMonthsAgo.getMonth()+1)}-${pad(threeMonthsAgo.getDate())}`;
+document.getElementById('batch-to').value =
   `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
 
 
@@ -285,6 +321,8 @@ function stopPipeline(){
   fetch('/api/stop');
   setStatus('','停止');
   document.getElementById('btn-run').disabled=false;
+  const bb=document.getElementById('btn-batch');
+  if(bb){ bb.disabled=false; bb.textContent='▶ 一括取得開始'; }
 }
 
 function runUpdateDB(){
@@ -315,6 +353,47 @@ function runUpdateDB(){
   evtSource.onerror = ()=>{
     setStatus('error','接続エラー');
     btn.disabled=false; btn.textContent='↻ DB更新';
+    evtSource.close(); evtSource=null;
+  };
+}
+
+function runBatch(){
+  const fromVal = document.getElementById('batch-from').value.replace(/-/g,'');
+  const toVal = document.getElementById('batch-to').value.replace(/-/g,'');
+  if(!fromVal||!toVal){ alert('開始日と終了日を選択してください'); return; }
+  if(fromVal>toVal){ alert('開始日は終了日より前にしてください'); return; }
+  if(evtSource){ evtSource.close(); evtSource=null; }
+  document.getElementById('log').innerHTML='';
+  document.getElementById('batch-progress').textContent='';
+  setStatus('running','一括取得中...');
+  const btn=document.getElementById('btn-batch');
+  btn.disabled=true; btn.textContent='⏳ 取得中...';
+  const weekendOnly=document.getElementById('chk-batch-weekend').checked;
+  const deploy=document.getElementById('chk-batch-deploy').checked;
+  const params=new URLSearchParams({from:fromVal,to:toVal,weekend_only:weekendOnly,deploy});
+  evtSource=new EventSource('/api/batch_run?'+params);
+  evtSource.onmessage=e=>{
+    const line=JSON.parse(e.data);
+    let cls='';
+    if(line.startsWith('  ✓')) cls='ok';
+    else if(line.startsWith('  ✗')||line.includes('エラー')) cls='err';
+    else if(line.startsWith('===')||line.startsWith('[Step')) cls='head';
+    else if(line.match(/^\[\\d+\\/\\d+\]/)) cls='info';
+    const m=line.match(/\\[(\\d+)\\/(\\d+)\\]/);
+    if(m) document.getElementById('batch-progress').textContent=`${m[1]} / ${m[2]} 日完了`;
+    if(line==='__DONE__'){
+      setStatus('done','一括取得完了');
+      btn.disabled=false; btn.textContent='▶ 一括取得開始';
+      evtSource.close(); evtSource=null;
+    } else if(line==='__ERROR__'){
+      setStatus('error','エラー');
+      btn.disabled=false; btn.textContent='▶ 一括取得開始';
+      evtSource.close(); evtSource=null;
+    } else { appendLog(line,cls); }
+  };
+  evtSource.onerror=()=>{
+    setStatus('error','接続エラー');
+    btn.disabled=false; btn.textContent='▶ 一括取得開始';
     evtSource.close(); evtSource=null;
   };
 }
@@ -354,6 +433,7 @@ function runWeekendUpdate(){
 """
 
 _current_proc = None
+_stop_flag = False
 
 
 def get_db_info():
@@ -519,9 +599,83 @@ def api_update_db():
                     headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
 
 
+@app.route('/api/batch_run')
+def api_batch_run():
+    """日付範囲で過去データを一括取得"""
+    import datetime as dt
+    date_from = request.args.get('from', '')
+    date_to = request.args.get('to', '')
+    weekend_only = request.args.get('weekend_only', 'true') == 'true'
+    deploy = request.args.get('deploy', 'false') == 'true'
+
+    try:
+        d_from = dt.datetime.strptime(date_from, '%Y%m%d').date()
+        d_to = dt.datetime.strptime(date_to, '%Y%m%d').date()
+    except Exception:
+        def err_gen():
+            yield f'data: {json.dumps("日付形式エラー")}\n\n'
+            yield f'data: {json.dumps("__ERROR__")}\n\n'
+        return Response(err_gen(), mimetype='text/event-stream')
+
+    dates = []
+    d = d_from
+    while d <= d_to:
+        if not weekend_only or d.weekday() in (5, 6):
+            dates.append(d.strftime('%Y%m%d'))
+        d += dt.timedelta(days=1)
+
+    def generate():
+        global _current_proc, _stop_flag
+        _stop_flag = False
+        total = len(dates)
+        yield f'data: {json.dumps(f"=== 一括取得開始: {total}日分 ===")}\n\n'
+        done = 0
+        for date_str in dates:
+            if _stop_flag:
+                yield f'data: {json.dumps("=== 停止しました ===")}\n\n'
+                yield f'data: {json.dumps("__DONE__")}\n\n'
+                return
+            yield f'data: {json.dumps(f"[{done}/{total}] {date_str} 処理中...")}\n\n'
+            cmd = [sys.executable, '-u', '-X', 'utf8',
+                   os.path.join(BASE_DIR, 'pipeline.py'), date_str]
+            if deploy:
+                cmd.append('--deploy')
+            try:
+                _current_proc = subprocess.Popen(
+                    cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                    cwd=BASE_DIR, encoding='utf-8', errors='replace'
+                )
+                for line in _current_proc.stdout:
+                    if _stop_flag:
+                        _current_proc.terminate()
+                        break
+                    yield f'data: {json.dumps(line.rstrip())}\n\n'
+                _current_proc.wait()
+                rc = _current_proc.returncode
+                _current_proc = None
+                if _stop_flag:
+                    yield f'data: {json.dumps("=== 停止しました ===")}\n\n'
+                    yield f'data: {json.dumps("__DONE__")}\n\n'
+                    return
+                done += 1
+                status = '✓' if rc == 0 else '✗'
+                msg = f"  {status} [{done}/{total}] {date_str} {'完了' if rc == 0 else 'エラー（スキップ）'}"
+                yield f'data: {json.dumps(msg)}\n\n'
+            except Exception as e:
+                yield f'data: {json.dumps(f"  ✗ {date_str}: {e}")}\n\n'
+                _current_proc = None
+                done += 1
+        yield f'data: {json.dumps(f"=== 完了: {done}/{total}日 ===")}\n\n'
+        yield f'data: {json.dumps("__DONE__")}\n\n'
+
+    return Response(generate(), mimetype='text/event-stream',
+                    headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
+
+
 @app.route('/api/stop')
 def api_stop():
-    global _current_proc
+    global _current_proc, _stop_flag
+    _stop_flag = True
     if _current_proc:
         _current_proc.terminate()
         _current_proc = None
