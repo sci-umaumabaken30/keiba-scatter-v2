@@ -1,6 +1,10 @@
-import anthropic
+import io
 import os
 import sys
+from groq import Groq
+
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 from analysis.analyst import Analyst
 from ai.predictor import Predictor
@@ -9,7 +13,7 @@ from sns.poster import Poster
 
 class Baron:
     def __init__(self):
-        self.client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        self.client = Groq(api_key=os.getenv("GROQ_API_KEY"))
         self.analyst = Analyst()
         self.predictor = Predictor()
         self.poster = Poster()
@@ -36,32 +40,37 @@ class Baron:
         print("=" * 60)
 
     def _summarize(self, query, analysis, prediction, sns):
-        response = self.client.messages.create(
-            model="claude-sonnet-4-6",
+        response = self.client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
             max_tokens=1200,
-            system=(
-                "あなたはSCI（走破コンフォート指数）の最高責任者バロンです。"
-                "分析部・AI予測部・SNS部の3部署からの報告を受け取り、"
-                "ユーザーへ簡潔かつ的確にまとめて報告してください。"
-                "口調は落ち着いたプロフェッショナルで、要点を箇条書きで整理してください。"
-            ),
-            messages=[{
-                "role": "user",
-                "content": (
-                    f"依頼内容: {query}\n\n"
-                    f"【分析部の報告】\n{analysis}\n\n"
-                    f"【AI予測部の報告】\n{prediction}\n\n"
-                    f"【SNS部の報告】\n{sns}"
-                ),
-            }],
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "あなたはSCI（走破コンフォート指数）の最高責任者バロンです。"
+                        "分析部・AI予測部・SNS部の3部署からの報告を受け取り、"
+                        "ユーザーへ簡潔かつ的確にまとめて報告してください。"
+                        "口調は落ち着いたプロフェッショナルで、要点を箇条書きで整理してください。"
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"依頼内容: {query}\n\n"
+                        f"【分析部の報告】\n{analysis}\n\n"
+                        f"【AI予測部の報告】\n{prediction}\n\n"
+                        f"【SNS部の報告】\n{sns}"
+                    ),
+                },
+            ],
         )
-        return response.content[0].text
+        return response.choices[0].message.content
 
 
 def main():
-    if not os.getenv("ANTHROPIC_API_KEY"):
-        print("エラー: ANTHROPIC_API_KEY が設定されていません。")
-        print("例: set ANTHROPIC_API_KEY=sk-ant-...")
+    if not os.getenv("GROQ_API_KEY"):
+        print("エラー: GROQ_API_KEY が設定されていません。")
+        print("例: set GROQ_API_KEY=gsk_...")
         sys.exit(1)
 
     baron = Baron()
