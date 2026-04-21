@@ -140,7 +140,7 @@ a.site-link:hover { text-decoration: underline; }
 <div class="header">
   <h1>クッション値×含水率 散布図</h1>
   <span class="badge">管理画面</span>
-  <a class="site-link" href="https://jm3hiromu30-bit.github.io/keiba-scatter-v2/" target="_blank" style="margin-left:auto">
+  <a class="site-link" href="https://sci-umaumabaken30.github.io/keiba-scatter-v2/" target="_blank" style="margin-left:auto">
     ▶ サイトを開く
   </a>
 </div>
