@@ -3035,7 +3035,11 @@ function toCanvasY(v) { const pt=20,pb=40; const h=canvas.height/(window.deviceP
 function draw() {
   const W=canvas.width/(window.devicePixelRatio||1), H=canvas.height/(window.devicePixelRatio||1);
   ctx.clearRect(0,0,W,H);
-  ctx.fillStyle='#162d58'; ctx.fillRect(0,0,W,H);
+  const bg=ctx.createLinearGradient(0,0,W,H);
+  bg.addColorStop(0,'#1e3a72');
+  bg.addColorStop(0.45,'#162d58');
+  bg.addColorStop(1,'#0e1f3d');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
   ctx.strokeStyle='rgba(60,100,200,0.18)'; ctx.lineWidth=1;
   for(let x=Math.ceil(X_MIN);x<=X_MAX;x+=0.5){ const px=toCanvasX(x); ctx.beginPath();ctx.moveTo(px,20);ctx.lineTo(px,H-40);ctx.stroke(); ctx.fillStyle='#3a5880';ctx.font='10px monospace';ctx.textAlign='center';ctx.fillText(x.toFixed(1),px,H-25); }
   for(let y=0;y<=Y_MAX;y+=2){ const py=toCanvasY(y); ctx.beginPath();ctx.moveTo(50,py);ctx.lineTo(W-50,py);ctx.stroke(); ctx.fillStyle='#3a5880';ctx.font='10px monospace';ctx.textAlign='right';ctx.fillText(y+'%',45,py+4); }
