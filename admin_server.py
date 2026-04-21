@@ -32,65 +32,80 @@ ADMIN_HTML = """<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>管理画面 | クッション値×含水率 散布図</title>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, sans-serif; min-height: 100vh; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { background: linear-gradient(160deg,#1e3a72 0%,#162d58 50%,#1a3268 100%); color: #ddeeff; font-family: -apple-system, sans-serif; min-height: 100vh; }
 .header {
-  background: #1e293b; border-bottom: 1px solid #334155;
+  background: linear-gradient(180deg,rgba(255,255,255,0.10) 0%,rgba(255,255,255,0.02) 100%),#2d4a68;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
   padding: 16px 24px; display: flex; align-items: center; gap: 16px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 4px 20px rgba(0,0,0,0.4);
+  position: sticky; top: 0; z-index: 100;
 }
-.header h1 { font-size: 18px; font-weight: 800; color: #f1f5f9; }
+.header h1 { font-size: 18px; font-weight: 800; color: #fff; }
 .header .badge {
-  background: #f59e0b; color: #1e293b; font-size: 11px; font-weight: 700;
-  padding: 2px 8px; border-radius: 4px;
+  background: linear-gradient(180deg,rgba(255,255,255,0.2) 0%,rgba(255,255,255,0.05) 100%),#f59e0b;
+  color: #fff; font-size: 11px; font-weight: 700;
+  padding: 3px 10px; border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.3); border-top: 1px solid rgba(255,255,255,0.5);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 6px rgba(0,0,0,0.3);
 }
 .container { max-width: 800px; margin: 32px auto; padding: 0 16px; }
 
 .card {
-  background: #1e293b; border: 1px solid #334155; border-radius: 12px;
-  padding: 24px; margin-bottom: 20px;
+  background: linear-gradient(180deg,rgba(255,255,255,0.07) 0%,rgba(255,255,255,0.01) 100%),#2d4a68;
+  border: 1px solid rgba(255,255,255,0.14); border-top: 1px solid rgba(255,255,255,0.25);
+  border-radius: 14px; padding: 24px; margin-bottom: 20px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 6px 24px rgba(0,0,0,0.35);
 }
-.card h2 { font-size: 14px; font-weight: 700; color: #94a3b8; margin-bottom: 16px; letter-spacing: 0.05em; text-transform: uppercase; }
+.card h2 { font-size: 13px; font-weight: 700; color: #a8c8e8; margin-bottom: 16px; letter-spacing: 0.08em; text-transform: uppercase; }
 
 .form-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 16px; }
 .form-group { display: flex; flex-direction: column; gap: 6px; }
-.form-group label { font-size: 12px; color: #94a3b8; font-weight: 600; }
+.form-group label { font-size: 12px; color: #a8c8e8; font-weight: 600; }
 .form-group input[type="date"], .form-group select {
-  background: #0f172a; border: 1px solid #475569; border-radius: 8px;
-  color: #f1f5f9; padding: 8px 12px; font-size: 14px; outline: none;
-  transition: border-color 0.15s;
+  background: linear-gradient(180deg,rgba(255,255,255,0.08) 0%,rgba(255,255,255,0.02) 100%),#1a5276;
+  border: 1px solid rgba(255,255,255,0.18); border-top: 1px solid rgba(255,255,255,0.3);
+  border-radius: 8px; color: #ddeeff; padding: 8px 12px; font-size: 14px; outline: none;
+  transition: border-color 0.15s; box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
 }
 .form-group input[type="date"]:focus, .form-group select:focus {
-  border-color: #f59e0b;
+  border-color: rgba(245,158,11,0.8);
 }
 
 .checks { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
 .check-label {
   display: flex; align-items: center; gap: 8px; cursor: pointer;
-  font-size: 13px; color: #cbd5e1; user-select: none;
+  font-size: 13px; color: #c8e0f8; user-select: none;
 }
 .check-label input[type="checkbox"] { accent-color: #f59e0b; width: 16px; height: 16px; }
 
 .btn-run {
-  background: #f59e0b; color: #1e293b; font-weight: 800; font-size: 15px;
-  border: none; border-radius: 10px; padding: 12px 28px; cursor: pointer;
-  transition: background 0.15s, transform 0.1s; white-space: nowrap;
+  background: linear-gradient(180deg,rgba(255,255,255,0.18) 0%,rgba(255,255,255,0.05) 100%),#f59e0b;
+  color: #fff; font-weight: 800; font-size: 15px;
+  border: 1px solid rgba(255,255,255,0.3); border-top: 1px solid rgba(255,255,255,0.5);
+  border-radius: 10px; padding: 12px 28px; cursor: pointer;
+  transition: all 0.15s; white-space: nowrap;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 14px rgba(0,0,0,0.35);
 }
-.btn-run:hover { background: #fbbf24; }
+.btn-run:hover { background: linear-gradient(180deg,rgba(255,255,255,0.25) 0%,rgba(255,255,255,0.08) 100%),#f59e0b; }
 .btn-run:active { transform: scale(0.97); }
-.btn-run:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; transform: none; }
+.btn-run:disabled { background: linear-gradient(180deg,rgba(255,255,255,0.05) 0%,rgba(0,0,0,0.05) 100%),#2d4a68; color: #6a90b8; cursor: not-allowed; transform: none; box-shadow: none; border-color: rgba(255,255,255,0.1); }
 
 .btn-open {
-  background: transparent; border: 1px solid #475569; color: #94a3b8;
-  font-size: 13px; border-radius: 8px; padding: 8px 16px; cursor: pointer;
-  transition: border-color 0.15s, color 0.15s; text-decoration: none; display: inline-block;
+  background: linear-gradient(180deg,rgba(255,255,255,0.10) 0%,rgba(255,255,255,0.02) 100%),#1a5276;
+  border: 1px solid rgba(255,255,255,0.18); border-top: 1px solid rgba(255,255,255,0.3);
+  color: #c8e0f8; font-size: 13px; border-radius: 8px; padding: 8px 16px; cursor: pointer;
+  transition: all 0.15s; text-decoration: none; display: inline-block;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 2px 8px rgba(0,0,0,0.25);
 }
-.btn-open:hover { border-color: #f59e0b; color: #f59e0b; }
+.btn-open:hover { border-color: rgba(245,158,11,0.7); color: #f59e0b; }
 
 .log-area {
-  background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+  background: linear-gradient(180deg,rgba(0,0,0,0.2) 0%,rgba(0,0,0,0.1) 100%),#162d58;
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
   padding: 16px; font-family: 'Menlo', 'Consolas', monospace; font-size: 12px;
   line-height: 1.7; height: 400px; overflow-y: auto; white-space: pre-wrap;
-  color: #94a3b8;
+  color: #a8c8e8; box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
 }
 .log-area .ok { color: #34d399; }
 .log-area .err { color: #f87171; }
@@ -99,23 +114,24 @@ body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, sans-ser
 
 .status-bar {
   display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
-  font-size: 12px; color: #64748b;
+  font-size: 12px; color: #7aa8c8;
 }
-.dot { width: 8px; height: 8px; border-radius: 50%; background: #475569; }
-.dot.running { background: #f59e0b; animation: pulse 1s infinite; }
-.dot.done { background: #34d399; }
-.dot.error { background: #f87171; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: #3a6d9a; }
+.dot.running { background: #f59e0b; animation: pulse 1s infinite; box-shadow: 0 0 8px #f59e0b; }
+.dot.done { background: #34d399; box-shadow: 0 0 8px #34d399; }
+.dot.error { background: #f87171; box-shadow: 0 0 8px #f87171; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
 .dates-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 .date-chip {
-  background: #0f172a; border: 1px solid #334155; border-radius: 8px;
-  padding: 6px 12px; font-size: 12px; color: #cbd5e1; cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  background: linear-gradient(180deg,rgba(255,255,255,0.08) 0%,rgba(255,255,255,0.01) 100%),#1a5276;
+  border: 1px solid rgba(255,255,255,0.15); border-top: 1px solid rgba(255,255,255,0.25);
+  border-radius: 8px; padding: 6px 14px; font-size: 12px; color: #c8e0f8; cursor: pointer;
+  transition: all 0.15s; box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
 }
-.date-chip:hover { border-color: #f59e0b; color: #f59e0b; }
+.date-chip:hover { border-color: rgba(245,158,11,0.7); color: #f59e0b; }
 
-a.site-link { color: #f59e0b; text-decoration: none; font-size: 13px; }
+a.site-link { color: #f59e0b; text-decoration: none; font-size: 13px; font-weight: 700; }
 a.site-link:hover { text-decoration: underline; }
 </style>
 </head>
@@ -181,16 +197,16 @@ a.site-link:hover { text-decoration: underline; }
   <!-- クッション値DB更新 -->
   <div class="card">
     <h2>クッション値DB更新</h2>
-    <p style="font-size:12px;color:#64748b;margin-bottom:10px">週末前にJRA公式からクッション値・含水率を取得してDBを更新します</p>
-    <p style="font-size:12px;margin-bottom:14px">期間: <span id="db-range" style="color:#f59e0b;font-weight:700">読込中...</span> &nbsp;<span id="db-count" style="color:#64748b"></span></p>
+    <p style="font-size:12px;color:#7aa8c8;margin-bottom:10px">週末前にJRA公式からクッション値・含水率を取得してDBを更新します</p>
+    <p style="font-size:12px;margin-bottom:14px">期間: <span id="db-range" style="color:#f59e0b;font-weight:700">読込中...</span> &nbsp;<span id="db-count" style="color:#7aa8c8"></span></p>
     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-      <button class="btn-run" id="btn-db" style="background:#3b82f6" onclick="runUpdateDB()">↻ DB更新</button>
-      <button class="btn-run" id="btn-weekend" style="background:#10b981" onclick="runWeekendUpdate()">🔄 今週末を一括更新</button>
+      <button class="btn-run" id="btn-db" style="background:linear-gradient(180deg,rgba(255,255,255,0.18) 0%,rgba(255,255,255,0.05) 100%),#3b82f6" onclick="runUpdateDB()">↻ DB更新</button>
+      <button class="btn-run" id="btn-weekend" style="background:linear-gradient(180deg,rgba(255,255,255,0.18) 0%,rgba(255,255,255,0.05) 100%),#10b981" onclick="runWeekendUpdate()">🔄 今週末を一括更新</button>
       <label class="check-label">
         <input type="checkbox" id="chk-year"> 過去データも取得（時間がかかります）
       </label>
     </div>
-    <p style="font-size:11px;color:#475569;margin-top:10px">一括更新: DB更新 → 今週土日のパイプライン自動実行（再スクレイピングなし）</p>
+    <p style="font-size:11px;color:#5a80a8;margin-top:10px">一括更新: DB更新 → 今週土日のパイプライン自動実行（再スクレイピングなし）</p>
   </div>
 
 </div>
