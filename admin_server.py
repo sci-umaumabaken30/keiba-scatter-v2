@@ -25,6 +25,20 @@ logging.basicConfig(
 logging.getLogger('werkzeug').setLevel(logging.WARNING)
 app = Flask(__name__)
 
+
+@app.after_request
+def add_cors(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+    return response
+
+
+@app.route('/api/sns_positioning', methods=['OPTIONS'])
+def api_sns_positioning_options():
+    return '', 204
+
+
 ADMIN_HTML = """<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -143,6 +157,7 @@ a.site-link:hover { text-decoration: underline; }
   <a class="site-link" href="https://sci-umaumabaken30.github.io/keiba-scatter-v2/" target="_blank" style="margin-left:auto">
     ▶ サイトを開く
   </a>
+  <button onclick="restartServer()" style="margin-left:12px;padding:4px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#a8c8e8;font-size:12px;cursor:pointer" title="設定変更後に再起動">🔄 再起動</button>
 </div>
 
 <div class="container">
@@ -221,6 +236,48 @@ a.site-link:hover { text-decoration: underline; }
       <button class="btn-open" onclick="stopPipeline()">■ 停止</button>
       <span id="batch-progress" style="font-size:12px;color:#a8c8e8"></span>
     </div>
+  </div>
+
+  <!-- SNS投稿画像生成 -->
+  <div class="card">
+    <h2>SNS投稿画像生成（過去走ポジショニングカード）</h2>
+    <p style="font-size:12px;color:#7aa8c8;margin-bottom:14px">会場・レース・馬を選んでX用画像を生成します（複数選択→グリッド画像）</p>
+    <div class="form-row" style="margin-bottom:10px;align-items:flex-start">
+      <div class="form-group">
+        <label>開催日</label>
+        <input type="date" id="sns-date-sel" style="min-width:130px" onchange="snsOnDateChange()">
+      </div>
+      <div class="form-group">
+        <label>会場</label>
+        <select id="sns-venue-sel" style="min-width:100px" onchange="snsOnVenueChange()">
+          <option value="">-- 会場 --</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:2">
+        <label>レース</label>
+        <select id="sns-race-sel" style="min-width:200px" onchange="snsOnRaceChange()">
+          <option value="">-- レース --</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:2">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <label style="margin:0">馬名</label>
+          <button onclick="snsCheckAll(true)"  style="padding:2px 8px;font-size:11px;border-radius:5px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#a8c8e8;cursor:pointer">全選択</button>
+          <button onclick="snsCheckAll(false)" style="padding:2px 8px;font-size:11px;border-radius:5px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#a8c8e8;cursor:pointer">全解除</button>
+          <span id="sns-sel-count" style="font-size:11px;color:#7aa8c8"></span>
+        </div>
+        <div id="sns-horse-list" style="max-height:200px;overflow-y:auto;border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:6px 4px;background:rgba(0,0,0,0.2)">
+          <p style="font-size:11px;color:#7aa8c8;padding:4px 8px">レースを選択してください</p>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <button class="btn-run" id="btn-sns"
+        style="background:linear-gradient(180deg,rgba(255,255,255,0.18) 0%,rgba(255,255,255,0.05) 100%),#e94560"
+        onclick="genSnsImage()">🖼 画像生成</button>
+    </div>
+    <div id="sns-preview" style="margin-top:14px"></div>
+    <p id="sns-msg" style="font-size:12px;color:#7aa8c8;margin-top:8px"></p>
   </div>
 
   <!-- クッション値DB更新 -->
@@ -426,6 +483,155 @@ function runWeekendUpdate(){
     btn.disabled=false; btn.textContent='🔄 今週末を一括更新';
     evtSource.close(); evtSource=null;
   };
+}
+
+// ---- SNS画像生成 ----
+let _snsFiles = [];  // [{file, date, venue, race, label}]
+
+async function initSnsFiles(){
+  try {
+    const r = await fetch('/api/sns_files');
+    const files = await r.json();
+    // scatter_YYYYMMDD_会場_レース名_コース.html を解析
+    _snsFiles = files.map(f => {
+      const m = f.match(/^scatter_(\d{8})_([^\d_]+)(\d+R)_(.+?)_[^_]+\.html$/);
+      if(!m) return null;
+      const rnum = parseInt(m[3]);
+      return { file: f, date: m[1], venue: m[2],
+               race: m[3] + ' ' + m[4], rnum };
+    }).filter(Boolean).sort((a,b) => a.rnum - b.rnum);
+
+    // カレンダーのmin/max/defaultを設定（最新日をデフォルト）
+    const dates = [...new Set(_snsFiles.map(x => x.date))].sort();
+    if(dates.length > 0){
+      const toISO = d => d.slice(0,4)+'-'+d.slice(4,6)+'-'+d.slice(6,8);
+      const dSel = document.getElementById('sns-date-sel');
+      dSel.min = toISO(dates[0]);
+      dSel.max = toISO(dates[dates.length-1]);
+      dSel.value = toISO(dates[dates.length-1]);
+      snsOnDateChange();
+    }
+  } catch(e) {
+    console.error('initSnsFiles error:', e);
+  }
+}
+initSnsFiles();
+
+function snsOnDateChange(){
+  const dateISO = document.getElementById('sns-date-sel').value;
+  const date = dateISO.replace(/-/g, '');  // YYYY-MM-DD → YYYYMMDD
+  const vSel = document.getElementById('sns-venue-sel');
+  vSel.innerHTML = '<option value="">-- 会場 --</option>';
+  document.getElementById('sns-race-sel').innerHTML = '<option value="">-- レース --</option>';
+  document.getElementById('sns-horse-list').innerHTML = '<p style="font-size:11px;color:#7aa8c8;padding:4px 8px">レースを選択してください</p>';
+  document.getElementById('sns-sel-count').textContent='';
+  if(!date) return;
+  const venues = [...new Set(_snsFiles.filter(x=>x.date===date).map(x=>x.venue))];
+  venues.forEach(v => {
+    const o = document.createElement('option');
+    o.value = v; o.textContent = v; vSel.appendChild(o);
+  });
+}
+
+function snsOnVenueChange(){
+  const date  = document.getElementById('sns-date-sel').value.replace(/-/g,'');
+  const venue = document.getElementById('sns-venue-sel').value;
+  const rSel  = document.getElementById('sns-race-sel');
+  rSel.innerHTML = '<option value="">-- レース --</option>';
+  document.getElementById('sns-horse-list').innerHTML = '<p style="font-size:11px;color:#7aa8c8;padding:4px 8px">レースを選択してください</p>';
+  document.getElementById('sns-sel-count').textContent='';
+  if(!date || !venue) return;
+  const races = _snsFiles.filter(x => x.date===date && x.venue===venue);
+  races.forEach(x => {
+    const o = document.createElement('option');
+    o.value = x.file; o.textContent = x.race; rSel.appendChild(o);
+  });
+}
+
+async function snsOnRaceChange(){
+  const file = document.getElementById('sns-race-sel').value;
+  const list = document.getElementById('sns-horse-list');
+  list.innerHTML = '<p style="font-size:11px;color:#7aa8c8;padding:4px 8px">読込中...</p>';
+  document.getElementById('sns-sel-count').textContent = '';
+  if(!file) { list.innerHTML = '<p style="font-size:11px;color:#7aa8c8;padding:4px 8px">レースを選択してください</p>'; return; }
+  try {
+    const r = await fetch('/api/sns_horses?file='+encodeURIComponent(file));
+    const horses = await r.json();
+    list.innerHTML = '';
+    horses.forEach(h => {
+      const lbl = document.createElement('label');
+      lbl.style.cssText = 'display:flex;align-items:center;gap:8px;padding:5px 8px;cursor:pointer;border-radius:6px;font-size:13px;color:#ddeeff';
+      lbl.onmouseenter = () => lbl.style.background='rgba(255,255,255,0.06)';
+      lbl.onmouseleave = () => lbl.style.background='';
+      const cb = document.createElement('input');
+      cb.type='checkbox'; cb.value=h.name; cb.className='sns-horse-cb';
+      cb.onchange = updateSnsCount;
+      lbl.appendChild(cb);
+      lbl.appendChild(document.createTextNode(h.horse_num + '番 ' + h.name));
+      list.appendChild(lbl);
+    });
+    updateSnsCount();
+  } catch(e) { list.innerHTML = '<p style="font-size:11px;color:#f87171;padding:4px 8px">読込失敗</p>'; }
+}
+function updateSnsCount(){
+  const n = document.querySelectorAll('.sns-horse-cb:checked').length;
+  document.getElementById('sns-sel-count').textContent = n > 0 ? n+'頭選択' : '';
+}
+function snsCheckAll(val){
+  document.querySelectorAll('.sns-horse-cb').forEach(cb => cb.checked=val);
+  updateSnsCount();
+}
+
+async function genSnsImage(){
+  const file   = document.getElementById('sns-race-sel').value;
+  const horses = [...document.querySelectorAll('.sns-horse-cb:checked')].map(cb => cb.value);
+  const msg    = document.getElementById('sns-msg');
+  if(!file || horses.length === 0){ msg.textContent='会場・レース・馬をすべて選択してください'; return; }
+  const btn = document.getElementById('btn-sns');
+  btn.disabled=true; btn.textContent='⏳ 生成中...';
+  msg.textContent='画像を生成しています...';
+  const prev = document.getElementById('sns-preview');
+  prev.innerHTML = ''; prev.style.display='block';
+  try {
+    const body = horses.length === 1
+      ? JSON.stringify({file, horse: horses[0]})
+      : JSON.stringify({file, horses});
+    const r = await fetch('/api/sns_positioning', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body
+    });
+    const d = await r.json();
+    if(d.ok){
+      const wrap = document.createElement('div');
+      const img = document.createElement('img');
+      img.src = d.url + '?t=' + Date.now();
+      img.style.cssText='max-width:360px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);display:block';
+      const dl = document.createElement('a');
+      dl.href=d.url; dl.download=d.filename; dl.textContent='⬇ '+d.filename;
+      dl.className='btn-open'; dl.style.cssText='margin-top:4px;font-size:11px;display:inline-block';
+      wrap.appendChild(img); wrap.appendChild(dl);
+      prev.appendChild(wrap);
+      msg.textContent='完了: ' + d.filename;
+    } else {
+      msg.textContent='⚠ エラー: '+(d.error||'不明');
+    }
+  } catch(e){
+    msg.textContent='⚠ 通信エラー: '+e;
+  }
+  btn.disabled=false; btn.textContent='🖼 画像生成';
+}
+
+async function restartServer(){
+  if(!confirm('管理サーバーを再起動しますか？\\n（ページが数秒間つながらなくなります）')) return;
+  try{ await fetch('/api/restart', {method:'POST'}); } catch(e){}
+  await new Promise(r => setTimeout(r, 1000));
+  for(let i=0; i<20; i++){
+    await new Promise(r => setTimeout(r, 800));
+    try{
+      const r = await fetch('/');
+      if(r.ok){ location.reload(); return; }
+    }catch(e){}
+  }
+  alert('再起動に失敗しました。手動で再起動してください。');
 }
 </script>
 </body>
@@ -670,6 +876,80 @@ def api_batch_run():
 
     return Response(generate(), mimetype='text/event-stream',
                     headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
+
+
+@app.route('/api/sns_files')
+def api_sns_files():
+    files = sorted(
+        [f for f in os.listdir(BASE_DIR) if f.startswith('scatter_') and f.endswith('.html')],
+        reverse=True
+    )
+    return json.dumps(files, ensure_ascii=False)
+
+
+@app.route('/api/sns_horses')
+def api_sns_horses():
+    import re as _re
+    fname = request.args.get('file', '')
+    fpath = os.path.join(BASE_DIR, os.path.basename(fname))
+    if not os.path.exists(fpath):
+        return json.dumps([])
+    with open(fpath, encoding='utf-8') as f:
+        content = f.read()
+    m = _re.search(r'const HORSES\s*=\s*(\[.*?\]);', content, _re.DOTALL)
+    if not m:
+        return json.dumps([])
+    horses = json.loads(m.group(1))
+    return json.dumps([{'name': h['name'], 'horse_num': h.get('horse_num', '')} for h in horses],
+                      ensure_ascii=False)
+
+
+@app.route('/api/sns_positioning', methods=['POST'])
+def api_sns_positioning():
+    data   = request.get_json()
+    fname  = data.get('file', '')
+    horse  = data.get('horse', '')       # 単体（散布図ページから）
+    horses = data.get('horses', [])      # 複数（管理パネルから）
+    fpath  = os.path.join(BASE_DIR, os.path.basename(fname))
+    if not os.path.exists(fpath):
+        return json.dumps({'ok': False, 'error': 'file not found'})
+    # 単体指定を horses リストに統一
+    if horse and not horses:
+        horses = [horse]
+    if not horses:
+        return json.dumps({'ok': False, 'error': 'no horse specified'})
+    try:
+        import importlib.util, sys as _sys
+        spec = importlib.util.spec_from_file_location(
+            'make_positioning_card',
+            os.path.join(BASE_DIR, 'sns', 'make_positioning_card.py'))
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        if len(horses) == 1:
+            out = mod.make_card(fpath, horses[0])
+        else:
+            out = mod.make_grid_card(fpath, horses)
+        rel = os.path.relpath(out, BASE_DIR).replace('\\', '/')
+        return json.dumps({'ok': True, 'url': '/static_out/' + rel,
+                           'filename': os.path.basename(out)})
+    except Exception as e:
+        return json.dumps({'ok': False, 'error': str(e)})
+
+
+@app.route('/static_out/<path:filename>')
+def static_out(filename):
+    from flask import send_from_directory
+    return send_from_directory(BASE_DIR, filename)
+
+
+@app.route('/api/restart', methods=['POST'])
+def api_restart():
+    import threading, sys, os
+    def _do_restart():
+        import time; time.sleep(0.5)
+        os.execv(sys.executable, [sys.executable] + sys.argv)
+    threading.Thread(target=_do_restart, daemon=True).start()
+    return 'ok'
 
 
 @app.route('/api/stop')

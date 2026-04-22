@@ -21,7 +21,11 @@ import argparse
 import base64
 import sqlite3
 from datetime import datetime
+from itertools import combinations
 from urllib.parse import quote
+
+from analysis.course_bias import calc_course_bias
+from analysis.horse_stats import calc_stats
 
 # Windowsでの日本語・特殊文字出力対応
 if sys.stdout.encoding and sys.stdout.encoding.lower() in ('cp932', 'shift_jis', 'sjis'):
@@ -327,8 +331,14 @@ def scrape_race_data(race_id):
         horse_name = horse_link.get_text(strip=True)
         horse_id_match = re.search(r'/horse/(\d+)', horse_link.get('href', ''))
         horse_id = horse_id_match.group(1) if horse_id_match else None
+        # 馬番: td.Umaban のテキスト、空の場合は tr の id="tr_NN" から取得
         umaban_td = row.find('td', class_=re.compile(r'^Umaban\d*$'))
         horse_num = umaban_td.get_text(strip=True) if umaban_td else ''
+        if not horse_num:
+            row_id = row.get('id', '')
+            m = re.search(r'tr_(\d+)', row_id)
+            if m:
+                horse_num = m.group(1)
         horses.append({'name': horse_name, 'horse_id': horse_id, 'horse_num': horse_num})
 
     # 各馬の過去成績
@@ -355,6 +365,7 @@ def scrape_race_data(race_id):
         },
         'horses': all_horses,
         'horse_nums': horse_nums,
+        'horse_ids': {h['name']: h['horse_id'] for h in horses if h['horse_id']},
     }
 
 
@@ -405,11 +416,13 @@ def get_horse_results(session, horse_id, max_races=10):
                     break
 
             num_horses = cells[6].get_text(strip=True) if len(cells) > 6 else ''
-            time_diff = cells[19].get_text(strip=True) if len(cells) > 19 else ''
-            passage = cells[25].get_text(strip=True) if len(cells) > 25 else ''
-            pace = cells[26].get_text(strip=True) if len(cells) > 26 else ''
-            agari = cells[27].get_text(strip=True) if len(cells) > 27 else ''
-            winner = cells[31].get_text(strip=True) if len(cells) > 31 else ''
+            odds       = cells[9].get_text(strip=True) if len(cells) > 9 else ''
+            popularity = cells[10].get_text(strip=True) if len(cells) > 10 else ''
+            time_diff  = cells[19].get_text(strip=True) if len(cells) > 19 else ''
+            passage    = cells[25].get_text(strip=True) if len(cells) > 25 else ''
+            pace       = cells[26].get_text(strip=True) if len(cells) > 26 else ''
+            agari      = cells[27].get_text(strip=True) if len(cells) > 27 else ''
+            winner     = cells[31].get_text(strip=True) if len(cells) > 31 else ''
 
             results.append({
                 'date': date,
@@ -419,6 +432,8 @@ def get_horse_results(session, horse_id, max_races=10):
                 'race_name': race_name,
                 'result': result,
                 'num_horses': num_horses,
+                'odds': odds,
+                'popularity': popularity,
                 'time_diff': time_diff,
                 'passage': passage,
                 'pace': pace,
@@ -457,7 +472,7 @@ def link_cushion_data(race_data, cushion_db):
 
 
 # ===== Step 5: 散布図HTML生成 =====
-def generate_scatter_html(race_data, target_cushion, target_moisture, output_path, date_label='', race_num=0, race_date=''):
+def generate_scatter_html(race_data, target_cushion, target_moisture, output_path, date_label='', race_num=0, race_date='', bet_rec=None):
     """散布図HTMLを生成"""
     race_info = race_data['race_info']
     venue = race_info['venue']
@@ -571,6 +586,28 @@ def generate_scatter_html(race_data, target_cushion, target_moisture, output_pat
             ai_text_lines.append(f"  {r['date']} {r['venue']} {r['surface']}{r['distance']}m {r['race_name']} {result_str} CV={r['cushion']} 含水率={r['moisture']}% {mark}")
     ai_text_summary = '\n'.join(ai_text_lines)
 
+    # 買い目推奨 HTML ブロック
+    if bet_rec:
+        _r = bet_rec
+        _rank_rows = ''.join(
+            f'<span class="sci-rank"><b>{h["horse_num"]}番</b>{h["name"]}<em>{h["sci"]}</em></span>'
+            for h in _r['scored']
+        )
+        _add_html = (
+            f'<span class="bet-add">{_r["add_type"]}: {" / ".join(_r["add_tickets"])}</span>'
+            if _r['add_type'] else '<span class="bet-add">追加なし（単勝のみ）</span>'
+        )
+        bet_rec_html = (
+            f'<div class="bet-bar">'
+            f'<span class="bet-tan">{_r["tan"]}</span>'
+            f'{_add_html}'
+            f'<span class="bet-meta">SCI={_r["sci1"]} gap={_r["gap"]} [{_r["class"]}]</span>'
+            f'</div>'
+            f'<div class="sci-ranks">{_rank_rows}</div>'
+        )
+    else:
+        bet_rec_html = ''
+
     html = f"""<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -666,6 +703,13 @@ canvas {{ display: block; width: 100% !important; height: 100% !important; touch
 .race-mark-btn.marked-× {{ background:linear-gradient(180deg,rgba(255,255,255,0.15) 0%,rgba(255,255,255,0.03) 100%),#3a6d9a; border-color:rgba(255,255,255,0.25); color:#fff; }}
 .horse-detail {{ display: none; padding: 8px 4px; }}
 .horse-detail.show {{ display: block; }}
+.sns-btn {{ display:block; width:100%; padding:7px 12px; margin-top:8px; border:1px solid rgba(255,169,77,0.45); border-radius:8px; background:rgba(255,169,77,0.08); color:#ffa94d; font-size:12px; font-weight:700; cursor:pointer; text-align:left; -webkit-tap-highlight-color:transparent; transition:all 0.2s; }}
+.sns-btn:hover {{ background:rgba(255,169,77,0.16); }}
+.sns-btn:active {{ transform:scale(0.98); }}
+.sns-btn:disabled {{ opacity:0.55; cursor:not-allowed; }}
+.sns-prev {{ margin-top:8px; display:none; }}
+.sns-prev img {{ width:100%; border-radius:6px; border:1px solid rgba(255,255,255,0.15); }}
+.sns-prev a {{ display:block; text-align:center; margin-top:4px; font-size:11px; color:#7aa8c8; }}
 .race-card {{ display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }}
 .race-item {{
   padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.14); border-top: 1px solid rgba(255,255,255,0.25);
@@ -690,6 +734,26 @@ canvas {{ display: block; width: 100% !important; height: 100% !important; touch
   box-shadow: 0 4px 20px rgba(0,0,0,0.6); border: 1px solid rgba(80,130,220,0.3);
 }}
 .tooltip.show {{ display: block; }}
+.bet-bar {{
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  padding: 6px 14px 4px; background: rgba(0,0,0,0.25);
+  border-top: 1px solid rgba(255,255,255,0.08); font-size: 12px;
+}}
+.bet-tan {{ font-weight: 900; color: #fde68a; background: rgba(245,158,11,0.2); padding: 2px 10px; border-radius: 20px; border: 1px solid rgba(245,158,11,0.5); }}
+.bet-add {{ font-weight: 700; color: #93c5fd; background: rgba(59,130,246,0.2); padding: 2px 10px; border-radius: 20px; border: 1px solid rgba(59,130,246,0.4); }}
+.bet-meta {{ font-size: 10px; color: #7aa8c8; margin-left: auto; }}
+.sci-ranks {{
+  display: flex; flex-wrap: wrap; gap: 4px;
+  padding: 4px 14px 6px; background: rgba(0,0,0,0.18);
+  border-top: 1px solid rgba(255,255,255,0.06);
+}}
+.sci-rank {{
+  display: flex; gap: 4px; align-items: baseline; font-size: 11px;
+  background: rgba(255,255,255,0.06); border-radius: 6px; padding: 2px 8px;
+  color: #c8e4ff;
+}}
+.sci-rank b {{ color: #fff; font-weight: 800; }}
+.sci-rank em {{ font-style: normal; font-size: 10px; color: #7aa8c8; margin-left: 2px; }}
 </style>
 </head>
 <body style="display:flex;flex-direction:column;">
@@ -702,6 +766,7 @@ canvas {{ display: block; width: 100% !important; height: 100% !important; touch
     <span style="color:#94a3b8">{date_label} {venue}</span>
   </div>
 </div>
+{bet_rec_html}
 <div class="main">
   <div class="chart-area"><canvas id="chart"></canvas><div class="tooltip" id="tooltip"></div></div>
   <div class="panel" id="panel"></div>
@@ -836,7 +901,7 @@ function buildPanel(){{
     html+=`<div class="rating-row" id="rate-${{i}}">`;
     RANKS.forEach(r=>{{html+=`<button class="rating-btn" data-horse="${{i}}" data-rank="${{r}}">${{r}}</button>`;}});
     html+=`</div>`;
-    html+=`<div class="horse-detail" id="detail-${{i}}"><div class="race-card">${{h.races.map((r,ri)=>{{const rrKey=h.name+'_'+ri;return`<div class="race-item" style="border-width:2px;border-color:${{_wc.bg}}66;border-top-color:${{_wc.bg}}bb;box-shadow:inset 0 1px 0 ${{_wc.bg}}44,0 2px 8px rgba(0,0,0,0.25)" data-horse="${{i}}" data-ri="${{ri}}"><div class="date">${{r.date}} ${{r.venue}}</div><div class="rname">${{r.race_name}}</div><div class="cond">${{r.surface}}${{r.distance}}m ${{r.distance===TDIST?'(同)':r.distance>TDIST?'(短)':'(延)'}}</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#b8d8f8">CV${{r.cushion}} / ${{r.moisture}}%</span><span style="font-size:9px;color:#b8d8f8;text-align:right">${{r.winner?`${{r.winner}}${{r.time_diff?'('+r.time_diff+')':''}} `:''}}<span class="result" style="color:${{COLORS[r.cat]}}">${{r.result!==null?r.result+'着':'取消'}}</span></span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#b8d8f8">${{r.num_horses?r.num_horses+'頭':''}}${{r.passage?'・'+r.passage:''}}</span><div class="race-mark-row" data-rrkey="${{rrKey}}"><button class="race-mark-btn" data-mark="◎">◎</button><button class="race-mark-btn" data-mark="○">○</button><button class="race-mark-btn" data-mark="×">×</button></div></div>${{r.agari?`<div style="font-size:9px;color:#b8d8f8;margin-top:1px">${{r.agari}}</div>`:''}}</div>`}}).join('')}}</div></div>`;
+    html+=`<div class="horse-detail" id="detail-${{i}}"><div class="race-card">${{h.races.map((r,ri)=>{{const rrKey=h.name+'_'+ri;return`<div class="race-item" style="border-width:2px;border-color:${{_wc.bg}}66;border-top-color:${{_wc.bg}}bb;box-shadow:inset 0 1px 0 ${{_wc.bg}}44,0 2px 8px rgba(0,0,0,0.25)" data-horse="${{i}}" data-ri="${{ri}}"><div class="date">${{r.date}} ${{r.venue}}</div><div class="rname">${{r.race_name}}</div><div class="cond">${{r.surface}}${{r.distance}}m ${{r.distance===TDIST?'(同)':r.distance>TDIST?'(短)':'(延)'}}</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#b8d8f8">CV${{r.cushion}} / ${{r.moisture}}%</span><span style="font-size:9px;color:#b8d8f8;text-align:right">${{r.winner?`${{r.winner}}${{r.time_diff?'('+r.time_diff+')':''}} `:''}}<span class="result" style="color:${{COLORS[r.cat]}}">${{r.result!==null?r.result+'着':'取消'}}</span></span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#b8d8f8">${{r.num_horses?r.num_horses+'頭':''}}${{r.passage?'・'+r.passage:''}}</span><div class="race-mark-row" data-rrkey="${{rrKey}}"><button class="race-mark-btn" data-mark="◎">◎</button><button class="race-mark-btn" data-mark="○">○</button><button class="race-mark-btn" data-mark="×">×</button></div></div>${{r.agari?`<div style="font-size:9px;color:#b8d8f8;margin-top:1px">${{r.agari}}</div>`:''}}</div>`}}).join('')}}</div><button class="sns-btn" id="snsb-${{i}}" data-hi="${{i}}">📸 SNS画像生成</button><div class="sns-prev" id="snsp-${{i}}"></div></div>`;
   }});
   panel.innerHTML=html;
   HORSES.forEach((h,i)=>{{document.getElementById('btn-'+i).addEventListener('click',()=>{{
@@ -876,6 +941,24 @@ function buildPanel(){{
       else{{raceRatings[rrKey]=mark;}}
       updateRaceMarks();
       saveRaceRatings();
+    }});
+  }});
+  document.querySelectorAll('.sns-btn').forEach(btn=>{{
+    btn.addEventListener('click',async(e)=>{{
+      e.stopPropagation();
+      const hi=parseInt(btn.dataset.hi);
+      const name=HORSES[hi].name;
+      const fname=window.location.pathname.split('/').pop()||'';
+      const prev=document.getElementById('snsp-'+hi);
+      btn.disabled=true; btn.textContent='⏳ 生成中...';
+      try{{
+        const r=await fetch('http://localhost:5000/api/sns_positioning',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{file:fname,horse:name}})}});
+        const d=await r.json();
+        if(d.ok){{
+          prev.innerHTML=`<img src="http://localhost:5000${{d.url}}" alt=""><a href="http://localhost:5000${{d.url}}" download="${{d.filename}}">⬇ ダウンロード</a>`;
+          prev.style.display='block'; btn.textContent='✓ 完了';
+        }}else{{btn.textContent='⚠ '+d.error; btn.disabled=false;}}
+      }}catch(ex){{btn.textContent='⚠ サーバー未起動'; btn.disabled=false;}}
     }});
   }});
 }}
@@ -924,6 +1007,135 @@ window.addEventListener('resize',resize); buildPanel(); updateRatings(); updateR
 
 
 # ===== メインパイプライン =====
+# ===== SCI スコア計算 & 買い目推奨 =====
+
+def classify_race_class(race_name: str) -> str:
+    if not race_name: return 'OP'
+    if '新馬' in race_name: return '新馬'
+    if '未勝利' in race_name: return '未勝利'
+    if '1勝クラス' in race_name or '500万' in race_name: return '1勝'
+    if '2勝クラス' in race_name or '1000万' in race_name: return '2勝'
+    if '3勝クラス' in race_name or '1600万' in race_name: return '3勝'
+    return 'OP'
+
+
+def calc_sci_scores(race_data: dict, target_cushion, target_moisture, surface_ja: str) -> list:
+    """各馬のSCIスコアを計算し [{name, horse_num, sci}] を降順で返す"""
+    surf_en = 'turf' if surface_ja == '芝' else 'dirt'
+    race_id = race_data['race_info'].get('race_id', '')
+    today_date_fmt = f"{race_id[:4]}-{race_id[4:6]}-{race_id[6:8]}" if len(race_id) >= 8 else ''
+    horses = race_data['horses']
+    horse_nums = race_data.get('horse_nums', {})
+    horse_ids = race_data.get('horse_ids', {})
+
+    # horse_ids があれば horse_results_cache.db から正確な過去成績を使う
+    db_hists = {}
+    if horse_ids:
+        try:
+            conn = sqlite3.connect(HORSE_CACHE_DB)
+            placeholders = ','.join('?' * len(horse_ids))
+            rows = conn.execute(
+                f'SELECT horse_id, results_json FROM horse_results WHERE horse_id IN ({placeholders})',
+                list(horse_ids.values())
+            ).fetchall()
+            conn.close()
+            id_to_hist = {hid: json.loads(rj) for hid, rj in rows}
+            for name, hid in horse_ids.items():
+                if hid in id_to_hist:
+                    db_hists[name] = id_to_hist[hid]
+        except Exception as e:
+            print(f"  [WARN] horse_results_cache.db 読み込み失敗: {e}")
+
+    scored = []
+    for name, hist_cache in horses.items():
+        # DB から正確な履歴があればそちらを優先
+        hist = db_hists.get(name, hist_cache)
+        if today_date_fmt:
+            hist = [r for r in hist if r.get('date', '').replace('/', '-') < today_date_fmt]
+        cb = calc_course_bias(hist, target_cushion, target_moisture, surf_en)
+        if cb['matched_runs'] >= 2:
+            raw_c = min(cb['score'] / 5.0, 100)
+        elif cb['matched_runs'] == 1:
+            raw_c = cb['fukusho_rate'] * 0.7
+        else:
+            raw_c = calc_stats(hist)['fukusho_rate'] * 0.4 if hist else 0.0
+        scored.append({'name': name, 'horse_num': horse_nums.get(name, '?'), 'sci': round(min(raw_c, 100), 1)})
+    scored.sort(key=lambda x: -x['sci'])
+    return scored
+
+
+def _san4_combos(scored):
+    nums = [h['horse_num'] for h in scored[:4]]
+    return [f'{a}-{b}-{c}' for a, b, c in combinations(nums, 3)]
+
+
+def _san6_combos(scored):
+    top1 = scored[0]['horse_num']
+    rest = [h['horse_num'] for h in scored[1:4]]
+    return [f'{top1}-{a}-{b}' for a, b in combinations(rest, 2)]
+
+
+def recommend_bet(scored: list, surface_ja: str, race_class: str) -> dict | None:
+    """バックテスト結果に基づく買い目推奨を返す"""
+    if len(scored) < 4:
+        return None
+    sci1 = scored[0]['sci']
+    sci2 = scored[1]['sci']
+    gap = round(sci1 - sci2, 1)
+    top1_num = scored[0]['horse_num']
+    aite3 = [h['horse_num'] for h in scored[1:4]]
+    high = sci1 >= 60
+
+    if surface_ja == '芝':
+        if race_class == '未勝利' and high:
+            add_type, add_tickets = '3連複4点', _san4_combos(scored)
+        elif race_class == '1勝' and high:
+            add_type, add_tickets = '3連複6点', _san6_combos(scored)
+        elif high:
+            add_type, add_tickets = '馬連3点', [f'{top1_num}-{a}' for a in aite3]
+        else:
+            add_type, add_tickets = '3連複4点', _san4_combos(scored)
+    else:  # ダート
+        if race_class == '2勝' and not high:
+            add_type, add_tickets = None, []
+        elif race_class == '2勝' and high:
+            add_type, add_tickets = '馬連3点', [f'{top1_num}-{a}' for a in aite3]
+        elif high:
+            add_type, add_tickets = '馬連3点', [f'{top1_num}-{a}' for a in aite3]
+        else:
+            add_type, add_tickets = '3連複4点', _san4_combos(scored)
+
+    return {
+        'top1': scored[0],
+        'sci1': sci1,
+        'gap': gap,
+        'class': race_class,
+        'tan': f"単勝 {top1_num}番",
+        'add_type': add_type,
+        'add_tickets': add_tickets,
+        'scored': scored[:6],
+    }
+
+
+def format_bet_text(rec: dict) -> str:
+    lines = ['─' * 40, '【 買い目推奨（SCI） 】']
+    if rec is None:
+        lines.append('  データ不足のため推奨不可')
+        return '\n'.join(lines)
+    lines.append(f"  1位: {rec['top1']['horse_num']}番 {rec['top1']['name']}  SCI={rec['sci1']}  gap={rec['gap']}")
+    lines.append(f"  クラス: {rec['class']}")
+    lines.append(f"  ◎ {rec['tan']}")
+    if rec['add_type']:
+        lines.append(f"  ＋ {rec['add_type']}: {', '.join(rec['add_tickets'])}")
+    else:
+        lines.append('  ＋ 追加なし（単勝のみ）')
+    lines.append('  スコアランキング:')
+    for i, h in enumerate(rec['scored'], 1):
+        lines.append(f"    {i}位 {h['horse_num']}番 {h['name']}  {h['sci']}")
+    lines.append('─' * 40)
+    return '\n'.join(lines)
+
+
 def main():
     parser = argparse.ArgumentParser(description='競馬クッション値×含水率 散布図 一括生成')
     parser.add_argument('date', help='開催日 (YYYYMMDD)')
@@ -1116,10 +1328,16 @@ def main():
                 os.remove(os.path.join(out_dir, old_f))
                 print(f"  旧ファイル削除: {old_f}")
 
+        # SCI スコア計算 & 買い目推奨
+        sci_scored = calc_sci_scores(race_data, target_cushion, target_moisture, surface)
+        r_class = classify_race_class(race_data['race_info'].get('race_name', ''))
+        bet_rec = recommend_bet(sci_scored, surface, r_class)
+        print(format_bet_text(bet_rec))
+
         pts, with_data, total = generate_scatter_html(
             race_data, target_cushion, target_moisture,
             output_file, date_label=date_label, race_num=race_num,
-            race_date=date_str,
+            race_date=date_str, bet_rec=bet_rec,
         )
         print(f"  ✓ 生成完了: {total}頭 ({with_data}頭データあり) {pts}ポイント")
         print(f"  → {output_file}")
