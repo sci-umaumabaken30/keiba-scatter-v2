@@ -615,7 +615,7 @@ def generate_scatter_html(race_data, target_cushion, target_moisture, output_pat
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>クッション値×含水率 - {venue}{race_name}</title>
 <style>
-* {{ margin: 0; padding: 0; box-sizing: border-box; }}
+* {{ margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }}
 body {{
   font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans JP', sans-serif;
   background: linear-gradient(160deg,#1e3a72 0%,#162d58 50%,#1a3268 100%); color: #ddeeff; overflow: hidden; height: 100vh;
@@ -924,6 +924,7 @@ function buildPanel(){{
   document.querySelectorAll('.race-item').forEach(el=>{{
     el.addEventListener('click',(e)=>{{
       if(e.target.classList.contains('race-mark-btn'))return;
+      e.preventDefault();
       e.stopPropagation();
       el.classList.toggle('highlighted');
       const key=el.dataset.horse+'-'+el.dataset.ri;
