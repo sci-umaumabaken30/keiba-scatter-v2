@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>クッション値×含水率 - 福島尾瀬特別</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans JP', sans-serif;
   background: linear-gradient(160deg,#1e3a72 0%,#162d58 50%,#1a3268 100%); color: #ddeeff; overflow: hidden; height: 100vh;
@@ -93,6 +93,13 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
 .race-mark-btn.marked-× { background:linear-gradient(180deg,rgba(255,255,255,0.15) 0%,rgba(255,255,255,0.03) 100%),#3a6d9a; border-color:rgba(255,255,255,0.25); color:#fff; }
 .horse-detail { display: none; padding: 8px 4px; }
 .horse-detail.show { display: block; }
+.sns-btn { display:block; width:100%; padding:7px 12px; margin-top:8px; border:1px solid rgba(255,169,77,0.45); border-radius:8px; background:rgba(255,169,77,0.08); color:#ffa94d; font-size:12px; font-weight:700; cursor:pointer; text-align:left; -webkit-tap-highlight-color:transparent; transition:all 0.2s; }
+.sns-btn:hover { background:rgba(255,169,77,0.16); }
+.sns-btn:active { transform:scale(0.98); }
+.sns-btn:disabled { opacity:0.55; cursor:not-allowed; }
+.sns-prev { margin-top:8px; display:none; }
+.sns-prev img { width:100%; border-radius:6px; border:1px solid rgba(255,255,255,0.15); }
+.sns-prev a { display:block; text-align:center; margin-top:4px; font-size:11px; color:#7aa8c8; }
 .race-card { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
 .race-item {
   padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.14); border-top: 1px solid rgba(255,255,255,0.25);
@@ -117,6 +124,26 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
   box-shadow: 0 4px 20px rgba(0,0,0,0.6); border: 1px solid rgba(80,130,220,0.3);
 }
 .tooltip.show { display: block; }
+.bet-bar {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  padding: 6px 14px 4px; background: rgba(0,0,0,0.25);
+  border-top: 1px solid rgba(255,255,255,0.08); font-size: 12px;
+}
+.bet-tan { font-weight: 900; color: #fde68a; background: rgba(245,158,11,0.2); padding: 2px 10px; border-radius: 20px; border: 1px solid rgba(245,158,11,0.5); }
+.bet-add { font-weight: 700; color: #93c5fd; background: rgba(59,130,246,0.2); padding: 2px 10px; border-radius: 20px; border: 1px solid rgba(59,130,246,0.4); }
+.bet-meta { font-size: 10px; color: #7aa8c8; margin-left: auto; }
+.sci-ranks {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  padding: 4px 14px 6px; background: rgba(0,0,0,0.18);
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.sci-rank {
+  display: flex; gap: 4px; align-items: baseline; font-size: 11px;
+  background: rgba(255,255,255,0.06); border-radius: 6px; padding: 2px 8px;
+  color: #c8e4ff;
+}
+.sci-rank b { color: #fff; font-weight: 800; }
+.sci-rank em { font-style: normal; font-size: 10px; color: #7aa8c8; margin-left: 2px; }
 </style>
 </head>
 <body style="display:flex;flex-direction:column;">
@@ -124,11 +151,12 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
   <h1>福島10R 尾瀬特別 ダ1700m</h1>
   <div class="sub">出走馬 クッション値×含水率 解析</div>
   <div class="target">
-    <span>CV: <b style="color:#94a3b8">9.7</b></span>
-    <span>含水率: <b style="color:#94a3b8">2.9%</b></span>
+    <span>CV: <b style="color:#94a3b8">9.2</b></span>
+    <span>含水率: <b style="color:#94a3b8">4.0%</b></span>
     <span style="color:#94a3b8">4/26（日） 福島</span>
   </div>
 </div>
+<div class="bet-bar"><span class="bet-tan">単勝 13番</span><span class="bet-add">馬連3点: 13-1 / 13-14 / 13-17</span><span class="bet-meta">SCI=95.2 gap=18.0 [OP]</span></div><div class="sci-ranks"><span class="sci-rank"><b>13番</b>ギマール<em>95.2</em></span><span class="sci-rank"><b>1番</b>アオカミ<em>77.2</em></span><span class="sci-rank"><b>14番</b>キングツェッペリン<em>73.4</em></span><span class="sci-rank"><b>17番</b>マーウォルス<em>71.7</em></span><span class="sci-rank"><b>21番</b>ショーダンサー<em>71.2</em></span><span class="sci-rank"><b>10番</b>スマートプレシャス<em>70.6</em></span></div>
 <div class="main">
   <div class="chart-area"><canvas id="chart"></canvas><div class="tooltip" id="tooltip"></div></div>
   <div class="panel" id="panel"></div>
@@ -149,14 +177,14 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
     "レース名": "尾瀬特別",
     "馬場": "ダート",
     "距離": "1700m",
-    "当日クッション値": 9.7,
-    "当日含水率": "2.9%"
+    "当日クッション値": 9.2,
+    "当日含水率": "4.0%"
   },
   "出走馬": [
     {
       "馬名": "アオカミ",
       "過去走数": 10,
-      "近似条件好走": 1,
+      "近似条件好走": 0,
       "過去レース": [
         {
           "日付": "2026/03/22",
@@ -167,7 +195,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 11,
           "クッション値": 10.0,
           "含水率": "4.0%",
-          "近似条件": "○",
+          "近似条件": "",
           "3着以内": ""
         },
         {
@@ -215,7 +243,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 13,
           "クッション値": 10.2,
           "含水率": "2.5%",
-          "近似条件": "○",
+          "近似条件": "",
           "3着以内": ""
         },
         {
@@ -239,7 +267,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 1,
           "クッション値": 9.0,
           "含水率": "6.0%",
-          "近似条件": "",
+          "近似条件": "○",
           "3着以内": "✓"
         },
         {
@@ -251,7 +279,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 3,
           "クッション値": 9.5,
           "含水率": "4.2%",
-          "近似条件": "◎",
+          "近似条件": "○",
           "3着以内": "✓"
         },
         {
@@ -275,7 +303,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 5,
           "クッション値": 10.1,
           "含水率": "1.7%",
-          "近似条件": "○",
+          "近似条件": "",
           "3着以内": ""
         }
       ]
@@ -354,7 +382,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 8,
           "クッション値": 9.0,
           "含水率": "5.0%",
-          "近似条件": "",
+          "近似条件": "◎",
           "3着以内": ""
         },
         {
@@ -366,7 +394,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 1,
           "クッション値": 10.1,
           "含水率": "1.9%",
-          "近似条件": "○",
+          "近似条件": "",
           "3着以内": "✓"
         },
         {
@@ -378,7 +406,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 2,
           "クッション値": 10.2,
           "含水率": "2.7%",
-          "近似条件": "○",
+          "近似条件": "",
           "3着以内": "✓"
         },
         {
@@ -402,7 +430,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 7,
           "クッション値": 10.2,
           "含水率": "1.6%",
-          "近似条件": "○",
+          "近似条件": "",
           "3着以内": ""
         }
       ]
@@ -513,7 +541,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
     {
       "馬名": "カスバートテソーロ",
       "過去走数": 10,
-      "近似条件好走": 1,
+      "近似条件好走": 0,
       "過去レース": [
         {
           "日付": "2026/04/12",
@@ -524,7 +552,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 1,
           "クッション値": 9.5,
           "含水率": "2.4%",
-          "近似条件": "◎",
+          "近似条件": "○",
           "3着以内": "✓"
         },
         {
@@ -560,7 +588,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 2,
           "クッション値": 9.7,
           "含水率": "6.0%",
-          "近似条件": "",
+          "近似条件": "○",
           "3着以内": "✓"
         },
         {
@@ -632,7 +660,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 5,
           "クッション値": 10.0,
           "含水率": "3.2%",
-          "近似条件": "○",
+          "近似条件": "",
           "3着以内": ""
         }
       ]
@@ -675,7 +703,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 6,
           "クッション値": 9.1,
           "含水率": "1.7%",
-          "近似条件": "",
+          "近似条件": "○",
           "3着以内": ""
         },
         {
@@ -687,7 +715,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 4,
           "クッション値": 8.9,
           "含水率": "1.9%",
-          "近似条件": "",
+          "近似条件": "○",
           "3着以内": ""
         },
         {
@@ -723,7 +751,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 11,
           "クッション値": 9.1,
           "含水率": "6.5%",
-          "近似条件": "",
+          "近似条件": "○",
           "3着以内": ""
         },
         {
@@ -759,7 +787,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 3,
           "クッション値": 10.0,
           "含水率": "3.1%",
-          "近似条件": "○",
+          "近似条件": "",
           "3着以内": "✓"
         }
       ]
@@ -778,7 +806,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 7,
           "クッション値": 9.6,
           "含水率": "1.8%",
-          "近似条件": "◎",
+          "近似条件": "○",
           "3着以内": ""
         },
         {
@@ -802,7 +830,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 10,
           "クッション値": 9.6,
           "含水率": "2.5%",
-          "近似条件": "◎",
+          "近似条件": "○",
           "3着以内": ""
         },
         {
@@ -826,7 +854,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 9,
           "クッション値": 9.7,
           "含水率": "4.1%",
-          "近似条件": "◎",
+          "近似条件": "○",
           "3着以内": ""
         },
         {
@@ -850,7 +878,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 8,
           "クッション値": 9.1,
           "含水率": "6.5%",
-          "近似条件": "",
+          "近似条件": "○",
           "3着以内": ""
         },
         {
@@ -953,7 +981,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 8,
           "クッション値": 9.0,
           "含水率": "1.0%",
-          "近似条件": "",
+          "近似条件": "○",
           "3着以内": ""
         },
         {
@@ -1013,7 +1041,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 7,
           "クッション値": 9.0,
           "含水率": "6.0%",
-          "近似条件": "",
+          "近似条件": "○",
           "3着以内": ""
         }
       ]
@@ -1147,7 +1175,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 9,
           "クッション値": 9.6,
           "含水率": "1.8%",
-          "近似条件": "◎",
+          "近似条件": "○",
           "3着以内": ""
         },
         {
@@ -1195,7 +1223,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 12,
           "クッション値": 9.2,
           "含水率": "2.9%",
-          "近似条件": "○",
+          "近似条件": "◎",
           "3着以内": ""
         },
         {
@@ -1231,7 +1259,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 14,
           "クッション値": 9.1,
           "含水率": "3.0%",
-          "近似条件": "",
+          "近似条件": "◎",
           "3着以内": ""
         }
       ]
@@ -1262,7 +1290,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 9,
           "クッション値": 9.5,
           "含水率": "2.2%",
-          "近似条件": "◎",
+          "近似条件": "○",
           "3着以内": ""
         },
         {
@@ -1298,7 +1326,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 5,
           "クッション値": 10.0,
           "含水率": "1.8%",
-          "近似条件": "○",
+          "近似条件": "",
           "3着以内": ""
         },
         {
@@ -1358,7 +1386,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 4,
           "クッション値": 9.2,
           "含水率": "6.4%",
-          "近似条件": "",
+          "近似条件": "○",
           "3着以内": ""
         }
       ]
@@ -1389,7 +1417,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 4,
           "クッション値": 9.0,
           "含水率": "7.0%",
-          "近似条件": "",
+          "近似条件": "○",
           "3着以内": ""
         },
         {
@@ -1425,7 +1453,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 5,
           "クッション値": 9.0,
           "含水率": "6.3%",
-          "近似条件": "",
+          "近似条件": "○",
           "3着以内": ""
         },
         {
@@ -1449,7 +1477,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 1,
           "クッション値": 9.9,
           "含水率": "1.4%",
-          "近似条件": "○",
+          "近似条件": "",
           "3着以内": "✓"
         },
         {
@@ -1461,7 +1489,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 3,
           "クッション値": 9.2,
           "含水率": "6.3%",
-          "近似条件": "",
+          "近似条件": "○",
           "3着以内": "✓"
         },
         {
@@ -1473,7 +1501,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 6,
           "クッション値": 9.0,
           "含水率": "4.9%",
-          "近似条件": "",
+          "近似条件": "◎",
           "3着以内": ""
         },
         {
@@ -1504,7 +1532,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 9,
           "クッション値": 9.5,
           "含水率": "2.4%",
-          "近似条件": "◎",
+          "近似条件": "○",
           "3着以内": ""
         },
         {
@@ -1540,7 +1568,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 6,
           "クッション値": 10.1,
           "含水率": "1.3%",
-          "近似条件": "○",
+          "近似条件": "",
           "3着以内": ""
         },
         {
@@ -1620,7 +1648,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
     {
       "馬名": "スマートプレシャス",
       "過去走数": 10,
-      "近似条件好走": 1,
+      "近似条件好走": 0,
       "過去レース": [
         {
           "日付": "2026/02/28",
@@ -1703,7 +1731,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 5,
           "クッション値": 9.9,
           "含水率": "1.0%",
-          "近似条件": "○",
+          "近似条件": "",
           "3着以内": ""
         },
         {
@@ -1715,7 +1743,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 6,
           "クッション値": 9.0,
           "含水率": "2.5%",
-          "近似条件": "",
+          "近似条件": "◎",
           "3着以内": ""
         },
         {
@@ -1727,7 +1755,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 8,
           "クッション値": 9.5,
           "含水率": "1.9%",
-          "近似条件": "◎",
+          "近似条件": "○",
           "3着以内": ""
         },
         {
@@ -1739,7 +1767,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 1,
           "クッション値": 9.8,
           "含水率": "2.6%",
-          "近似条件": "◎",
+          "近似条件": "",
           "3着以内": "✓"
         }
       ]
@@ -1862,7 +1890,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
     {
       "馬名": "セボンサデッセ",
       "過去走数": 8,
-      "近似条件好走": 0,
+      "近似条件好走": 1,
       "過去レース": [
         {
           "日付": "2026/03/01",
@@ -1897,7 +1925,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 2,
           "クッション値": 9.1,
           "含水率": "1.6%",
-          "近似条件": "",
+          "近似条件": "○",
           "3着以内": "✓"
         },
         {
@@ -1933,7 +1961,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 3,
           "クッション値": 9.0,
           "含水率": "4.9%",
-          "近似条件": "",
+          "近似条件": "◎",
           "3着以内": "✓"
         },
         {
@@ -2024,7 +2052,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 12,
           "クッション値": 10.0,
           "含水率": "5.5%",
-          "近似条件": "○",
+          "近似条件": "",
           "3着以内": ""
         }
       ]
@@ -2079,7 +2107,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 6,
           "クッション値": 9.9,
           "含水率": "5.7%",
-          "近似条件": "○",
+          "近似条件": "",
           "3着以内": ""
         },
         {
@@ -2103,7 +2131,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 14,
           "クッション値": 9.5,
           "含水率": "6.8%",
-          "近似条件": "",
+          "近似条件": "○",
           "3着以内": ""
         },
         {
@@ -2115,7 +2143,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 12,
           "クッション値": 9.5,
           "含水率": "1.6%",
-          "近似条件": "◎",
+          "近似条件": "○",
           "3着以内": ""
         },
         {
@@ -2127,7 +2155,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 5,
           "クッション値": 9.6,
           "含水率": "2.9%",
-          "近似条件": "◎",
+          "近似条件": "○",
           "3着以内": ""
         },
         {
@@ -2194,7 +2222,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 9,
           "クッション値": 10.0,
           "含水率": "5.5%",
-          "近似条件": "○",
+          "近似条件": "",
           "3着以内": ""
         },
         {
@@ -2206,7 +2234,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 11,
           "クッション値": 9.2,
           "含水率": "2.9%",
-          "近似条件": "○",
+          "近似条件": "◎",
           "3着以内": ""
         },
         {
@@ -2218,7 +2246,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 12,
           "クッション値": 9.6,
           "含水率": "2.5%",
-          "近似条件": "◎",
+          "近似条件": "○",
           "3着以内": ""
         },
         {
@@ -2230,7 +2258,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 1,
           "クッション値": 9.5,
           "含水率": "6.8%",
-          "近似条件": "",
+          "近似条件": "○",
           "3着以内": "✓"
         },
         {
@@ -2242,7 +2270,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 6,
           "クッション値": 10.1,
           "含水率": "1.9%",
-          "近似条件": "○",
+          "近似条件": "",
           "3着以内": ""
         },
         {
@@ -2274,7 +2302,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
     {
       "馬名": "トーレ",
       "過去走数": 10,
-      "近似条件好走": 0,
+      "近似条件好走": 1,
       "過去レース": [
         {
           "日付": "2026/02/28",
@@ -2357,7 +2385,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 1,
           "クッション値": 9.0,
           "含水率": "4.6%",
-          "近似条件": "",
+          "近似条件": "◎",
           "3着以内": "✓"
         },
         {
@@ -2460,7 +2488,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 12,
           "クッション値": 9.7,
           "含水率": "2.1%",
-          "近似条件": "◎",
+          "近似条件": "○",
           "3着以内": ""
         },
         {
@@ -2472,7 +2500,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 11,
           "クッション値": 8.9,
           "含水率": "4.0%",
-          "近似条件": "",
+          "近似条件": "○",
           "3着以内": ""
         },
         {
@@ -2484,7 +2512,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 9,
           "クッション値": 9.0,
           "含水率": "2.0%",
-          "近似条件": "",
+          "近似条件": "○",
           "3着以内": ""
         },
         {
@@ -2508,7 +2536,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 1,
           "クッション値": 10.2,
           "含水率": "2.7%",
-          "近似条件": "○",
+          "近似条件": "",
           "3着以内": "✓"
         },
         {
@@ -2528,7 +2556,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
     {
       "馬名": "マーウォルス",
       "過去走数": 10,
-      "近似条件好走": 0,
+      "近似条件好走": 2,
       "過去レース": [
         {
           "日付": "2026/02/28",
@@ -2551,7 +2579,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 1,
           "クッション値": 9.1,
           "含水率": "6.3%",
-          "近似条件": "",
+          "近似条件": "○",
           "3着以内": "✓"
         },
         {
@@ -2563,7 +2591,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 5,
           "クッション値": 9.1,
           "含水率": "6.9%",
-          "近似条件": "",
+          "近似条件": "○",
           "3着以内": ""
         },
         {
@@ -2587,7 +2615,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 3,
           "クッション値": 9.2,
           "含水率": "3.7%",
-          "近似条件": "○",
+          "近似条件": "◎",
           "3着以内": "✓"
         },
         {
@@ -2623,7 +2651,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 2,
           "クッション値": 9.0,
           "含水率": "2.9%",
-          "近似条件": "",
+          "近似条件": "◎",
           "3着以内": "✓"
         },
         {
@@ -2635,7 +2663,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
           "着順": 4,
           "クッション値": 9.0,
           "含水率": "1.5%",
-          "近似条件": "",
+          "近似条件": "○",
           "3着以内": ""
         },
         {
@@ -2657,7 +2685,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
 </script>
 <div id="ai-readable" style="display:none" aria-hidden="true">
 <pre>【4/26（日） 福島10R 尾瀬特別 ダート1700m】
-当日条件: クッション値=9.7 含水率=2.9%
+当日条件: クッション値=9.2 含水率=4.0%
 
 ▼ アオカミ（過去10走）
   2026/03/22 中山 ダ1200m 鎌ケ谷特別(2勝クラス) 11着 CV=10.0 含水率=4.0% 
@@ -2667,7 +2695,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
   2025/09/27 中山 ダ1200m 3歳以上2勝クラス 13着 CV=10.2 含水率=2.5% 
   2025/05/04 東京 ダ1300m 4歳以上2勝クラス 9着 CV=9.4 含水率=8.3% 
   2025/04/19 福島 ダ1150m 4歳以上1勝クラス 1着 CV=9.0 含水率=6.0% 
-  2025/03/23 中京 ダ1400m 4歳以上1勝クラス 3着 CV=9.5 含水率=4.2% ◎
+  2025/03/23 中京 ダ1400m 4歳以上1勝クラス 3着 CV=9.5 含水率=4.2% 
   2025/02/01 東京 ダ1400m 4歳以上1勝クラス 7着 CV=9.4 含水率=1.4% 
   2025/01/06 中山 ダ1200m 4歳以上1勝クラス 5着 CV=10.1 含水率=1.7% 
 ▼ アースイオス（過去10走）
@@ -2676,7 +2704,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
   2026/02/28 中山 ダ1800m 4歳以上2勝クラス 15着 CV=10.0 含水率=10.6% 
   2026/01/25 小倉 ダ1700m 響灘特別(2勝クラス) 16着 CV=10.5 含水率=1.7% 
   2025/09/07 札幌 ダ1700m 旭川特別(2勝クラス) 14着 CV=7.1 含水率=3.0% 
-  2025/06/28 福島 ダ1700m いわき特別(2勝クラス) 8着 CV=9.0 含水率=5.0% 
+  2025/06/28 福島 ダ1700m いわき特別(2勝クラス) 8着 CV=9.0 含水率=5.0% ◎
   2025/03/02 中山 ダ1800m 4歳以上1勝クラス 1着 CV=10.1 含水率=1.9% 
   2025/01/25 中山 ダ1800m 4歳以上1勝クラス 2着 CV=10.2 含水率=2.7% 
   2025/01/12 中山 ダ1800m 4歳以上1勝クラス 5着 CV=10.0 含水率=5.9% 
@@ -2691,7 +2719,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
   2025/02/02 東京 芝1800m セントポーリア賞(1勝クラス) 11着 CV=8.7 含水率=12.1% 
   2024/09/14 中山 芝2000m 2歳新馬 1着 CV=9.3 含水率=14.1% 
 ▼ カスバートテソーロ（過去10走）
-  2026/04/12 福島 ダ1700m 4歳以上1勝クラス 1着 CV=9.5 含水率=2.4% ◎
+  2026/04/12 福島 ダ1700m 4歳以上1勝クラス 1着 CV=9.5 含水率=2.4% 
   2026/01/31 東京 ダ2100m 4歳以上1勝クラス 11着 CV=9.6 含水率=1.2% 
   2026/01/12 中山 ダ1800m 4歳以上1勝クラス 10着 CV=10.3 含水率=2.2% 
   2025/12/20 中京 ダ1800m 3歳以上1勝クラス 2着 CV=9.7 含水率=6.0% 
@@ -2713,11 +2741,11 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
   2024/06/09 京都 ダ1800m 3歳以上1勝クラス 2着 CV=9.6 含水率=8.7% 
   2024/05/19 京都 ダ1800m 3歳1勝クラス 3着 CV=10.0 含水率=3.1% 
 ▼ キングツェッペリン（過去10走）
-  2026/02/22 小倉 ダ1700m 和布刈特別(2勝クラス) 7着 CV=9.6 含水率=1.8% ◎
+  2026/02/22 小倉 ダ1700m 和布刈特別(2勝クラス) 7着 CV=9.6 含水率=1.8% 
   2025/11/01 京都 ダ1800m 3歳以上2勝クラス 14着 CV=10.4 含水率=15.1% 
-  2025/10/19 東京 ダ1600m 西湖特別(2勝クラス) 10着 CV=9.6 含水率=2.5% ◎
+  2025/10/19 東京 ダ1600m 西湖特別(2勝クラス) 10着 CV=9.6 含水率=2.5% 
   2025/07/05 小倉 ダ1700m TAインディア賞(2勝クラス) 2着 CV=8.8 含水率=0.5% 
-  2025/05/24 東京 ダ1600m 4歳以上2勝クラス 9着 CV=9.7 含水率=4.1% ◎
+  2025/05/24 東京 ダ1600m 4歳以上2勝クラス 9着 CV=9.7 含水率=4.1% 
   2025/05/11 京都 ダ1400m 4歳以上2勝クラス 6着 CV=10.2 含水率=10.2% 
   2025/03/09 阪神 ダ1400m 4歳以上2勝クラス 8着 CV=9.1 含水率=6.5% 
   2025/02/15 京都 ダ1400m 4歳以上1勝クラス 1着 CV=10.5 含水率=5.0% 
@@ -2745,17 +2773,17 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
   2025/02/22 京都 ダ1800m 4歳以上1勝クラス 7着 CV=10.5 含水率=2.6% 
 ▼ コスモマルーン（過去9走）
   2026/03/28 中山 ダ1800m 4歳以上2勝クラス 5着 CV=9.1 含水率=13.2% 
-  2026/02/22 小倉 ダ1700m 和布刈特別(2勝クラス) 9着 CV=9.6 含水率=1.8% ◎
+  2026/02/22 小倉 ダ1700m 和布刈特別(2勝クラス) 9着 CV=9.6 含水率=1.8% 
   2026/01/31 小倉 ダ1700m 平尾台特別(2勝クラス) 3着 CV=10.5 含水率=1.4% 
   2026/01/18 中山 ダ1800m 4歳以上2勝クラス 4着 CV=10.5 含水率=1.4% 
   2025/12/28 中山 ダ1800m ハッピーエンドC(2勝クラス) 8着 CV=9.5 含水率=5.7% 
-  2025/11/23 東京 ダ1600m 3歳以上2勝クラス 12着 CV=9.2 含水率=2.9% 
+  2025/11/23 東京 ダ1600m 3歳以上2勝クラス 12着 CV=9.2 含水率=2.9% ◎
   2025/11/02 東京 ダ1600m 清里特別(2勝クラス) 7着 CV=9.3 含水率=10.7% 
   2025/09/20 中山 芝2500m 九十九里特別(2勝クラス) 9着 CV=9.2 含水率=13.8% 
-  2025/07/27 新潟 ダ1200m 出雲崎特別(2勝クラス) 14着 CV=9.1 含水率=3.0% 
+  2025/07/27 新潟 ダ1200m 出雲崎特別(2勝クラス) 14着 CV=9.1 含水率=3.0% ◎
 ▼ ジュンラトゥール（過去10走）
   2026/03/21 阪神 ダ1800m 4歳以上2勝クラス 7着 CV=9.1 含水率=9.1% 
-  2026/03/14 中京 ダ1800m 中京スポーツ杯(2勝クラス) 9着 CV=9.5 含水率=2.2% ◎
+  2026/03/14 中京 ダ1800m 中京スポーツ杯(2勝クラス) 9着 CV=9.5 含水率=2.2% 
   2026/02/28 小倉 ダ1700m 早鞆特別(2勝クラス) 4着 CV=8.8 含水率=14.5% 
   2026/01/04 京都 ダ1800m 天ケ瀬特別(2勝クラス) 10着 CV=10.7 含水率=3.8% 
   2025/12/13 中京 ダ1800m 鳴海特別(2勝クラス) 5着 CV=10.0 含水率=1.8% 
@@ -2773,10 +2801,10 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
   2025/08/24 中京 ダ1800m 大府特別(2勝クラス) 3着 CV=10.9 含水率=1.3% 
   2025/08/02 中京 ダ1800m 3歳以上1勝クラス 1着 CV=9.9 含水率=1.4% 
   2025/04/12 阪神 ダ1800m 3歳1勝クラス 3着 CV=9.2 含水率=6.3% 
-  2025/03/23 阪神 ダ1800m 3歳1勝クラス 6着 CV=9.0 含水率=4.9% 
+  2025/03/23 阪神 ダ1800m 3歳1勝クラス 6着 CV=9.0 含水率=4.9% ◎
   2024/12/15 京都 ダ1800m 2歳新馬 1着 CV=11.3 含水率=2.1% 
 ▼ ジーベック（過去10走）
-  2026/04/12 福島 ダ1150m 喜多方特別(2勝クラス) 9着 CV=9.5 含水率=2.4% ◎
+  2026/04/12 福島 ダ1150m 喜多方特別(2勝クラス) 9着 CV=9.5 含水率=2.4% 
   2026/02/10 京都 ダ1200m 4歳以上2勝クラス 9着 CV=10.9 含水率=3.5% 
   2026/01/24 京都 ダ1200m 4歳以上2勝クラス 8着 CV=10.5 含水率=1.3% 
   2026/01/17 中山 ダ1200m 4歳以上2勝クラス 6着 CV=10.1 含水率=1.3% 
@@ -2794,9 +2822,9 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
   2025/07/12 小倉 ダ1700m 八女特別(2勝クラス) 5着 CV=8.7 含水率=0.5% 
   2025/05/11 新潟 ダ1800m 五泉特別(2勝クラス) 15着 CV=9.1 含水率=7.4% 
   2025/04/27 福島 ダ1700m 尾瀬特別(2勝クラス) 5着 CV=9.9 含水率=1.0% 
-  2025/03/01 阪神 ダ1800m 4歳以上2勝クラス 6着 CV=9.0 含水率=2.5% 
-  2025/02/01 小倉 ダ1700m 平尾台特別(2勝クラス) 8着 CV=9.5 含水率=1.9% ◎
-  2024/11/17 福島 ダ1700m 3歳以上1勝クラス 1着 CV=9.8 含水率=2.6% ◎
+  2025/03/01 阪神 ダ1800m 4歳以上2勝クラス 6着 CV=9.0 含水率=2.5% ◎
+  2025/02/01 小倉 ダ1700m 平尾台特別(2勝クラス) 8着 CV=9.5 含水率=1.9% 
+  2024/11/17 福島 ダ1700m 3歳以上1勝クラス 1着 CV=9.8 含水率=2.6% 
 ▼ セザンワールド（過去9走）
   2026/04/04 中山 ダ1800m 千葉日報杯(2勝クラス) 4着 CV=9.2 含水率=8.7% 
   2026/03/08 中山 ダ1800m 4歳以上2勝クラス 6着 CV=9.5 含水率=11.0% 
@@ -2813,7 +2841,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
   2025/12/13 阪神 ダ1400m 3歳以上1勝クラス 2着 CV=9.1 含水率=1.6% 
   2025/11/30 京都 ダ1800m 3歳以上1勝クラス 4着 CV=10.9 含水率=4.3% 
   2025/05/25 京都 ダ1800m 3歳1勝クラス 2着 CV=8.6 含水率=16.3% 
-  2025/03/23 阪神 ダ1800m 3歳1勝クラス 3着 CV=9.0 含水率=4.9% 
+  2025/03/23 阪神 ダ1800m 3歳1勝クラス 3着 CV=9.0 含水率=4.9% ◎
   2025/02/02 小倉 ダ1700m 3歳1勝クラス 2着 CV=8.3 含水率=17.4% 
   2024/11/24 京都 ダ1400m 2歳新馬 1着 CV=11.4 含水率=1.7% 
 ▼ ダイシンバースディ（過去5走）
@@ -2829,16 +2857,16 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
   2025/09/15 中山 ダ1800m 鋸山特別(2勝クラス) 6着 CV=9.9 含水率=5.7% 
   2025/05/18 東京 ダ1600m 青梅特別(2勝クラス) 11着 CV=8.9 含水率=12.5% 
   2025/04/26 東京 ダ1600m 4歳以上2勝クラス 14着 CV=9.5 含水率=6.8% 
-  2025/02/23 東京 ダ1400m 大島特別(2勝クラス) 12着 CV=9.5 含水率=1.6% ◎
-  2024/10/06 東京 ダ1600m 3歳以上2勝クラス 5着 CV=9.6 含水率=2.9% ◎
+  2025/02/23 東京 ダ1400m 大島特別(2勝クラス) 12着 CV=9.5 含水率=1.6% 
+  2024/10/06 東京 ダ1600m 3歳以上2勝クラス 5着 CV=9.6 含水率=2.9% 
   2024/07/14 函館 ダ1700m 駒場特別(2勝クラス) 13着 CV=8.3 含水率=3.6% 
   2024/06/15 函館 ダ1700m 3歳以上1勝クラス 1着 CV=7.6 含水率=2.8% 
 ▼ トルショー（過去9走）
   2026/03/08 中山 ダ1800m 4歳以上2勝クラス 8着 CV=9.5 含水率=11.0% 
   2026/02/28 中山 ダ1800m 4歳以上2勝クラス 11着 CV=10.0 含水率=10.6% 
   2026/01/10 中山 ダ1800m 4歳以上2勝クラス 9着 CV=10.0 含水率=5.5% 
-  2025/11/23 東京 ダ1600m 3歳以上2勝クラス 11着 CV=9.2 含水率=2.9% 
-  2025/10/19 東京 ダ1600m 西湖特別(2勝クラス) 12着 CV=9.6 含水率=2.5% ◎
+  2025/11/23 東京 ダ1600m 3歳以上2勝クラス 11着 CV=9.2 含水率=2.9% ◎
+  2025/10/19 東京 ダ1600m 西湖特別(2勝クラス) 12着 CV=9.6 含水率=2.5% 
   2025/04/26 東京 ダ1600m 3歳1勝クラス 1着 CV=9.5 含水率=6.8% 
   2025/03/02 中山 ダ1800m 3歳1勝クラス 6着 CV=10.1 含水率=1.9% 
   2025/02/16 東京 ダ1600m 3歳1勝クラス 3着 CV=9.3 含水率=1.7% 
@@ -2850,7 +2878,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
   2025/10/04 京都 ダ1800m 3歳以上2勝クラス 10着 CV=9.4 含水率=12.2% 
   2025/07/05 小倉 ダ1700m TAインディア賞(2勝クラス) 6着 CV=8.8 含水率=0.5% 
   2025/05/17 京都 ダ1800m 4歳以上2勝クラス 3着 CV=10.1 含水率=6.9% 
-  2025/04/20 福島 ダ1700m 4歳以上1勝クラス 1着 CV=9.0 含水率=4.6% 
+  2025/04/20 福島 ダ1700m 4歳以上1勝クラス 1着 CV=9.0 含水率=4.6% ◎
   2025/03/29 中京 ダ1800m 4歳以上1勝クラス 5着 CV=8.6 含水率=11.6% 
   2025/02/02 京都 ダ1800m 4歳以上1勝クラス 13着 CV=9.5 含水率=7.2% 
   2024/11/30 京都 ダ1800m 3歳以上1勝クラス 3着 CV=11.5 含水率=4.7% 
@@ -2859,7 +2887,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
   2026/02/10 東京 ダ1300m 4歳以上2勝クラス 14着 CV=10.1 含水率=9.1% 
   2025/11/22 福島 ダ1150m 福島放送賞(2勝クラス) 7着 CV=9.2 含水率=1.4% 
   2025/09/07 中山 ダ1200m 浦安特別(2勝クラス) 12着 CV=9.9 含水率=6.3% 
-  2025/07/26 中京 ダ1400m 四日市特別(2勝クラス) 12着 CV=9.7 含水率=2.1% ◎
+  2025/07/26 中京 ダ1400m 四日市特別(2勝クラス) 12着 CV=9.7 含水率=2.1% 
   2025/07/06 福島 ダ1150m さくらんぼ特別(2勝クラス) 11着 CV=8.9 含水率=4.0% 
   2025/04/12 福島 ダ1150m 喜多方特別(2勝クラス) 9着 CV=9.0 含水率=2.0% 
   2025/03/22 中山 ダ1200m 4歳以上2勝クラス 7着 CV=9.3 含水率=11.6% 
@@ -2870,17 +2898,17 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
   2026/02/15 小倉 ダ1700m 4歳以上1勝クラス 1着 CV=9.1 含水率=6.3% 
   2025/12/20 阪神 ダ1800m 3歳以上1勝クラス 5着 CV=9.1 含水率=6.9% 
   2025/11/23 京都 ダ1400m 3歳以上1勝クラス 9着 CV=10.5 含水率=1.7% 
-  2025/11/08 福島 ダ1700m 3歳以上1勝クラス 3着 CV=9.2 含水率=3.7% 
+  2025/11/08 福島 ダ1700m 3歳以上1勝クラス 3着 CV=9.2 含水率=3.7% ◎
   2025/08/10 札幌 ダ1700m 3歳未勝利 1着 CV=7.2 含水率=10.2% 
   2025/07/13 小倉 ダ1700m 3歳未勝利 2着 CV=9.1 含水率=0.5% 
-  2025/06/21 阪神 ダ1800m 3歳未勝利 2着 CV=9.0 含水率=2.9% 
+  2025/06/21 阪神 ダ1800m 3歳未勝利 2着 CV=9.0 含水率=2.9% ◎
   2025/03/02 阪神 ダ1800m 3歳未勝利 4着 CV=9.0 含水率=1.5% 
   2025/02/01 京都 ダ1800m 3歳未勝利 2着 CV=10.8 含水率=1.0% </pre>
 </div>
 <script>
-const HORSES = [{"name": "アオカミ", "horse_num": "", "races": [{"date": "2026/03/22", "venue": "中山", "surface": "ダ", "distance": 1200, "race_name": "鎌ケ谷特別(2勝クラス)", "result": 11, "cushion": 10.0, "moisture": 4.0, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.3", "passage": "9-10", "pace": "34.6-36.8", "agari": "37.3", "winner": "カネショウレジェン"}, {"date": "2026/02/15", "venue": "東京", "surface": "ダ", "distance": 1400, "race_name": "4歳以上2勝クラス", "result": 9, "cushion": 9.4, "moisture": 5.5, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.4", "passage": "7-8", "pace": "36.4-36.1", "agari": "36.6", "winner": "クインズデネブ"}, {"date": "2025/11/29", "venue": "京都", "surface": "ダ", "distance": 1200, "race_name": "3歳以上2勝クラス", "result": 15, "cushion": 10.9, "moisture": 4.8, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.2", "passage": "13-13", "pace": "35.3-36.6", "agari": "36.5", "winner": "トリリオンボーイ"}, {"date": "2025/10/25", "venue": "東京", "surface": "ダ", "distance": 1400, "race_name": "3歳以上2勝クラス", "result": 7, "cushion": 9.6, "moisture": 9.3, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "1.0", "passage": "7-6", "pace": "36.4-35.4", "agari": "35.9", "winner": "フウセツ"}, {"date": "2025/09/27", "venue": "中山", "surface": "ダ", "distance": 1200, "race_name": "3歳以上2勝クラス", "result": 13, "cushion": 10.2, "moisture": 2.5, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.1", "passage": "6-5", "pace": "34.4-37.0", "agari": "37.3", "winner": "ワンダラー"}, {"date": "2025/05/04", "venue": "東京", "surface": "ダ", "distance": 1300, "race_name": "4歳以上2勝クラス", "result": 9, "cushion": 9.4, "moisture": 8.3, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.1", "passage": "9-7", "pace": "29.4-35.9", "agari": "35.6", "winner": "キュムロンニンバス"}, {"date": "2025/04/19", "venue": "福島", "surface": "ダ", "distance": 1150, "race_name": "4歳以上1勝クラス", "result": 1, "cushion": 9.0, "moisture": 6.0, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "-0.1", "passage": "9-8", "pace": "31.7-37.7", "agari": "36.6", "winner": "(サンダーアリュール)"}, {"date": "2025/03/23", "venue": "中京", "surface": "ダ", "distance": 1400, "race_name": "4歳以上1勝クラス", "result": 3, "cushion": 9.5, "moisture": 4.2, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "0.5", "passage": "7-6", "pace": "35.0-37.4", "agari": "37.1", "winner": "フィリップ"}, {"date": "2025/02/01", "venue": "東京", "surface": "ダ", "distance": 1400, "race_name": "4歳以上1勝クラス", "result": 7, "cushion": 9.4, "moisture": 1.4, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.0", "passage": "8-9", "pace": "35.3-37.4", "agari": "37.3", "winner": "ゴールデンオスカー"}, {"date": "2025/01/06", "venue": "中山", "surface": "ダ", "distance": 1200, "race_name": "4歳以上1勝クラス", "result": 5, "cushion": 10.1, "moisture": 1.7, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.4", "passage": "12-12", "pace": "33.8-38.4", "agari": "37.7", "winner": "ホウオウフロイト"}]}, {"name": "アースイオス", "horse_num": "", "races": [{"date": "2026/04/12", "venue": "中山", "surface": "ダ", "distance": 2400, "race_name": "印西特別(2勝クラス)", "result": 12, "cushion": 9.3, "moisture": 7.9, "cat": "diff_dist", "good": false, "num_horses": "12", "time_diff": "3.4", "passage": "12-12-12-12", "pace": "39.0-37.7", "agari": "39.3", "winner": "インジケーター"}, {"date": "2026/04/04", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "千葉日報杯(2勝クラス)", "result": 14, "cushion": 9.2, "moisture": 8.7, "cat": "diff_dist", "good": false, "num_horses": "15", "time_diff": "3.1", "passage": "14-14-15-15", "pace": "37.2-37.7", "agari": "39.1", "winner": "オリーブグリーン"}, {"date": "2026/02/28", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 15, "cushion": 10.0, "moisture": 10.6, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "2.3", "passage": "14-14-13-14", "pace": "37.1-38.7", "agari": "39.4", "winner": "メリークリスマス"}, {"date": "2026/01/25", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "響灘特別(2勝クラス)", "result": 16, "cushion": 10.5, "moisture": 1.7, "cat": "same_dist", "good": false, "num_horses": "16", "time_diff": "3.3", "passage": "16-16-15-16", "pace": "30.9-36.9", "agari": "38.8", "winner": "アイウィル"}, {"date": "2025/09/07", "venue": "札幌", "surface": "ダ", "distance": 1700, "race_name": "旭川特別(2勝クラス)", "result": 14, "cushion": 7.1, "moisture": 3.0, "cat": "same_dist", "good": false, "num_horses": "14", "time_diff": "4.6", "passage": "14-14-14-14", "pace": "30.0-37.5", "agari": "39.9", "winner": "トーセンサウダージ"}, {"date": "2025/06/28", "venue": "福島", "surface": "ダ", "distance": 1700, "race_name": "いわき特別(2勝クラス)", "result": 8, "cushion": 9.0, "moisture": 5.0, "cat": "same_dist", "good": false, "num_horses": "14", "time_diff": "2.9", "passage": "14-14-14-13", "pace": "30.2-36.8", "agari": "37.7", "winner": "ナルカミ"}, {"date": "2025/03/02", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "4歳以上1勝クラス", "result": 1, "cushion": 10.1, "moisture": 1.9, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "-0.2", "passage": "16-14-10-6", "pace": "36.3-39.4", "agari": "38.7", "winner": "(スペイドアン)"}, {"date": "2025/01/25", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "4歳以上1勝クラス", "result": 2, "cushion": 10.2, "moisture": 2.7, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "0.0", "passage": "15-16-7-3", "pace": "37.8-38.5", "agari": "37.8", "winner": "タイセイアディクト"}, {"date": "2025/01/12", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "4歳以上1勝クラス", "result": 5, "cushion": 10.0, "moisture": 5.9, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.6", "passage": "14-14-15-11", "pace": "36.9-39.5", "agari": "38.8", "winner": "ブレスワード"}, {"date": "2024/12/07", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "3歳以上1勝クラス", "result": 7, "cushion": 10.2, "moisture": 1.6, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.4", "passage": "16-16-16-16", "pace": "38.3-37.8", "agari": "37.3", "winner": "エッグスラット"}]}, {"name": "イブニングタイド", "horse_num": "", "races": [{"date": "2026/02/22", "venue": "東京", "surface": "ダ", "distance": 1400, "race_name": "大島特別(2勝クラス)", "result": 15, "cushion": 9.7, "moisture": 1.0, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "2.1", "passage": "6-6", "pace": "35.2-37.1", "agari": "38.1", "winner": "アスクアイルビゼア"}, {"date": "2025/12/21", "venue": "中京", "surface": "芝", "distance": 1400, "race_name": "尾張特別(2勝クラス)", "result": 7, "cushion": 9.7, "moisture": 12.8, "cat": "diff_surface", "good": false, "num_horses": "18", "time_diff": "0.5", "passage": "5-5", "pace": "34.6-35.5", "agari": "35.3", "winner": "リチャードバローズ"}, {"date": "2025/10/25", "venue": "東京", "surface": "芝", "distance": 1400, "race_name": "精進湖特別(2勝クラス)", "result": 6, "cushion": 9.6, "moisture": 14.2, "cat": "diff_surface", "good": false, "num_horses": "12", "time_diff": "0.2", "passage": "5-5", "pace": "35.2-34.3", "agari": "33.9", "winner": "ウイントワイライト"}, {"date": "2025/08/23", "venue": "新潟", "surface": "芝", "distance": 1400, "race_name": "飯豊特別(2勝クラス)", "result": 17, "cushion": 9.3, "moisture": 11.6, "cat": "diff_surface", "good": false, "num_horses": "17", "time_diff": "1.3", "passage": "9-10", "pace": "34.2-34.9", "agari": "35.4", "winner": "ラテラルシンキング"}, {"date": "2025/06/14", "venue": "東京", "surface": "芝", "distance": 1400, "race_name": "3歳以上1勝クラス", "result": 1, "cushion": 9.4, "moisture": 13.9, "cat": "diff_surface", "good": true, "num_horses": "18", "time_diff": "0.0", "passage": "4-4", "pace": "35.0-35.0", "agari": "34.5", "winner": "(ボンヌソワレ)"}, {"date": "2025/04/27", "venue": "東京", "surface": "芝", "distance": 1600, "race_name": "3歳1勝クラス", "result": 5, "cushion": 9.2, "moisture": 13.9, "cat": "diff_surface", "good": false, "num_horses": "9", "time_diff": "0.5", "passage": "4-3", "pace": "34.6-34.6", "agari": "34.8", "winner": "アスクセクシーモア"}, {"date": "2025/02/02", "venue": "東京", "surface": "芝", "distance": 1800, "race_name": "セントポーリア賞(1勝クラス)", "result": 11, "cushion": 8.7, "moisture": 12.1, "cat": "diff_surface", "good": false, "num_horses": "13", "time_diff": "1.4", "passage": "2-3-3", "pace": "36.1-34.8", "agari": "35.9", "winner": "エネルジコ"}, {"date": "2024/09/14", "venue": "中山", "surface": "芝", "distance": 2000, "race_name": "2歳新馬", "result": 1, "cushion": 9.3, "moisture": 14.1, "cat": "diff_surface", "good": true, "num_horses": "9", "time_diff": "0.0", "passage": "1-1-1-2", "pace": "38.4-33.5", "agari": "33.5", "winner": "(サトノラポール)"}]}, {"name": "カスバートテソーロ", "horse_num": "", "races": [{"date": "2026/04/12", "venue": "福島", "surface": "ダ", "distance": 1700, "race_name": "4歳以上1勝クラス", "result": 1, "cushion": 9.5, "moisture": 2.4, "cat": "same_dist", "good": true, "num_horses": "15", "time_diff": "-0.1", "passage": "6-4-3-2", "pace": "30.9-38.2", "agari": "37.9", "winner": "(ベルフィーヌ)"}, {"date": "2026/01/31", "venue": "東京", "surface": "ダ", "distance": 2100, "race_name": "4歳以上1勝クラス", "result": 11, "cushion": 9.6, "moisture": 1.2, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "2.0", "passage": "8-8-9-10", "pace": "30.9-38.4", "agari": "39.1", "winner": "ダブルメッセージ"}, {"date": "2026/01/12", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "4歳以上1勝クラス", "result": 10, "cushion": 10.3, "moisture": 2.2, "cat": "diff_dist", "good": false, "num_horses": "15", "time_diff": "3.4", "passage": "7-7-7-4", "pace": "37.6-38.0", "agari": "40.5", "winner": "フィールオーサム"}, {"date": "2025/12/20", "venue": "中京", "surface": "ダ", "distance": 1800, "race_name": "3歳以上1勝クラス", "result": 2, "cushion": 9.7, "moisture": 6.0, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "0.9", "passage": "7-7-7-7", "pace": "37.8-38.0", "agari": "38.1", "winner": "タガノヘラクレス"}, {"date": "2025/11/24", "venue": "福島", "surface": "ダ", "distance": 1700, "race_name": "3歳以上1勝クラス", "result": 4, "cushion": 9.5, "moisture": 1.1, "cat": "same_dist", "good": false, "num_horses": "15", "time_diff": "0.1", "passage": "7-7-4-5", "pace": "29.5-39.1", "agari": "39.0", "winner": "ステラスプレンダー"}, {"date": "2025/09/07", "venue": "札幌", "surface": "ダ", "distance": 1700, "race_name": "3歳未勝利", "result": 1, "cushion": 7.1, "moisture": 3.0, "cat": "same_dist", "good": true, "num_horses": "14", "time_diff": "-0.6", "passage": "8-10-1-1", "pace": "30.0-38.2", "agari": "38.2", "winner": "(リポジノ)"}, {"date": "2025/08/31", "venue": "札幌", "surface": "ダ", "distance": 1700, "race_name": "3歳未勝利", "result": 3, "cushion": 7.5, "moisture": 11.2, "cat": "same_dist", "good": true, "num_horses": "14", "time_diff": "0.5", "passage": "12-12-9-6", "pace": "29.8-38.8", "agari": "38.2", "winner": "ユージュアーナ"}, {"date": "2025/08/16", "venue": "札幌", "surface": "ダ", "distance": 1700, "race_name": "3歳未勝利", "result": 2, "cushion": 7.4, "moisture": 4.4, "cat": "same_dist", "good": true, "num_horses": "14", "time_diff": "0.3", "passage": "12-11-11-4", "pace": "29.9-38.8", "agari": "38.2", "winner": "サウンドルーチェ"}, {"date": "2025/08/03", "venue": "札幌", "surface": "ダ", "distance": 1700, "race_name": "3歳未勝利", "result": 2, "cushion": 7.5, "moisture": 2.2, "cat": "same_dist", "good": true, "num_horses": "14", "time_diff": "0.4", "passage": "11-10-3-2", "pace": "30.6-38.3", "agari": "38.4", "winner": "レディゴディヴァ"}, {"date": "2025/05/17", "venue": "新潟", "surface": "ダ", "distance": 1800, "race_name": "3歳未勝利", "result": 5, "cushion": 10.0, "moisture": 3.2, "cat": "diff_dist", "good": false, "num_horses": "15", "time_diff": "1.1", "passage": "8-7-4-4", "pace": "36.2-39.2", "agari": "40.1", "winner": "ノンスタンダルド"}]}, {"name": "ギマール", "horse_num": "", "races": [{"date": "2026/02/08", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "由布院特別(2勝クラス)", "result": null, "cushion": 9.6, "moisture": 5.0, "cat": "same_dist", "good": false, "num_horses": "16", "time_diff": "", "passage": "7-7-16", "pace": "29.3-38.7", "agari": "", "winner": "パフ"}, {"date": "2026/01/25", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "響灘特別(2勝クラス)", "result": 2, "cushion": 10.5, "moisture": 1.7, "cat": "same_dist", "good": true, "num_horses": "16", "time_diff": "0.0", "passage": "7-7-8-5", "pace": "30.9-36.9", "agari": "36.3", "winner": "アイウィル"}, {"date": "2025/12/07", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "豊中特別(2勝クラス)", "result": 6, "cushion": 9.1, "moisture": 1.7, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "0.4", "passage": "8-8-7-6", "pace": "35.8-39.0", "agari": "38.1", "winner": "タマモキャリコ"}, {"date": "2025/11/15", "venue": "福島", "surface": "ダ", "distance": 1700, "race_name": "西郷特別(2勝クラス)", "result": 4, "cushion": 8.9, "moisture": 1.9, "cat": "same_dist", "good": false, "num_horses": "15", "time_diff": "0.8", "passage": "4-4-4-4", "pace": "30.8-37.1", "agari": "37.5", "winner": "テーオールビー"}, {"date": "2025/07/05", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "TAインディア賞(2勝クラス)", "result": 3, "cushion": 8.8, "moisture": 0.5, "cat": "same_dist", "good": true, "num_horses": "11", "time_diff": "0.6", "passage": "7-7-4-4", "pace": "30.6-37.2", "agari": "37.5", "winner": "メイショウズイウン"}, {"date": "2025/06/01", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "與杼特別(2勝クラス)", "result": 6, "cushion": 11.3, "moisture": 3.2, "cat": "diff_dist", "good": false, "num_horses": "14", "time_diff": "0.5", "passage": "11-10-7-8", "pace": "35.5-38.3", "agari": "38.1", "winner": "メイショウソウタ"}, {"date": "2025/03/09", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 11, "cushion": 9.1, "moisture": 6.5, "cat": "diff_dist", "good": false, "num_horses": "12", "time_diff": "1.2", "passage": "3-4-5-6", "pace": "39.0-38.1", "agari": "38.8", "winner": "キャピタルサックス"}, {"date": "2025/02/09", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "4歳以上1勝クラス", "result": 1, "cushion": 9.9, "moisture": 7.0, "cat": "diff_dist", "good": true, "num_horses": "10", "time_diff": "0.0", "passage": "2-2-2-2", "pace": "37.4-37.9", "agari": "37.7", "winner": "(インジケーター)"}, {"date": "2024/06/09", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "3歳以上1勝クラス", "result": 2, "cushion": 9.6, "moisture": 8.7, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "0.2", "passage": "3-3-3-2", "pace": "36.3-38.0", "agari": "37.9", "winner": "レアンダー"}, {"date": "2024/05/19", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "3歳1勝クラス", "result": 3, "cushion": 10.0, "moisture": 3.1, "cat": "diff_dist", "good": true, "num_horses": "12", "time_diff": "0.5", "passage": "9-9-7-4", "pace": "35.9-37.7", "agari": "37.4", "winner": "デトネイション"}]}, {"name": "キングツェッペリン", "horse_num": "", "races": [{"date": "2026/02/22", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "和布刈特別(2勝クラス)", "result": 7, "cushion": 9.6, "moisture": 1.8, "cat": "same_dist", "good": false, "num_horses": "16", "time_diff": "0.8", "passage": "12-11-14-13", "pace": "30.6-37.5", "agari": "37.0", "winner": "タイセイミッション"}, {"date": "2025/11/01", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "3歳以上2勝クラス", "result": 14, "cushion": 10.4, "moisture": 15.1, "cat": "diff_dist", "good": false, "num_horses": "15", "time_diff": "2.6", "passage": "7-7-8-9", "pace": "35.4-36.6", "agari": "38.2", "winner": "アーロンイメル"}, {"date": "2025/10/19", "venue": "東京", "surface": "ダ", "distance": 1600, "race_name": "西湖特別(2勝クラス)", "result": 10, "cushion": 9.6, "moisture": 2.5, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "1.2", "passage": "7-8", "pace": "35.5-36.3", "agari": "36.7", "winner": "クールブロン"}, {"date": "2025/07/05", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "TAインディア賞(2勝クラス)", "result": 2, "cushion": 8.8, "moisture": 0.5, "cat": "same_dist", "good": true, "num_horses": "11", "time_diff": "0.2", "passage": "2-3-4-4", "pace": "30.6-37.2", "agari": "37.1", "winner": "メイショウズイウン"}, {"date": "2025/05/24", "venue": "東京", "surface": "ダ", "distance": 1600, "race_name": "4歳以上2勝クラス", "result": 9, "cushion": 9.7, "moisture": 4.1, "cat": "diff_dist", "good": false, "num_horses": "14", "time_diff": "0.6", "passage": "10-10", "pace": "35.5-36.3", "agari": "36.1", "winner": "アルゴナヴィス"}, {"date": "2025/05/11", "venue": "京都", "surface": "ダ", "distance": 1400, "race_name": "4歳以上2勝クラス", "result": 6, "cushion": 10.2, "moisture": 10.2, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.8", "passage": "9-8", "pace": "35.0-36.4", "agari": "36.5", "winner": "プルートマスター"}, {"date": "2025/03/09", "venue": "阪神", "surface": "ダ", "distance": 1400, "race_name": "4歳以上2勝クラス", "result": 8, "cushion": 9.1, "moisture": 6.5, "cat": "diff_dist", "good": false, "num_horses": "14", "time_diff": "0.9", "passage": "11-11", "pace": "34.6-37.5", "agari": "37.1", "winner": "レイズカイザー"}, {"date": "2025/02/15", "venue": "京都", "surface": "ダ", "distance": 1400, "race_name": "4歳以上1勝クラス", "result": 1, "cushion": 10.5, "moisture": 5.0, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "-0.1", "passage": "13-12", "pace": "34.8-38.5", "agari": "37.1", "winner": "(リネアグローリア)"}, {"date": "2024/12/08", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "3歳以上1勝クラス", "result": 9, "cushion": 11.6, "moisture": 4.6, "cat": "diff_dist", "good": false, "num_horses": "10", "time_diff": "2.3", "passage": "2-4-6-8", "pace": "36.4-39.2", "agari": "40.8", "winner": "レーウィン"}, {"date": "2024/09/01", "venue": "中京", "surface": "ダ", "distance": 1200, "race_name": "3歳以上1勝クラス", "result": 12, "cushion": 8.6, "moisture": 18.4, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "3.2", "passage": "15-15", "pace": "34.1-35.4", "agari": "35.5", "winner": "フィルムアクトレス"}]}, {"name": "グランキングオー", "horse_num": "", "races": [{"date": "2026/02/08", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "由布院特別(2勝クラス)", "result": 8, "cushion": 9.6, "moisture": 5.0, "cat": "same_dist", "good": false, "num_horses": "16", "time_diff": "0.8", "passage": "2-2-2-2", "pace": "29.3-38.7", "agari": "39.4", "winner": "パフ"}, {"date": "2026/01/25", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "響灘特別(2勝クラス)", "result": 13, "cushion": 10.5, "moisture": 1.7, "cat": "same_dist", "good": false, "num_horses": "16", "time_diff": "1.5", "passage": "3-3-3-3", "pace": "30.9-36.9", "agari": "38.2", "winner": "アイウィル"}, {"date": "2025/11/23", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "3歳以上2勝クラス", "result": 8, "cushion": 10.5, "moisture": 1.7, "cat": "diff_dist", "good": false, "num_horses": "14", "time_diff": "1.2", "passage": "1-1-1-1", "pace": "37.6-36.1", "agari": "37.3", "winner": "モックモック"}, {"date": "2025/11/09", "venue": "福島", "surface": "ダ", "distance": 1700, "race_name": "河北新報杯(2勝クラス)", "result": 15, "cushion": 9.2, "moisture": 2.0, "cat": "same_dist", "good": false, "num_horses": "15", "time_diff": "2.9", "passage": "12-12-11-14", "pace": "30.1-37.8", "agari": "39.6", "winner": "アレナパラシオ"}, {"date": "2025/09/20", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "3歳以上2勝クラス", "result": 8, "cushion": 9.0, "moisture": 1.0, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.9", "passage": "1-1-1-1", "pace": "37.3-37.9", "agari": "39.8", "winner": "カミノレアル"}, {"date": "2025/09/06", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "出石特別(2勝クラス)", "result": 3, "cushion": 9.0, "moisture": 13.0, "cat": "diff_dist", "good": true, "num_horses": "9", "time_diff": "0.8", "passage": "1-1-1-1", "pace": "37.6-36.6", "agari": "37.4", "winner": "トリポリタニア"}, {"date": "2025/07/19", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "3歳以上1勝クラス", "result": 1, "cushion": 8.8, "moisture": 16.4, "cat": "same_dist", "good": true, "num_horses": "16", "time_diff": "-0.3", "passage": "1-1-1-1", "pace": "30.4-36.1", "agari": "36.1", "winner": "(ダノンヴェステル)"}, {"date": "2025/05/25", "venue": "東京", "surface": "ダ", "distance": 1400, "race_name": "3歳1勝クラス", "result": 7, "cushion": 8.9, "moisture": 16.3, "cat": "diff_dist", "good": false, "num_horses": "9", "time_diff": "1.1", "passage": "2-2", "pace": "34.6-36.2", "agari": "37.1", "winner": "シホノペルフェット"}, {"date": "2025/05/04", "venue": "京都", "surface": "ダ", "distance": 1400, "race_name": "3歳1勝クラス", "result": 3, "cushion": 10.6, "moisture": 7.7, "cat": "diff_dist", "good": true, "num_horses": "15", "time_diff": "0.4", "passage": "9-8", "pace": "34.6-37.4", "agari": "37.0", "winner": "ダノンフィーゴ"}, {"date": "2025/03/15", "venue": "阪神", "surface": "ダ", "distance": 1400, "race_name": "3歳1勝クラス", "result": 7, "cushion": 9.0, "moisture": 6.0, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.9", "passage": "16-14", "pace": "34.9-37.9", "agari": "36.9", "winner": "ドンパッショーネ"}]}, {"name": "グレイスオブゴッド", "horse_num": "", "races": [{"date": "2026/02/08", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "由布院特別(2勝クラス)", "result": 7, "cushion": 9.6, "moisture": 5.0, "cat": "same_dist", "good": false, "num_horses": "16", "time_diff": "0.8", "passage": "13-14-11-7", "pace": "29.3-38.7", "agari": "38.6", "winner": "パフ"}, {"date": "2025/11/09", "venue": "福島", "surface": "ダ", "distance": 1700, "race_name": "河北新報杯(2勝クラス)", "result": 6, "cushion": 9.2, "moisture": 2.0, "cat": "same_dist", "good": false, "num_horses": "15", "time_diff": "0.6", "passage": "14-14-14-10", "pace": "30.1-37.8", "agari": "37.1", "winner": "アレナパラシオ"}, {"date": "2025/08/24", "venue": "札幌", "surface": "ダ", "distance": 1700, "race_name": "オールスターJ第3戦(2勝クラス)", "result": 8, "cushion": 7.6, "moisture": 7.6, "cat": "same_dist", "good": false, "num_horses": "14", "time_diff": "1.5", "passage": "12-12-11-10", "pace": "31.3-37.4", "agari": "37.4", "winner": "ベルギューン"}, {"date": "2025/08/02", "venue": "札幌", "surface": "ダ", "distance": 1700, "race_name": "大倉山特別(2勝クラス)", "result": 8, "cushion": 7.7, "moisture": 4.0, "cat": "same_dist", "good": false, "num_horses": "14", "time_diff": "1.8", "passage": "9-9-10-9", "pace": "31.0-36.7", "agari": "37.5", "winner": "スマートケープ"}, {"date": "2025/06/29", "venue": "函館", "surface": "ダ", "distance": 1700, "race_name": "渡島特別(2勝クラス)", "result": 4, "cushion": 7.2, "moisture": 7.1, "cat": "same_dist", "good": false, "num_horses": "11", "time_diff": "1.1", "passage": "8-8-10-9", "pace": "29.1-37.9", "agari": "38.2", "winner": "ウェイトゥゴー"}, {"date": "2025/06/22", "venue": "函館", "surface": "ダ", "distance": 1700, "race_name": "檜山特別(2勝クラス)", "result": 9, "cushion": 6.8, "moisture": 10.7, "cat": "same_dist", "good": false, "num_horses": "14", "time_diff": "0.9", "passage": "11-10-10-9", "pace": "30.0-37.0", "agari": "37.0", "winner": "バギーウィップ"}, {"date": "2025/05/24", "venue": "京都", "surface": "ダ", "distance": 1400, "race_name": "オーストラリアT(2勝クラス)", "result": 12, "cushion": 11.2, "moisture": 4.0, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "1.3", "passage": "9-9", "pace": "34.8-35.2", "agari": "35.6", "winner": "プロミシングスター"}, {"date": "2025/02/22", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "4歳以上1勝クラス", "result": 7, "cushion": 10.5, "moisture": 2.6, "cat": "diff_dist", "good": false, "num_horses": "11", "time_diff": "0.7", "passage": "9-9-6-5", "pace": "37.4-38.3", "agari": "38.5", "winner": "ブルーペクトライト"}]}, {"name": "コスモマルーン", "horse_num": "", "races": [{"date": "2026/03/28", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 5, "cushion": 9.1, "moisture": 13.2, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.1", "passage": "11-10-7-7", "pace": "36.5-37.8", "agari": "38.5", "winner": "サムシャイン"}, {"date": "2026/02/22", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "和布刈特別(2勝クラス)", "result": 9, "cushion": 9.6, "moisture": 1.8, "cat": "same_dist", "good": false, "num_horses": "16", "time_diff": "1.2", "passage": "12-14-13-13", "pace": "30.6-37.5", "agari": "37.5", "winner": "タイセイミッション"}, {"date": "2026/01/31", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "平尾台特別(2勝クラス)", "result": 3, "cushion": 10.5, "moisture": 1.4, "cat": "same_dist", "good": true, "num_horses": "16", "time_diff": "0.2", "passage": "14-14-10-10", "pace": "29.7-38.1", "agari": "37.4", "winner": "ドゥラリス"}, {"date": "2026/01/18", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 4, "cushion": 10.5, "moisture": 1.4, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.3", "passage": "13-13-10-8", "pace": "36.8-38.9", "agari": "39.3", "winner": "レディーフランシス"}, {"date": "2025/12/28", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "ハッピーエンドC(2勝クラス)", "result": 8, "cushion": 9.5, "moisture": 5.7, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "2.7", "passage": "11-11-13-13", "pace": "37.2-38.2", "agari": "39.8", "winner": "ジェイエルマスター"}, {"date": "2025/11/23", "venue": "東京", "surface": "ダ", "distance": 1600, "race_name": "3歳以上2勝クラス", "result": 12, "cushion": 9.2, "moisture": 2.9, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.2", "passage": "13-11", "pace": "37.1-35.6", "agari": "35.8", "winner": "セギレエルビエント"}, {"date": "2025/11/02", "venue": "東京", "surface": "ダ", "distance": 1600, "race_name": "清里特別(2勝クラス)", "result": 7, "cushion": 9.3, "moisture": 10.7, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "0.5", "passage": "9-9", "pace": "36.4-36.0", "agari": "35.6", "winner": "ロッシニアーナ"}, {"date": "2025/09/20", "venue": "中山", "surface": "芝", "distance": 2500, "race_name": "九十九里特別(2勝クラス)", "result": 9, "cushion": 9.2, "moisture": 13.8, "cat": "diff_surface", "good": false, "num_horses": "9", "time_diff": "3.0", "passage": "6-6-8-8", "pace": "30.7-34.1", "agari": "35.2", "winner": "マイユニバース"}, {"date": "2025/07/27", "venue": "新潟", "surface": "ダ", "distance": 1200, "race_name": "出雲崎特別(2勝クラス)", "result": 14, "cushion": 9.1, "moisture": 3.0, "cat": "diff_dist", "good": false, "num_horses": "15", "time_diff": "1.9", "passage": "15-15", "pace": "33.5-38.0", "agari": "37.1", "winner": "ノットファウンド"}]}, {"name": "ジュンラトゥール", "horse_num": "", "races": [{"date": "2026/03/21", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 7, "cushion": 9.1, "moisture": 9.1, "cat": "diff_dist", "good": false, "num_horses": "12", "time_diff": "0.7", "passage": "9-10-9-9", "pace": "36.6-38.1", "agari": "37.9", "winner": "ドラゴン"}, {"date": "2026/03/14", "venue": "中京", "surface": "ダ", "distance": 1800, "race_name": "中京スポーツ杯(2勝クラス)", "result": 9, "cushion": 9.5, "moisture": 2.2, "cat": "diff_dist", "good": false, "num_horses": "14", "time_diff": "1.1", "passage": "10-11-6-6", "pace": "39.2-36.6", "agari": "37.3", "winner": "テーオーマルコーニ"}, {"date": "2026/02/28", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "早鞆特別(2勝クラス)", "result": 4, "cushion": 8.8, "moisture": 14.5, "cat": "same_dist", "good": false, "num_horses": "16", "time_diff": "0.4", "passage": "11-10-8-6", "pace": "28.5-37.8", "agari": "37.4", "winner": "ジューンエオス"}, {"date": "2026/01/04", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "天ケ瀬特別(2勝クラス)", "result": 10, "cushion": 10.7, "moisture": 3.8, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "2.1", "passage": "10-11-11-12", "pace": "37.1-37.0", "agari": "37.4", "winner": "グランドプラージュ"}, {"date": "2025/12/13", "venue": "中京", "surface": "ダ", "distance": 1800, "race_name": "鳴海特別(2勝クラス)", "result": 5, "cushion": 10.0, "moisture": 1.8, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.4", "passage": "9-11-9-9", "pace": "37.7-37.0", "agari": "36.7", "winner": "アラレタバシル"}, {"date": "2025/09/07", "venue": "札幌", "surface": "ダ", "distance": 1700, "race_name": "3歳以上1勝クラス", "result": 1, "cushion": 7.1, "moisture": 3.0, "cat": "same_dist", "good": true, "num_horses": "14", "time_diff": "-0.5", "passage": "11-14-14-8", "pace": "28.8-38.8", "agari": "37.5", "winner": "(スマートカイロス)"}, {"date": "2025/08/31", "venue": "札幌", "surface": "ダ", "distance": 1700, "race_name": "3歳以上1勝クラス", "result": 6, "cushion": 7.5, "moisture": 11.2, "cat": "same_dist", "good": false, "num_horses": "12", "time_diff": "0.7", "passage": "5-5-5-7", "pace": "30.2-37.7", "agari": "37.9", "winner": "アイオリア"}, {"date": "2025/08/16", "venue": "札幌", "surface": "ダ", "distance": 1700, "race_name": "3歳以上1勝クラス", "result": 3, "cushion": 7.4, "moisture": 4.4, "cat": "same_dist", "good": true, "num_horses": "14", "time_diff": "0.4", "passage": "5-5-2-1", "pace": "30.3-38.7", "agari": "39.0", "winner": "ゼロスネーク"}, {"date": "2025/05/11", "venue": "新潟", "surface": "ダ", "distance": 1800, "race_name": "4歳以上1勝クラス", "result": 10, "cushion": 9.1, "moisture": 7.4, "cat": "diff_dist", "good": false, "num_horses": "15", "time_diff": "1.0", "passage": "6-7-5-5", "pace": "37.4-40.2", "agari": "40.6", "winner": "ワンダーカモン"}, {"date": "2025/04/13", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "4歳以上1勝クラス", "result": 4, "cushion": 9.2, "moisture": 6.4, "cat": "diff_dist", "good": false, "num_horses": "10", "time_diff": "0.9", "passage": "5-5-4-5", "pace": "38.1-37.8", "agari": "38.2", "winner": "バトンインディ"}]}, {"name": "ショーダンサー", "horse_num": "", "races": [{"date": "2026/04/05", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 3, "cushion": 8.5, "moisture": 16.0, "cat": "diff_dist", "good": true, "num_horses": "15", "time_diff": "0.6", "passage": "9-7-5-4", "pace": "36.4-37.1", "agari": "36.9", "winner": "マテンロウブレイブ"}, {"date": "2026/03/08", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 4, "cushion": 9.0, "moisture": 7.0, "cat": "diff_dist", "good": false, "num_horses": "9", "time_diff": "0.9", "passage": "5-5-5-4", "pace": "39.2-36.4", "agari": "36.7", "winner": "ルクスフレンジー"}, {"date": "2026/01/18", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "大津特別(2勝クラス)", "result": 3, "cushion": 10.5, "moisture": 0.9, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "0.4", "passage": "8-8-8-8", "pace": "37.5-37.4", "agari": "36.9", "winner": "バッケンレコード"}, {"date": "2025/12/28", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "3歳以上2勝クラス", "result": 2, "cushion": 8.9, "moisture": 9.9, "cat": "diff_dist", "good": true, "num_horses": "13", "time_diff": "0.1", "passage": "7-7-7-7", "pace": "36.7-38.3", "agari": "37.4", "winner": "ゴールドダイアー"}, {"date": "2025/09/13", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "鳥取特別(2勝クラス)", "result": 5, "cushion": 9.0, "moisture": 6.3, "cat": "diff_dist", "good": false, "num_horses": "9", "time_diff": "0.3", "passage": "7-7-6-7", "pace": "36.8-37.7", "agari": "37.3", "winner": "マイノワール"}, {"date": "2025/08/24", "venue": "中京", "surface": "ダ", "distance": 1800, "race_name": "大府特別(2勝クラス)", "result": 3, "cushion": 10.9, "moisture": 1.3, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "0.5", "passage": "9-11-11-10", "pace": "37.3-38.9", "agari": "36.5", "winner": "パカーラン"}, {"date": "2025/08/02", "venue": "中京", "surface": "ダ", "distance": 1800, "race_name": "3歳以上1勝クラス", "result": 1, "cushion": 9.9, "moisture": 1.4, "cat": "diff_dist", "good": true, "num_horses": "10", "time_diff": "-0.2", "passage": "7-7-7-7", "pace": "38.0-38.4", "agari": "37.7", "winner": "(シャンパンポップ)"}, {"date": "2025/04/12", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "3歳1勝クラス", "result": 3, "cushion": 9.2, "moisture": 6.3, "cat": "diff_dist", "good": true, "num_horses": "11", "time_diff": "0.1", "passage": "6-5-5-5", "pace": "36.8-38.8", "agari": "38.6", "winner": "ヒルノハンブルク"}, {"date": "2025/03/23", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "3歳1勝クラス", "result": 6, "cushion": 9.0, "moisture": 4.9, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "2.0", "passage": "11-11-9-8", "pace": "37.8-38.5", "agari": "39.4", "winner": "カナルビーグル"}, {"date": "2024/12/15", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "2歳新馬", "result": 1, "cushion": 11.3, "moisture": 2.1, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "-0.3", "passage": "11-11-9-8", "pace": "36.6-38.3", "agari": "37.5", "winner": "(ハグ)"}]}, {"name": "ジーベック", "horse_num": "", "races": [{"date": "2026/04/12", "venue": "福島", "surface": "ダ", "distance": 1150, "race_name": "喜多方特別(2勝クラス)", "result": 9, "cushion": 9.5, "moisture": 2.4, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.9", "passage": "13-11", "pace": "31.2-37.5", "agari": "36.8", "winner": "イマージョン"}, {"date": "2026/02/10", "venue": "京都", "surface": "ダ", "distance": 1200, "race_name": "4歳以上2勝クラス", "result": 9, "cushion": 10.9, "moisture": 3.5, "cat": "diff_dist", "good": false, "num_horses": "15", "time_diff": "0.7", "passage": "6-4", "pace": "34.8-37.7", "agari": "37.6", "winner": "ディニトーソ"}, {"date": "2026/01/24", "venue": "京都", "surface": "ダ", "distance": 1200, "race_name": "4歳以上2勝クラス", "result": 8, "cushion": 10.5, "moisture": 1.3, "cat": "diff_dist", "good": false, "num_horses": "15", "time_diff": "0.9", "passage": "9-8", "pace": "35.3-37.0", "agari": "36.6", "winner": "スペシャルナンバー"}, {"date": "2026/01/17", "venue": "中山", "surface": "ダ", "distance": 1200, "race_name": "4歳以上2勝クラス", "result": 6, "cushion": 10.1, "moisture": 1.3, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.7", "passage": "5-3", "pace": "33.8-38.0", "agari": "38.2", "winner": "ゴールドハンマー"}, {"date": "2025/12/13", "venue": "中山", "surface": "ダ", "distance": 1200, "race_name": "3歳以上2勝クラス", "result": 4, "cushion": 10.3, "moisture": 1.2, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "0.8", "passage": "6-6", "pace": "34.3-36.9", "agari": "37.1", "winner": "シュヴァルボヌール"}, {"date": "2025/11/30", "venue": "東京", "surface": "ダ", "distance": 1400, "race_name": "アプローズ賞(2勝クラス)", "result": 8, "cushion": 9.3, "moisture": 1.8, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.3", "passage": "7-7", "pace": "35.3-36.7", "agari": "37.1", "winner": "シャパリュ"}, {"date": "2025/08/17", "venue": "札幌", "surface": "ダ", "distance": 1000, "race_name": "大通公園特別(2勝クラス)", "result": 3, "cushion": 7.7, "moisture": 2.4, "cat": "diff_dist", "good": true, "num_horses": "11", "time_diff": "0.4", "passage": "8-8", "pace": "34.2-35.9", "agari": "35.1", "winner": "カウスリップ"}, {"date": "2025/08/03", "venue": "札幌", "surface": "ダ", "distance": 1000, "race_name": "3歳以上2勝クラス", "result": 2, "cushion": 7.5, "moisture": 2.2, "cat": "diff_dist", "good": true, "num_horses": "10", "time_diff": "0.6", "passage": "7-6", "pace": "34.5-35.7", "agari": "35.5", "winner": "メイショウキルギス"}, {"date": "2025/07/13", "venue": "函館", "surface": "ダ", "distance": 1000, "race_name": "噴火湾特別(2勝クラス)", "result": 5, "cushion": 7.7, "moisture": 1.7, "cat": "diff_dist", "good": false, "num_horses": "12", "time_diff": "0.5", "passage": "7-6", "pace": "34.4-36.0", "agari": "35.9", "winner": "テイエムタリスマ"}, {"date": "2025/06/01", "venue": "京都", "surface": "ダ", "distance": 1200, "race_name": "4歳以上2勝クラス", "result": 9, "cushion": 11.3, "moisture": 3.2, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.7", "passage": "8-8", "pace": "35.1-36.3", "agari": "36.5", "winner": "パドマ"}]}, {"name": "スマートプレシャス", "horse_num": "", "races": [{"date": "2026/02/28", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "早鞆特別(2勝クラス)", "result": 13, "cushion": 8.8, "moisture": 14.5, "cat": "same_dist", "good": false, "num_horses": "16", "time_diff": "1.5", "passage": "3-3-4-4", "pace": "28.5-37.8", "agari": "39.0", "winner": "ジューンエオス"}, {"date": "2026/01/31", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "平尾台特別(2勝クラス)", "result": 4, "cushion": 10.5, "moisture": 1.4, "cat": "same_dist", "good": false, "num_horses": "16", "time_diff": "0.3", "passage": "2-2-2-2", "pace": "29.7-38.1", "agari": "38.4", "winner": "ドゥラリス"}, {"date": "2025/11/22", "venue": "京都", "surface": "ダ", "distance": 1400, "race_name": "3歳以上2勝クラス", "result": 14, "cushion": 10.7, "moisture": 1.7, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.7", "passage": "1-2", "pace": "34.1-37.8", "agari": "39.5", "winner": "リネアグローリア"}, {"date": "2025/09/21", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "3歳以上2勝クラス", "result": 14, "cushion": 9.5, "moisture": 7.2, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "2.8", "passage": "1-1-1-1", "pace": "36.9-39.0", "agari": "41.8", "winner": "サンセットブライト"}, {"date": "2025/07/12", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "八女特別(2勝クラス)", "result": 5, "cushion": 8.7, "moisture": 0.5, "cat": "same_dist", "good": false, "num_horses": "13", "time_diff": "0.6", "passage": "1-1-1-1", "pace": "30.0-39.5", "agari": "40.1", "winner": "ルフトクス"}, {"date": "2025/05/11", "venue": "新潟", "surface": "ダ", "distance": 1800, "race_name": "五泉特別(2勝クラス)", "result": 15, "cushion": 9.1, "moisture": 7.4, "cat": "diff_dist", "good": false, "num_horses": "15", "time_diff": "2.2", "passage": "1-1-1-1", "pace": "36.2-39.9", "agari": "42.1", "winner": "プレイサーゴールド"}, {"date": "2025/04/27", "venue": "福島", "surface": "ダ", "distance": 1700, "race_name": "尾瀬特別(2勝クラス)", "result": 5, "cushion": 9.9, "moisture": 1.0, "cat": "same_dist", "good": false, "num_horses": "15", "time_diff": "0.4", "passage": "1-1-1-1", "pace": "29.5-39.8", "agari": "40.2", "winner": "タガノアレハンドラ"}, {"date": "2025/03/01", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 6, "cushion": 9.0, "moisture": 2.5, "cat": "diff_dist", "good": false, "num_horses": "10", "time_diff": "0.7", "passage": "1-1-1-1", "pace": "36.2-39.5", "agari": "40.2", "winner": "ピジョンブラッド"}, {"date": "2025/02/01", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "平尾台特別(2勝クラス)", "result": 8, "cushion": 9.5, "moisture": 1.9, "cat": "same_dist", "good": false, "num_horses": "16", "time_diff": "1.4", "passage": "4-4-6-4", "pace": "29.4-38.7", "agari": "39.7", "winner": "カマチョクイン"}, {"date": "2024/11/17", "venue": "福島", "surface": "ダ", "distance": 1700, "race_name": "3歳以上1勝クラス", "result": 1, "cushion": 9.8, "moisture": 2.6, "cat": "same_dist", "good": true, "num_horses": "15", "time_diff": "-0.2", "passage": "1-1-1-1", "pace": "29.9-38.6", "agari": "38.6", "winner": "(サイモンブーケ)"}]}, {"name": "セザンワールド", "horse_num": "", "races": [{"date": "2026/04/04", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "千葉日報杯(2勝クラス)", "result": 4, "cushion": 9.2, "moisture": 8.7, "cat": "diff_dist", "good": false, "num_horses": "15", "time_diff": "0.3", "passage": "9-6-3-3", "pace": "37.2-37.7", "agari": "37.7", "winner": "オリーブグリーン"}, {"date": "2026/03/08", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 6, "cushion": 9.5, "moisture": 11.0, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "0.8", "passage": "12-12-9-8", "pace": "36.9-39.7", "agari": "39.5", "winner": "ラオラシオン"}, {"date": "2026/01/24", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "初霞賞(2勝クラス)", "result": 4, "cushion": 10.7, "moisture": 1.0, "cat": "diff_dist", "good": false, "num_horses": "10", "time_diff": "0.7", "passage": "6-6-7-7", "pace": "37.7-39.3", "agari": "39.2", "winner": "プルナチャンドラ"}, {"date": "2026/01/05", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "初茜賞(2勝クラス)", "result": 4, "cushion": 9.7, "moisture": 7.2, "cat": "diff_dist", "good": false, "num_horses": "12", "time_diff": "1.0", "passage": "8-8-7-6", "pace": "37.1-38.7", "agari": "38.8", "winner": "オーケーバーディー"}, {"date": "2025/11/08", "venue": "福島", "surface": "芝", "distance": 1800, "race_name": "3歳以上1勝クラス", "result": 7, "cushion": 9.2, "moisture": 12.1, "cat": "diff_surface", "good": false, "num_horses": "16", "time_diff": "0.9", "passage": "10-9-9-6", "pace": "34.9-35.6", "agari": "35.7", "winner": "バセリーナ"}, {"date": "2025/10/25", "venue": "新潟", "surface": "芝", "distance": 1800, "race_name": "3歳以上1勝クラス", "result": 9, "cushion": 9.4, "moisture": 10.5, "cat": "diff_surface", "good": false, "num_horses": "15", "time_diff": "1.2", "passage": "13-13", "pace": "36.0-33.8", "agari": "34.3", "winner": "コンフォルツァ"}, {"date": "2025/09/20", "venue": "中山", "surface": "芝", "distance": 2000, "race_name": "3歳以上1勝クラス", "result": 16, "cushion": 9.2, "moisture": 13.8, "cat": "diff_surface", "good": false, "num_horses": "18", "time_diff": "1.7", "passage": "16-16-17-16", "pace": "35.9-35.0", "agari": "35.1", "winner": "レイヤードレッド"}, {"date": "2025/08/31", "venue": "新潟", "surface": "芝", "distance": 2200, "race_name": "瓢湖特別(1勝クラス)", "result": 6, "cushion": 9.5, "moisture": 12.3, "cat": "diff_surface", "good": false, "num_horses": "11", "time_diff": "0.8", "passage": "7-7-7-5", "pace": "35.6-35.5", "agari": "35.9", "winner": "トリプルコーク"}, {"date": "2025/07/06", "venue": "福島", "surface": "芝", "distance": 1800, "race_name": "3歳以上1勝クラス", "result": 4, "cushion": 8.9, "moisture": 10.5, "cat": "diff_surface", "good": false, "num_horses": "14", "time_diff": "0.4", "passage": "8-9-9-8", "pace": "35.1-37.0", "agari": "36.0", "winner": "コスモアンソロジー"}]}, {"name": "セボンサデッセ", "horse_num": "", "races": [{"date": "2026/03/01", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "4歳以上1勝クラス", "result": 1, "cushion": 9.6, "moisture": 11.7, "cat": "same_dist", "good": true, "num_horses": "16", "time_diff": "-0.2", "passage": "1-1-1-1", "pace": "30.1-37.4", "agari": "37.4", "winner": "(ポイントネモ)"}, {"date": "2026/01/12", "venue": "京都", "surface": "ダ", "distance": 1400, "race_name": "4歳以上1勝クラス", "result": 4, "cushion": 11.0, "moisture": 1.2, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.3", "passage": "2-2", "pace": "36.2-36.8", "agari": "37.0", "winner": "メイケイレイン"}, {"date": "2025/12/13", "venue": "阪神", "surface": "ダ", "distance": 1400, "race_name": "3歳以上1勝クラス", "result": 2, "cushion": 9.1, "moisture": 1.6, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "0.6", "passage": "3-3", "pace": "34.5-37.2", "agari": "37.4", "winner": "ラファル"}, {"date": "2025/11/30", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "3歳以上1勝クラス", "result": 4, "cushion": 10.9, "moisture": 4.3, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.8", "passage": "6-5-3-2", "pace": "35.9-37.6", "agari": "38.0", "winner": "ドゥラエテルノ"}, {"date": "2025/05/25", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "3歳1勝クラス", "result": 2, "cushion": 8.6, "moisture": 16.3, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "0.3", "passage": "6-5-3-3", "pace": "35.5-36.6", "agari": "36.6", "winner": "トリポリタニア"}, {"date": "2025/03/23", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "3歳1勝クラス", "result": 3, "cushion": 9.0, "moisture": 4.9, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "1.1", "passage": "3-4-4-4", "pace": "37.8-38.5", "agari": "39.0", "winner": "カナルビーグル"}, {"date": "2025/02/02", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "3歳1勝クラス", "result": 2, "cushion": 8.3, "moisture": 17.4, "cat": "same_dist", "good": true, "num_horses": "8", "time_diff": "0.1", "passage": "2-2-2-2", "pace": "30.6-35.7", "agari": "35.8", "winner": "シュラザック"}, {"date": "2024/11/24", "venue": "京都", "surface": "ダ", "distance": 1400, "race_name": "2歳新馬", "result": 1, "cushion": 11.4, "moisture": 1.7, "cat": "diff_dist", "good": true, "num_horses": "14", "time_diff": "-0.6", "passage": "4-2", "pace": "35.8-38.1", "agari": "37.7", "winner": "(タマゴ)"}]}, {"name": "ダイシンバースディ", "horse_num": "", "races": [{"date": "2026/04/05", "venue": "中山", "surface": "芝", "distance": 1600, "race_name": "4歳以上2勝クラス", "result": 12, "cushion": 7.9, "moisture": 13.7, "cat": "diff_surface", "good": false, "num_horses": "12", "time_diff": "1.8", "passage": "9-10-9", "pace": "36.2-34.7", "agari": "35.4", "winner": "リバーバレイト"}, {"date": "2026/03/21", "venue": "中山", "surface": "芝", "distance": 1800, "race_name": "館山特別(2勝クラス)", "result": 13, "cushion": 9.8, "moisture": 12.8, "cat": "diff_surface", "good": false, "num_horses": "15", "time_diff": "1.0", "passage": "2-2-2-2", "pace": "36.7-34.5", "agari": "35.4", "winner": "ダノンジャイアン"}, {"date": "2026/02/21", "venue": "東京", "surface": "芝", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 10, "cushion": 9.8, "moisture": 13.1, "cat": "diff_surface", "good": false, "num_horses": "12", "time_diff": "1.3", "passage": "5-7-7", "pace": "36.3-33.8", "agari": "34.4", "winner": "マイネルトルファン"}, {"date": "2026/02/01", "venue": "東京", "surface": "芝", "distance": 2000, "race_name": "4歳以上2勝クラス", "result": 7, "cushion": 9.7, "moisture": 12.3, "cat": "diff_surface", "good": false, "num_horses": "9", "time_diff": "1.5", "passage": "3-3-3", "pace": "36.5-34.3", "agari": "35.3", "winner": "ログラール"}, {"date": "2026/01/10", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 12, "cushion": 10.0, "moisture": 5.5, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "2.4", "passage": "3-2-3-4", "pace": "36.8-37.7", "agari": "39.9", "winner": "エクリプスルバン"}]}, {"name": "テンクウジョー", "horse_num": "", "races": [{"date": "2026/04/04", "venue": "阪神", "surface": "ダ", "distance": 1400, "race_name": "4歳以上2勝クラス", "result": 9, "cushion": 9.2, "moisture": 7.7, "cat": "diff_dist", "good": false, "num_horses": "15", "time_diff": "0.9", "passage": "7-6", "pace": "34.8-36.1", "agari": "36.2", "winner": "テイエムヒショウ"}, {"date": "2026/02/10", "venue": "東京", "surface": "ダ", "distance": 1300, "race_name": "4歳以上2勝クラス", "result": 8, "cushion": 10.1, "moisture": 9.1, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.8", "passage": "14-14", "pace": "30.1-35.9", "agari": "35.2", "winner": "ドラゴンテイラー"}, {"date": "2025/09/28", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "3歳以上2勝クラス", "result": 10, "cushion": 10.3, "moisture": 1.7, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.7", "passage": "13-14-15-14", "pace": "35.9-38.5", "agari": "38.2", "winner": "チュウワクリスエス"}, {"date": "2025/09/15", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "鋸山特別(2勝クラス)", "result": 6, "cushion": 9.9, "moisture": 5.7, "cat": "diff_dist", "good": false, "num_horses": "11", "time_diff": "1.9", "passage": "8-8-8-7", "pace": "36.4-37.6", "agari": "38.6", "winner": "リアライズカミオン"}, {"date": "2025/05/18", "venue": "東京", "surface": "ダ", "distance": 1600, "race_name": "青梅特別(2勝クラス)", "result": 11, "cushion": 8.9, "moisture": 12.5, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.4", "passage": "8-9", "pace": "34.1-36.2", "agari": "36.0", "winner": "オウギノカナメ"}, {"date": "2025/04/26", "venue": "東京", "surface": "ダ", "distance": 1600, "race_name": "4歳以上2勝クラス", "result": 14, "cushion": 9.5, "moisture": 6.8, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "3.1", "passage": "12-9", "pace": "34.5-37.2", "agari": "39.5", "winner": "ターコイズフリンジ"}, {"date": "2025/02/23", "venue": "東京", "surface": "ダ", "distance": 1400, "race_name": "大島特別(2勝クラス)", "result": 12, "cushion": 9.5, "moisture": 1.6, "cat": "diff_dist", "good": false, "num_horses": "14", "time_diff": "2.6", "passage": "10-7", "pace": "35.7-36.7", "agari": "38.6", "winner": "ヴァンドーム"}, {"date": "2024/10/06", "venue": "東京", "surface": "ダ", "distance": 1600, "race_name": "3歳以上2勝クラス", "result": 5, "cushion": 9.6, "moisture": 2.9, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.9", "passage": "8-7", "pace": "35.0-34.5", "agari": "35.8", "winner": "ボールドゾーン"}, {"date": "2024/07/14", "venue": "函館", "surface": "ダ", "distance": 1700, "race_name": "駒場特別(2勝クラス)", "result": 13, "cushion": 8.3, "moisture": 3.6, "cat": "same_dist", "good": false, "num_horses": "14", "time_diff": "1.4", "passage": "13-13-9-10", "pace": "29.2-38.6", "agari": "38.6", "winner": "レッドラグラス"}, {"date": "2024/06/15", "venue": "函館", "surface": "ダ", "distance": 1700, "race_name": "3歳以上1勝クラス", "result": 1, "cushion": 7.6, "moisture": 2.8, "cat": "same_dist", "good": true, "num_horses": "14", "time_diff": "-0.1", "passage": "12-11-8-4", "pace": "29.7-39.9", "agari": "38.6", "winner": "(カリフォルニア)"}]}, {"name": "トルショー", "horse_num": "", "races": [{"date": "2026/03/08", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 8, "cushion": 9.5, "moisture": 11.0, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "1.3", "passage": "3-3-3-3", "pace": "36.9-39.7", "agari": "40.7", "winner": "ラオラシオン"}, {"date": "2026/02/28", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 11, "cushion": 10.0, "moisture": 10.6, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.4", "passage": "7-7-8-9", "pace": "37.1-38.7", "agari": "39.3", "winner": "メリークリスマス"}, {"date": "2026/01/10", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 9, "cushion": 10.0, "moisture": 5.5, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "1.4", "passage": "13-12-3-2", "pace": "36.8-37.7", "agari": "38.9", "winner": "エクリプスルバン"}, {"date": "2025/11/23", "venue": "東京", "surface": "ダ", "distance": 1600, "race_name": "3歳以上2勝クラス", "result": 11, "cushion": 9.2, "moisture": 2.9, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.0", "passage": "10-9", "pace": "37.1-35.6", "agari": "35.9", "winner": "セギレエルビエント"}, {"date": "2025/10/19", "venue": "東京", "surface": "ダ", "distance": 1600, "race_name": "西湖特別(2勝クラス)", "result": 12, "cushion": 9.6, "moisture": 2.5, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "1.8", "passage": "1-1", "pace": "35.5-36.3", "agari": "38.1", "winner": "クールブロン"}, {"date": "2025/04/26", "venue": "東京", "surface": "ダ", "distance": 1600, "race_name": "3歳1勝クラス", "result": 1, "cushion": 9.5, "moisture": 6.8, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "0.0", "passage": "2-2", "pace": "35.4-36.5", "agari": "36.4", "winner": "(クラリネットソナタ)"}, {"date": "2025/03/02", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "3歳1勝クラス", "result": 6, "cushion": 10.1, "moisture": 1.9, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.2", "passage": "5-5-6-7", "pace": "37.3-38.1", "agari": "38.8", "winner": "アメージング"}, {"date": "2025/02/16", "venue": "東京", "surface": "ダ", "distance": 1600, "race_name": "3歳1勝クラス", "result": 3, "cushion": 9.3, "moisture": 1.7, "cat": "diff_dist", "good": true, "num_horses": "11", "time_diff": "0.1", "passage": "2-2", "pace": "35.6-37.3", "agari": "37.3", "winner": "サノノワンダー"}, {"date": "2024/11/03", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "もちの木賞(1勝クラス)", "result": 11, "cushion": 11.1, "moisture": 3.3, "cat": "diff_dist", "good": false, "num_horses": "12", "time_diff": "5.9", "passage": "5-6-9-9", "pace": "36.1-37.7", "agari": "42.8", "winner": "クァンタムウェーブ"}]}, {"name": "トーレ", "horse_num": "", "races": [{"date": "2026/02/28", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "早鞆特別(2勝クラス)", "result": 16, "cushion": 8.8, "moisture": 14.5, "cat": "same_dist", "good": false, "num_horses": "16", "time_diff": "3.0", "passage": "1-1-2-3", "pace": "28.5-37.8", "agari": "40.8", "winner": "ジューンエオス"}, {"date": "2026/01/11", "venue": "京都", "surface": "ダ", "distance": 1400, "race_name": "4歳以上2勝クラス", "result": 13, "cushion": 10.4, "moisture": 1.0, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.5", "passage": "14-12", "pace": "36.0-37.2", "agari": "37.2", "winner": "ラファル"}, {"date": "2025/10/19", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "聚楽第特別(2勝クラス)", "result": 13, "cushion": 10.8, "moisture": 7.2, "cat": "diff_dist", "good": false, "num_horses": "14", "time_diff": "3.1", "passage": "2-3-2-2", "pace": "34.9-37.4", "agari": "40.2", "winner": "テスティモーネ"}, {"date": "2025/10/04", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "3歳以上2勝クラス", "result": 10, "cushion": 9.4, "moisture": 12.2, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "1.4", "passage": "1-1-1-1", "pace": "36.3-36.7", "agari": "38.1", "winner": "ヒルノハンブルク"}, {"date": "2025/07/05", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "TAインディア賞(2勝クラス)", "result": 6, "cushion": 8.8, "moisture": 0.5, "cat": "same_dist", "good": false, "num_horses": "11", "time_diff": "0.9", "passage": "1-1-1-1", "pace": "30.6-37.2", "agari": "38.1", "winner": "メイショウズイウン"}, {"date": "2025/05/17", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 3, "cushion": 10.1, "moisture": 6.9, "cat": "diff_dist", "good": true, "num_horses": "10", "time_diff": "0.4", "passage": "1-1-1-1", "pace": "35.6-37.0", "agari": "37.4", "winner": "ヒロノラメール"}, {"date": "2025/04/20", "venue": "福島", "surface": "ダ", "distance": 1700, "race_name": "4歳以上1勝クラス", "result": 1, "cushion": 9.0, "moisture": 4.6, "cat": "same_dist", "good": true, "num_horses": "15", "time_diff": "-0.8", "passage": "1-1-1-1", "pace": "30.7-37.6", "agari": "37.6", "winner": "(レイワサンサン)"}, {"date": "2025/03/29", "venue": "中京", "surface": "ダ", "distance": 1800, "race_name": "4歳以上1勝クラス", "result": 5, "cushion": 8.6, "moisture": 11.6, "cat": "diff_dist", "good": false, "num_horses": "14", "time_diff": "1.4", "passage": "3-3-2-2", "pace": "37.2-38.9", "agari": "40.3", "winner": "バルダンツァ"}, {"date": "2025/02/02", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "4歳以上1勝クラス", "result": 13, "cushion": 9.5, "moisture": 7.2, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "6.5", "passage": "3-3-3-3", "pace": "38.0-39.0", "agari": "45.2", "winner": "メイショウトム"}, {"date": "2024/11/30", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "3歳以上1勝クラス", "result": 3, "cushion": 11.5, "moisture": 4.7, "cat": "diff_dist", "good": true, "num_horses": "12", "time_diff": "0.6", "passage": "2-2-2-2", "pace": "36.9-38.1", "agari": "38.5", "winner": "シャンデルナゴル"}]}, {"name": "マイレーヌ", "horse_num": "", "races": [{"date": "2026/02/21", "venue": "東京", "surface": "芝", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 11, "cushion": 9.8, "moisture": 13.1, "cat": "diff_surface", "good": false, "num_horses": "12", "time_diff": "1.5", "passage": "2-4-4", "pace": "36.3-33.8", "agari": "35.0", "winner": "マイネルトルファン"}, {"date": "2026/02/10", "venue": "東京", "surface": "ダ", "distance": 1300, "race_name": "4歳以上2勝クラス", "result": 14, "cushion": 10.1, "moisture": 9.1, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.8", "passage": "7-6", "pace": "30.1-35.9", "agari": "37.1", "winner": "ドラゴンテイラー"}, {"date": "2025/11/22", "venue": "福島", "surface": "ダ", "distance": 1150, "race_name": "福島放送賞(2勝クラス)", "result": 7, "cushion": 9.2, "moisture": 1.4, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.0", "passage": "10-10", "pace": "31.4-37.3", "agari": "37.3", "winner": "ルージュアズライト"}, {"date": "2025/09/07", "venue": "中山", "surface": "ダ", "distance": 1200, "race_name": "浦安特別(2勝クラス)", "result": 12, "cushion": 9.9, "moisture": 6.3, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "2.0", "passage": "12-12", "pace": "33.8-37.3", "agari": "37.7", "winner": "モンドプリューム"}, {"date": "2025/07/26", "venue": "中京", "surface": "ダ", "distance": 1400, "race_name": "四日市特別(2勝クラス)", "result": 12, "cushion": 9.7, "moisture": 2.1, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.9", "passage": "6-6", "pace": "34.0-37.5", "agari": "38.5", "winner": "ワイワイレジェンド"}, {"date": "2025/07/06", "venue": "福島", "surface": "ダ", "distance": 1150, "race_name": "さくらんぼ特別(2勝クラス)", "result": 11, "cushion": 8.9, "moisture": 4.0, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "2.2", "passage": "6-9", "pace": "31.2-36.5", "agari": "38.1", "winner": "ビバップ"}, {"date": "2025/04/12", "venue": "福島", "surface": "ダ", "distance": 1150, "race_name": "喜多方特別(2勝クラス)", "result": 9, "cushion": 9.0, "moisture": 2.0, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.7", "passage": "12-11", "pace": "30.7-37.9", "agari": "37.2", "winner": "ブレーザー"}, {"date": "2025/03/22", "venue": "中山", "surface": "ダ", "distance": 1200, "race_name": "4歳以上2勝クラス", "result": 7, "cushion": 9.3, "moisture": 11.6, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.9", "passage": "3-3", "pace": "34.3-37.1", "agari": "37.8", "winner": "スマイルアップ"}, {"date": "2025/01/25", "venue": "中山", "surface": "ダ", "distance": 1200, "race_name": "4歳以上1勝クラス", "result": 1, "cushion": 10.2, "moisture": 2.7, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "-0.2", "passage": "2-2", "pace": "33.4-37.9", "agari": "37.8", "winner": "(ロサンゼルス)"}, {"date": "2025/01/12", "venue": "中山", "surface": "ダ", "distance": 1200, "race_name": "4歳以上1勝クラス", "result": 2, "cushion": 10.0, "moisture": 5.9, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "0.1", "passage": "1-1", "pace": "34.0-37.9", "agari": "38.0", "winner": "ケープアグラス"}]}, {"name": "マーウォルス", "horse_num": "", "races": [{"date": "2026/02/28", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "早鞆特別(2勝クラス)", "result": 5, "cushion": 8.8, "moisture": 14.5, "cat": "same_dist", "good": false, "num_horses": "16", "time_diff": "0.8", "passage": "12-12-12-12", "pace": "28.5-37.8", "agari": "37.4", "winner": "ジューンエオス"}, {"date": "2026/02/15", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "4歳以上1勝クラス", "result": 1, "cushion": 9.1, "moisture": 6.3, "cat": "same_dist", "good": true, "num_horses": "13", "time_diff": "-0.1", "passage": "11-11-10-8", "pace": "29.2-39.2", "agari": "38.3", "winner": "(ショウナンタハティ)"}, {"date": "2025/12/20", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "3歳以上1勝クラス", "result": 5, "cushion": 9.1, "moisture": 6.9, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.9", "passage": "10-7-7-5", "pace": "37.7-36.9", "agari": "37.3", "winner": "アカデミア"}, {"date": "2025/11/23", "venue": "京都", "surface": "ダ", "distance": 1400, "race_name": "3歳以上1勝クラス", "result": 9, "cushion": 10.5, "moisture": 1.7, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.0", "passage": "13-12", "pace": "34.9-37.1", "agari": "37.0", "winner": "ポッドドンナー"}, {"date": "2025/11/08", "venue": "福島", "surface": "ダ", "distance": 1700, "race_name": "3歳以上1勝クラス", "result": 3, "cushion": 9.2, "moisture": 3.7, "cat": "same_dist", "good": true, "num_horses": "15", "time_diff": "0.4", "passage": "8-7-8-8", "pace": "30.0-38.5", "agari": "38.2", "winner": "タイセイマンボ"}, {"date": "2025/08/10", "venue": "札幌", "surface": "ダ", "distance": 1700, "race_name": "3歳未勝利", "result": 1, "cushion": 7.2, "moisture": 10.2, "cat": "same_dist", "good": true, "num_horses": "14", "time_diff": "-0.1", "passage": "7-7-4-2", "pace": "30.1-39.8", "agari": "39.1", "winner": "(ジョードリウム)"}, {"date": "2025/07/13", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "3歳未勝利", "result": 2, "cushion": 9.1, "moisture": 0.5, "cat": "same_dist", "good": true, "num_horses": "16", "time_diff": "0.5", "passage": "9-9-1-2", "pace": "30.3-38.9", "agari": "39.4", "winner": "ハッコウイチウ"}, {"date": "2025/06/21", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "3歳未勝利", "result": 2, "cushion": 9.0, "moisture": 2.9, "cat": "diff_dist", "good": true, "num_horses": "13", "time_diff": "0.4", "passage": "7-7-3-3", "pace": "37.2-39.4", "agari": "39.5", "winner": "エテルノレガーメ"}, {"date": "2025/03/02", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "3歳未勝利", "result": 4, "cushion": 9.0, "moisture": 1.5, "cat": "diff_dist", "good": false, "num_horses": "12", "time_diff": "0.2", "passage": "5-5-4-3", "pace": "38.7-38.0", "agari": "37.7", "winner": "ディープサミット"}, {"date": "2025/02/01", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "3歳未勝利", "result": 2, "cushion": 10.8, "moisture": 1.0, "cat": "diff_dist", "good": true, "num_horses": "9", "time_diff": "0.0", "passage": "2-2-2-2", "pace": "37.6-38.6", "agari": "38.5", "winner": "コウジョリョウゾク"}]}];
-const TX = 9.7;
-const TY = 2.9;
+const HORSES = [{"name": "アオカミ", "horse_num": "1", "races": [{"date": "2026/03/22", "venue": "中山", "surface": "ダ", "distance": 1200, "race_name": "鎌ケ谷特別(2勝クラス)", "result": 11, "cushion": 10.0, "moisture": 4.0, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.3", "passage": "9-10", "pace": "34.6-36.8", "agari": "37.3", "winner": "カネショウレジェン"}, {"date": "2026/02/15", "venue": "東京", "surface": "ダ", "distance": 1400, "race_name": "4歳以上2勝クラス", "result": 9, "cushion": 9.4, "moisture": 5.5, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.4", "passage": "7-8", "pace": "36.4-36.1", "agari": "36.6", "winner": "クインズデネブ"}, {"date": "2025/11/29", "venue": "京都", "surface": "ダ", "distance": 1200, "race_name": "3歳以上2勝クラス", "result": 15, "cushion": 10.9, "moisture": 4.8, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.2", "passage": "13-13", "pace": "35.3-36.6", "agari": "36.5", "winner": "トリリオンボーイ"}, {"date": "2025/10/25", "venue": "東京", "surface": "ダ", "distance": 1400, "race_name": "3歳以上2勝クラス", "result": 7, "cushion": 9.6, "moisture": 9.3, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "1.0", "passage": "7-6", "pace": "36.4-35.4", "agari": "35.9", "winner": "フウセツ"}, {"date": "2025/09/27", "venue": "中山", "surface": "ダ", "distance": 1200, "race_name": "3歳以上2勝クラス", "result": 13, "cushion": 10.2, "moisture": 2.5, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.1", "passage": "6-5", "pace": "34.4-37.0", "agari": "37.3", "winner": "ワンダラー"}, {"date": "2025/05/04", "venue": "東京", "surface": "ダ", "distance": 1300, "race_name": "4歳以上2勝クラス", "result": 9, "cushion": 9.4, "moisture": 8.3, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.1", "passage": "9-7", "pace": "29.4-35.9", "agari": "35.6", "winner": "キュムロンニンバス"}, {"date": "2025/04/19", "venue": "福島", "surface": "ダ", "distance": 1150, "race_name": "4歳以上1勝クラス", "result": 1, "cushion": 9.0, "moisture": 6.0, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "-0.1", "passage": "9-8", "pace": "31.7-37.7", "agari": "36.6", "winner": "(サンダーアリュール)"}, {"date": "2025/03/23", "venue": "中京", "surface": "ダ", "distance": 1400, "race_name": "4歳以上1勝クラス", "result": 3, "cushion": 9.5, "moisture": 4.2, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "0.5", "passage": "7-6", "pace": "35.0-37.4", "agari": "37.1", "winner": "フィリップ"}, {"date": "2025/02/01", "venue": "東京", "surface": "ダ", "distance": 1400, "race_name": "4歳以上1勝クラス", "result": 7, "cushion": 9.4, "moisture": 1.4, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.0", "passage": "8-9", "pace": "35.3-37.4", "agari": "37.3", "winner": "ゴールデンオスカー"}, {"date": "2025/01/06", "venue": "中山", "surface": "ダ", "distance": 1200, "race_name": "4歳以上1勝クラス", "result": 5, "cushion": 10.1, "moisture": 1.7, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.4", "passage": "12-12", "pace": "33.8-38.4", "agari": "37.7", "winner": "ホウオウフロイト"}]}, {"name": "アースイオス", "horse_num": "7", "races": [{"date": "2026/04/12", "venue": "中山", "surface": "ダ", "distance": 2400, "race_name": "印西特別(2勝クラス)", "result": 12, "cushion": 9.3, "moisture": 7.9, "cat": "diff_dist", "good": false, "num_horses": "12", "time_diff": "3.4", "passage": "12-12-12-12", "pace": "39.0-37.7", "agari": "39.3", "winner": "インジケーター"}, {"date": "2026/04/04", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "千葉日報杯(2勝クラス)", "result": 14, "cushion": 9.2, "moisture": 8.7, "cat": "diff_dist", "good": false, "num_horses": "15", "time_diff": "3.1", "passage": "14-14-15-15", "pace": "37.2-37.7", "agari": "39.1", "winner": "オリーブグリーン"}, {"date": "2026/02/28", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 15, "cushion": 10.0, "moisture": 10.6, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "2.3", "passage": "14-14-13-14", "pace": "37.1-38.7", "agari": "39.4", "winner": "メリークリスマス"}, {"date": "2026/01/25", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "響灘特別(2勝クラス)", "result": 16, "cushion": 10.5, "moisture": 1.7, "cat": "same_dist", "good": false, "num_horses": "16", "time_diff": "3.3", "passage": "16-16-15-16", "pace": "30.9-36.9", "agari": "38.8", "winner": "アイウィル"}, {"date": "2025/09/07", "venue": "札幌", "surface": "ダ", "distance": 1700, "race_name": "旭川特別(2勝クラス)", "result": 14, "cushion": 7.1, "moisture": 3.0, "cat": "same_dist", "good": false, "num_horses": "14", "time_diff": "4.6", "passage": "14-14-14-14", "pace": "30.0-37.5", "agari": "39.9", "winner": "トーセンサウダージ"}, {"date": "2025/06/28", "venue": "福島", "surface": "ダ", "distance": 1700, "race_name": "いわき特別(2勝クラス)", "result": 8, "cushion": 9.0, "moisture": 5.0, "cat": "same_dist", "good": false, "num_horses": "14", "time_diff": "2.9", "passage": "14-14-14-13", "pace": "30.2-36.8", "agari": "37.7", "winner": "ナルカミ"}, {"date": "2025/03/02", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "4歳以上1勝クラス", "result": 1, "cushion": 10.1, "moisture": 1.9, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "-0.2", "passage": "16-14-10-6", "pace": "36.3-39.4", "agari": "38.7", "winner": "(スペイドアン)"}, {"date": "2025/01/25", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "4歳以上1勝クラス", "result": 2, "cushion": 10.2, "moisture": 2.7, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "0.0", "passage": "15-16-7-3", "pace": "37.8-38.5", "agari": "37.8", "winner": "タイセイアディクト"}, {"date": "2025/01/12", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "4歳以上1勝クラス", "result": 5, "cushion": 10.0, "moisture": 5.9, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.6", "passage": "14-14-15-11", "pace": "36.9-39.5", "agari": "38.8", "winner": "ブレスワード"}, {"date": "2024/12/07", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "3歳以上1勝クラス", "result": 7, "cushion": 10.2, "moisture": 1.6, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.4", "passage": "16-16-16-16", "pace": "38.3-37.8", "agari": "37.3", "winner": "エッグスラット"}]}, {"name": "イブニングタイド", "horse_num": "20", "races": [{"date": "2026/02/22", "venue": "東京", "surface": "ダ", "distance": 1400, "race_name": "大島特別(2勝クラス)", "result": 15, "cushion": 9.7, "moisture": 1.0, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "2.1", "passage": "6-6", "pace": "35.2-37.1", "agari": "38.1", "winner": "アスクアイルビゼア"}, {"date": "2025/12/21", "venue": "中京", "surface": "芝", "distance": 1400, "race_name": "尾張特別(2勝クラス)", "result": 7, "cushion": 9.7, "moisture": 12.8, "cat": "diff_surface", "good": false, "num_horses": "18", "time_diff": "0.5", "passage": "5-5", "pace": "34.6-35.5", "agari": "35.3", "winner": "リチャードバローズ"}, {"date": "2025/10/25", "venue": "東京", "surface": "芝", "distance": 1400, "race_name": "精進湖特別(2勝クラス)", "result": 6, "cushion": 9.6, "moisture": 14.2, "cat": "diff_surface", "good": false, "num_horses": "12", "time_diff": "0.2", "passage": "5-5", "pace": "35.2-34.3", "agari": "33.9", "winner": "ウイントワイライト"}, {"date": "2025/08/23", "venue": "新潟", "surface": "芝", "distance": 1400, "race_name": "飯豊特別(2勝クラス)", "result": 17, "cushion": 9.3, "moisture": 11.6, "cat": "diff_surface", "good": false, "num_horses": "17", "time_diff": "1.3", "passage": "9-10", "pace": "34.2-34.9", "agari": "35.4", "winner": "ラテラルシンキング"}, {"date": "2025/06/14", "venue": "東京", "surface": "芝", "distance": 1400, "race_name": "3歳以上1勝クラス", "result": 1, "cushion": 9.4, "moisture": 13.9, "cat": "diff_surface", "good": true, "num_horses": "18", "time_diff": "0.0", "passage": "4-4", "pace": "35.0-35.0", "agari": "34.5", "winner": "(ボンヌソワレ)"}, {"date": "2025/04/27", "venue": "東京", "surface": "芝", "distance": 1600, "race_name": "3歳1勝クラス", "result": 5, "cushion": 9.2, "moisture": 13.9, "cat": "diff_surface", "good": false, "num_horses": "9", "time_diff": "0.5", "passage": "4-3", "pace": "34.6-34.6", "agari": "34.8", "winner": "アスクセクシーモア"}, {"date": "2025/02/02", "venue": "東京", "surface": "芝", "distance": 1800, "race_name": "セントポーリア賞(1勝クラス)", "result": 11, "cushion": 8.7, "moisture": 12.1, "cat": "diff_surface", "good": false, "num_horses": "13", "time_diff": "1.4", "passage": "2-3-3", "pace": "36.1-34.8", "agari": "35.9", "winner": "エネルジコ"}, {"date": "2024/09/14", "venue": "中山", "surface": "芝", "distance": 2000, "race_name": "2歳新馬", "result": 1, "cushion": 9.3, "moisture": 14.1, "cat": "diff_surface", "good": true, "num_horses": "9", "time_diff": "0.0", "passage": "1-1-1-2", "pace": "38.4-33.5", "agari": "33.5", "winner": "(サトノラポール)"}]}, {"name": "カスバートテソーロ", "horse_num": "16", "races": [{"date": "2026/04/12", "venue": "福島", "surface": "ダ", "distance": 1700, "race_name": "4歳以上1勝クラス", "result": 1, "cushion": 9.5, "moisture": 2.4, "cat": "same_dist", "good": true, "num_horses": "15", "time_diff": "-0.1", "passage": "6-4-3-2", "pace": "30.9-38.2", "agari": "37.9", "winner": "(ベルフィーヌ)"}, {"date": "2026/01/31", "venue": "東京", "surface": "ダ", "distance": 2100, "race_name": "4歳以上1勝クラス", "result": 11, "cushion": 9.6, "moisture": 1.2, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "2.0", "passage": "8-8-9-10", "pace": "30.9-38.4", "agari": "39.1", "winner": "ダブルメッセージ"}, {"date": "2026/01/12", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "4歳以上1勝クラス", "result": 10, "cushion": 10.3, "moisture": 2.2, "cat": "diff_dist", "good": false, "num_horses": "15", "time_diff": "3.4", "passage": "7-7-7-4", "pace": "37.6-38.0", "agari": "40.5", "winner": "フィールオーサム"}, {"date": "2025/12/20", "venue": "中京", "surface": "ダ", "distance": 1800, "race_name": "3歳以上1勝クラス", "result": 2, "cushion": 9.7, "moisture": 6.0, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "0.9", "passage": "7-7-7-7", "pace": "37.8-38.0", "agari": "38.1", "winner": "タガノヘラクレス"}, {"date": "2025/11/24", "venue": "福島", "surface": "ダ", "distance": 1700, "race_name": "3歳以上1勝クラス", "result": 4, "cushion": 9.5, "moisture": 1.1, "cat": "same_dist", "good": false, "num_horses": "15", "time_diff": "0.1", "passage": "7-7-4-5", "pace": "29.5-39.1", "agari": "39.0", "winner": "ステラスプレンダー"}, {"date": "2025/09/07", "venue": "札幌", "surface": "ダ", "distance": 1700, "race_name": "3歳未勝利", "result": 1, "cushion": 7.1, "moisture": 3.0, "cat": "same_dist", "good": true, "num_horses": "14", "time_diff": "-0.6", "passage": "8-10-1-1", "pace": "30.0-38.2", "agari": "38.2", "winner": "(リポジノ)"}, {"date": "2025/08/31", "venue": "札幌", "surface": "ダ", "distance": 1700, "race_name": "3歳未勝利", "result": 3, "cushion": 7.5, "moisture": 11.2, "cat": "same_dist", "good": true, "num_horses": "14", "time_diff": "0.5", "passage": "12-12-9-6", "pace": "29.8-38.8", "agari": "38.2", "winner": "ユージュアーナ"}, {"date": "2025/08/16", "venue": "札幌", "surface": "ダ", "distance": 1700, "race_name": "3歳未勝利", "result": 2, "cushion": 7.4, "moisture": 4.4, "cat": "same_dist", "good": true, "num_horses": "14", "time_diff": "0.3", "passage": "12-11-11-4", "pace": "29.9-38.8", "agari": "38.2", "winner": "サウンドルーチェ"}, {"date": "2025/08/03", "venue": "札幌", "surface": "ダ", "distance": 1700, "race_name": "3歳未勝利", "result": 2, "cushion": 7.5, "moisture": 2.2, "cat": "same_dist", "good": true, "num_horses": "14", "time_diff": "0.4", "passage": "11-10-3-2", "pace": "30.6-38.3", "agari": "38.4", "winner": "レディゴディヴァ"}, {"date": "2025/05/17", "venue": "新潟", "surface": "ダ", "distance": 1800, "race_name": "3歳未勝利", "result": 5, "cushion": 10.0, "moisture": 3.2, "cat": "diff_dist", "good": false, "num_horses": "15", "time_diff": "1.1", "passage": "8-7-4-4", "pace": "36.2-39.2", "agari": "40.1", "winner": "ノンスタンダルド"}]}, {"name": "ギマール", "horse_num": "13", "races": [{"date": "2026/02/08", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "由布院特別(2勝クラス)", "result": null, "cushion": 9.6, "moisture": 5.0, "cat": "same_dist", "good": false, "num_horses": "16", "time_diff": "", "passage": "7-7-16", "pace": "29.3-38.7", "agari": "", "winner": "パフ"}, {"date": "2026/01/25", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "響灘特別(2勝クラス)", "result": 2, "cushion": 10.5, "moisture": 1.7, "cat": "same_dist", "good": true, "num_horses": "16", "time_diff": "0.0", "passage": "7-7-8-5", "pace": "30.9-36.9", "agari": "36.3", "winner": "アイウィル"}, {"date": "2025/12/07", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "豊中特別(2勝クラス)", "result": 6, "cushion": 9.1, "moisture": 1.7, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "0.4", "passage": "8-8-7-6", "pace": "35.8-39.0", "agari": "38.1", "winner": "タマモキャリコ"}, {"date": "2025/11/15", "venue": "福島", "surface": "ダ", "distance": 1700, "race_name": "西郷特別(2勝クラス)", "result": 4, "cushion": 8.9, "moisture": 1.9, "cat": "same_dist", "good": false, "num_horses": "15", "time_diff": "0.8", "passage": "4-4-4-4", "pace": "30.8-37.1", "agari": "37.5", "winner": "テーオールビー"}, {"date": "2025/07/05", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "TAインディア賞(2勝クラス)", "result": 3, "cushion": 8.8, "moisture": 0.5, "cat": "same_dist", "good": true, "num_horses": "11", "time_diff": "0.6", "passage": "7-7-4-4", "pace": "30.6-37.2", "agari": "37.5", "winner": "メイショウズイウン"}, {"date": "2025/06/01", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "與杼特別(2勝クラス)", "result": 6, "cushion": 11.3, "moisture": 3.2, "cat": "diff_dist", "good": false, "num_horses": "14", "time_diff": "0.5", "passage": "11-10-7-8", "pace": "35.5-38.3", "agari": "38.1", "winner": "メイショウソウタ"}, {"date": "2025/03/09", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 11, "cushion": 9.1, "moisture": 6.5, "cat": "diff_dist", "good": false, "num_horses": "12", "time_diff": "1.2", "passage": "3-4-5-6", "pace": "39.0-38.1", "agari": "38.8", "winner": "キャピタルサックス"}, {"date": "2025/02/09", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "4歳以上1勝クラス", "result": 1, "cushion": 9.9, "moisture": 7.0, "cat": "diff_dist", "good": true, "num_horses": "10", "time_diff": "0.0", "passage": "2-2-2-2", "pace": "37.4-37.9", "agari": "37.7", "winner": "(インジケーター)"}, {"date": "2024/06/09", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "3歳以上1勝クラス", "result": 2, "cushion": 9.6, "moisture": 8.7, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "0.2", "passage": "3-3-3-2", "pace": "36.3-38.0", "agari": "37.9", "winner": "レアンダー"}, {"date": "2024/05/19", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "3歳1勝クラス", "result": 3, "cushion": 10.0, "moisture": 3.1, "cat": "diff_dist", "good": true, "num_horses": "12", "time_diff": "0.5", "passage": "9-9-7-4", "pace": "35.9-37.7", "agari": "37.4", "winner": "デトネイション"}]}, {"name": "キングツェッペリン", "horse_num": "14", "races": [{"date": "2026/02/22", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "和布刈特別(2勝クラス)", "result": 7, "cushion": 9.6, "moisture": 1.8, "cat": "same_dist", "good": false, "num_horses": "16", "time_diff": "0.8", "passage": "12-11-14-13", "pace": "30.6-37.5", "agari": "37.0", "winner": "タイセイミッション"}, {"date": "2025/11/01", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "3歳以上2勝クラス", "result": 14, "cushion": 10.4, "moisture": 15.1, "cat": "diff_dist", "good": false, "num_horses": "15", "time_diff": "2.6", "passage": "7-7-8-9", "pace": "35.4-36.6", "agari": "38.2", "winner": "アーロンイメル"}, {"date": "2025/10/19", "venue": "東京", "surface": "ダ", "distance": 1600, "race_name": "西湖特別(2勝クラス)", "result": 10, "cushion": 9.6, "moisture": 2.5, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "1.2", "passage": "7-8", "pace": "35.5-36.3", "agari": "36.7", "winner": "クールブロン"}, {"date": "2025/07/05", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "TAインディア賞(2勝クラス)", "result": 2, "cushion": 8.8, "moisture": 0.5, "cat": "same_dist", "good": true, "num_horses": "11", "time_diff": "0.2", "passage": "2-3-4-4", "pace": "30.6-37.2", "agari": "37.1", "winner": "メイショウズイウン"}, {"date": "2025/05/24", "venue": "東京", "surface": "ダ", "distance": 1600, "race_name": "4歳以上2勝クラス", "result": 9, "cushion": 9.7, "moisture": 4.1, "cat": "diff_dist", "good": false, "num_horses": "14", "time_diff": "0.6", "passage": "10-10", "pace": "35.5-36.3", "agari": "36.1", "winner": "アルゴナヴィス"}, {"date": "2025/05/11", "venue": "京都", "surface": "ダ", "distance": 1400, "race_name": "4歳以上2勝クラス", "result": 6, "cushion": 10.2, "moisture": 10.2, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.8", "passage": "9-8", "pace": "35.0-36.4", "agari": "36.5", "winner": "プルートマスター"}, {"date": "2025/03/09", "venue": "阪神", "surface": "ダ", "distance": 1400, "race_name": "4歳以上2勝クラス", "result": 8, "cushion": 9.1, "moisture": 6.5, "cat": "diff_dist", "good": false, "num_horses": "14", "time_diff": "0.9", "passage": "11-11", "pace": "34.6-37.5", "agari": "37.1", "winner": "レイズカイザー"}, {"date": "2025/02/15", "venue": "京都", "surface": "ダ", "distance": 1400, "race_name": "4歳以上1勝クラス", "result": 1, "cushion": 10.5, "moisture": 5.0, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "-0.1", "passage": "13-12", "pace": "34.8-38.5", "agari": "37.1", "winner": "(リネアグローリア)"}, {"date": "2024/12/08", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "3歳以上1勝クラス", "result": 9, "cushion": 11.6, "moisture": 4.6, "cat": "diff_dist", "good": false, "num_horses": "10", "time_diff": "2.3", "passage": "2-4-6-8", "pace": "36.4-39.2", "agari": "40.8", "winner": "レーウィン"}, {"date": "2024/09/01", "venue": "中京", "surface": "ダ", "distance": 1200, "race_name": "3歳以上1勝クラス", "result": 12, "cushion": 8.6, "moisture": 18.4, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "3.2", "passage": "15-15", "pace": "34.1-35.4", "agari": "35.5", "winner": "フィルムアクトレス"}]}, {"name": "グランキングオー", "horse_num": "15", "races": [{"date": "2026/02/08", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "由布院特別(2勝クラス)", "result": 8, "cushion": 9.6, "moisture": 5.0, "cat": "same_dist", "good": false, "num_horses": "16", "time_diff": "0.8", "passage": "2-2-2-2", "pace": "29.3-38.7", "agari": "39.4", "winner": "パフ"}, {"date": "2026/01/25", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "響灘特別(2勝クラス)", "result": 13, "cushion": 10.5, "moisture": 1.7, "cat": "same_dist", "good": false, "num_horses": "16", "time_diff": "1.5", "passage": "3-3-3-3", "pace": "30.9-36.9", "agari": "38.2", "winner": "アイウィル"}, {"date": "2025/11/23", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "3歳以上2勝クラス", "result": 8, "cushion": 10.5, "moisture": 1.7, "cat": "diff_dist", "good": false, "num_horses": "14", "time_diff": "1.2", "passage": "1-1-1-1", "pace": "37.6-36.1", "agari": "37.3", "winner": "モックモック"}, {"date": "2025/11/09", "venue": "福島", "surface": "ダ", "distance": 1700, "race_name": "河北新報杯(2勝クラス)", "result": 15, "cushion": 9.2, "moisture": 2.0, "cat": "same_dist", "good": false, "num_horses": "15", "time_diff": "2.9", "passage": "12-12-11-14", "pace": "30.1-37.8", "agari": "39.6", "winner": "アレナパラシオ"}, {"date": "2025/09/20", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "3歳以上2勝クラス", "result": 8, "cushion": 9.0, "moisture": 1.0, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.9", "passage": "1-1-1-1", "pace": "37.3-37.9", "agari": "39.8", "winner": "カミノレアル"}, {"date": "2025/09/06", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "出石特別(2勝クラス)", "result": 3, "cushion": 9.0, "moisture": 13.0, "cat": "diff_dist", "good": true, "num_horses": "9", "time_diff": "0.8", "passage": "1-1-1-1", "pace": "37.6-36.6", "agari": "37.4", "winner": "トリポリタニア"}, {"date": "2025/07/19", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "3歳以上1勝クラス", "result": 1, "cushion": 8.8, "moisture": 16.4, "cat": "same_dist", "good": true, "num_horses": "16", "time_diff": "-0.3", "passage": "1-1-1-1", "pace": "30.4-36.1", "agari": "36.1", "winner": "(ダノンヴェステル)"}, {"date": "2025/05/25", "venue": "東京", "surface": "ダ", "distance": 1400, "race_name": "3歳1勝クラス", "result": 7, "cushion": 8.9, "moisture": 16.3, "cat": "diff_dist", "good": false, "num_horses": "9", "time_diff": "1.1", "passage": "2-2", "pace": "34.6-36.2", "agari": "37.1", "winner": "シホノペルフェット"}, {"date": "2025/05/04", "venue": "京都", "surface": "ダ", "distance": 1400, "race_name": "3歳1勝クラス", "result": 3, "cushion": 10.6, "moisture": 7.7, "cat": "diff_dist", "good": true, "num_horses": "15", "time_diff": "0.4", "passage": "9-8", "pace": "34.6-37.4", "agari": "37.0", "winner": "ダノンフィーゴ"}, {"date": "2025/03/15", "venue": "阪神", "surface": "ダ", "distance": 1400, "race_name": "3歳1勝クラス", "result": 7, "cushion": 9.0, "moisture": 6.0, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.9", "passage": "16-14", "pace": "34.9-37.9", "agari": "36.9", "winner": "ドンパッショーネ"}]}, {"name": "グレイスオブゴッド", "horse_num": "2", "races": [{"date": "2026/02/08", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "由布院特別(2勝クラス)", "result": 7, "cushion": 9.6, "moisture": 5.0, "cat": "same_dist", "good": false, "num_horses": "16", "time_diff": "0.8", "passage": "13-14-11-7", "pace": "29.3-38.7", "agari": "38.6", "winner": "パフ"}, {"date": "2025/11/09", "venue": "福島", "surface": "ダ", "distance": 1700, "race_name": "河北新報杯(2勝クラス)", "result": 6, "cushion": 9.2, "moisture": 2.0, "cat": "same_dist", "good": false, "num_horses": "15", "time_diff": "0.6", "passage": "14-14-14-10", "pace": "30.1-37.8", "agari": "37.1", "winner": "アレナパラシオ"}, {"date": "2025/08/24", "venue": "札幌", "surface": "ダ", "distance": 1700, "race_name": "オールスターJ第3戦(2勝クラス)", "result": 8, "cushion": 7.6, "moisture": 7.6, "cat": "same_dist", "good": false, "num_horses": "14", "time_diff": "1.5", "passage": "12-12-11-10", "pace": "31.3-37.4", "agari": "37.4", "winner": "ベルギューン"}, {"date": "2025/08/02", "venue": "札幌", "surface": "ダ", "distance": 1700, "race_name": "大倉山特別(2勝クラス)", "result": 8, "cushion": 7.7, "moisture": 4.0, "cat": "same_dist", "good": false, "num_horses": "14", "time_diff": "1.8", "passage": "9-9-10-9", "pace": "31.0-36.7", "agari": "37.5", "winner": "スマートケープ"}, {"date": "2025/06/29", "venue": "函館", "surface": "ダ", "distance": 1700, "race_name": "渡島特別(2勝クラス)", "result": 4, "cushion": 7.2, "moisture": 7.1, "cat": "same_dist", "good": false, "num_horses": "11", "time_diff": "1.1", "passage": "8-8-10-9", "pace": "29.1-37.9", "agari": "38.2", "winner": "ウェイトゥゴー"}, {"date": "2025/06/22", "venue": "函館", "surface": "ダ", "distance": 1700, "race_name": "檜山特別(2勝クラス)", "result": 9, "cushion": 6.8, "moisture": 10.7, "cat": "same_dist", "good": false, "num_horses": "14", "time_diff": "0.9", "passage": "11-10-10-9", "pace": "30.0-37.0", "agari": "37.0", "winner": "バギーウィップ"}, {"date": "2025/05/24", "venue": "京都", "surface": "ダ", "distance": 1400, "race_name": "オーストラリアT(2勝クラス)", "result": 12, "cushion": 11.2, "moisture": 4.0, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "1.3", "passage": "9-9", "pace": "34.8-35.2", "agari": "35.6", "winner": "プロミシングスター"}, {"date": "2025/02/22", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "4歳以上1勝クラス", "result": 7, "cushion": 10.5, "moisture": 2.6, "cat": "diff_dist", "good": false, "num_horses": "11", "time_diff": "0.7", "passage": "9-9-6-5", "pace": "37.4-38.3", "agari": "38.5", "winner": "ブルーペクトライト"}]}, {"name": "コスモマルーン", "horse_num": "4", "races": [{"date": "2026/03/28", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 5, "cushion": 9.1, "moisture": 13.2, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.1", "passage": "11-10-7-7", "pace": "36.5-37.8", "agari": "38.5", "winner": "サムシャイン"}, {"date": "2026/02/22", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "和布刈特別(2勝クラス)", "result": 9, "cushion": 9.6, "moisture": 1.8, "cat": "same_dist", "good": false, "num_horses": "16", "time_diff": "1.2", "passage": "12-14-13-13", "pace": "30.6-37.5", "agari": "37.5", "winner": "タイセイミッション"}, {"date": "2026/01/31", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "平尾台特別(2勝クラス)", "result": 3, "cushion": 10.5, "moisture": 1.4, "cat": "same_dist", "good": true, "num_horses": "16", "time_diff": "0.2", "passage": "14-14-10-10", "pace": "29.7-38.1", "agari": "37.4", "winner": "ドゥラリス"}, {"date": "2026/01/18", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 4, "cushion": 10.5, "moisture": 1.4, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.3", "passage": "13-13-10-8", "pace": "36.8-38.9", "agari": "39.3", "winner": "レディーフランシス"}, {"date": "2025/12/28", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "ハッピーエンドC(2勝クラス)", "result": 8, "cushion": 9.5, "moisture": 5.7, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "2.7", "passage": "11-11-13-13", "pace": "37.2-38.2", "agari": "39.8", "winner": "ジェイエルマスター"}, {"date": "2025/11/23", "venue": "東京", "surface": "ダ", "distance": 1600, "race_name": "3歳以上2勝クラス", "result": 12, "cushion": 9.2, "moisture": 2.9, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.2", "passage": "13-11", "pace": "37.1-35.6", "agari": "35.8", "winner": "セギレエルビエント"}, {"date": "2025/11/02", "venue": "東京", "surface": "ダ", "distance": 1600, "race_name": "清里特別(2勝クラス)", "result": 7, "cushion": 9.3, "moisture": 10.7, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "0.5", "passage": "9-9", "pace": "36.4-36.0", "agari": "35.6", "winner": "ロッシニアーナ"}, {"date": "2025/09/20", "venue": "中山", "surface": "芝", "distance": 2500, "race_name": "九十九里特別(2勝クラス)", "result": 9, "cushion": 9.2, "moisture": 13.8, "cat": "diff_surface", "good": false, "num_horses": "9", "time_diff": "3.0", "passage": "6-6-8-8", "pace": "30.7-34.1", "agari": "35.2", "winner": "マイユニバース"}, {"date": "2025/07/27", "venue": "新潟", "surface": "ダ", "distance": 1200, "race_name": "出雲崎特別(2勝クラス)", "result": 14, "cushion": 9.1, "moisture": 3.0, "cat": "diff_dist", "good": false, "num_horses": "15", "time_diff": "1.9", "passage": "15-15", "pace": "33.5-38.0", "agari": "37.1", "winner": "ノットファウンド"}]}, {"name": "ジュンラトゥール", "horse_num": "11", "races": [{"date": "2026/03/21", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 7, "cushion": 9.1, "moisture": 9.1, "cat": "diff_dist", "good": false, "num_horses": "12", "time_diff": "0.7", "passage": "9-10-9-9", "pace": "36.6-38.1", "agari": "37.9", "winner": "ドラゴン"}, {"date": "2026/03/14", "venue": "中京", "surface": "ダ", "distance": 1800, "race_name": "中京スポーツ杯(2勝クラス)", "result": 9, "cushion": 9.5, "moisture": 2.2, "cat": "diff_dist", "good": false, "num_horses": "14", "time_diff": "1.1", "passage": "10-11-6-6", "pace": "39.2-36.6", "agari": "37.3", "winner": "テーオーマルコーニ"}, {"date": "2026/02/28", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "早鞆特別(2勝クラス)", "result": 4, "cushion": 8.8, "moisture": 14.5, "cat": "same_dist", "good": false, "num_horses": "16", "time_diff": "0.4", "passage": "11-10-8-6", "pace": "28.5-37.8", "agari": "37.4", "winner": "ジューンエオス"}, {"date": "2026/01/04", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "天ケ瀬特別(2勝クラス)", "result": 10, "cushion": 10.7, "moisture": 3.8, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "2.1", "passage": "10-11-11-12", "pace": "37.1-37.0", "agari": "37.4", "winner": "グランドプラージュ"}, {"date": "2025/12/13", "venue": "中京", "surface": "ダ", "distance": 1800, "race_name": "鳴海特別(2勝クラス)", "result": 5, "cushion": 10.0, "moisture": 1.8, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.4", "passage": "9-11-9-9", "pace": "37.7-37.0", "agari": "36.7", "winner": "アラレタバシル"}, {"date": "2025/09/07", "venue": "札幌", "surface": "ダ", "distance": 1700, "race_name": "3歳以上1勝クラス", "result": 1, "cushion": 7.1, "moisture": 3.0, "cat": "same_dist", "good": true, "num_horses": "14", "time_diff": "-0.5", "passage": "11-14-14-8", "pace": "28.8-38.8", "agari": "37.5", "winner": "(スマートカイロス)"}, {"date": "2025/08/31", "venue": "札幌", "surface": "ダ", "distance": 1700, "race_name": "3歳以上1勝クラス", "result": 6, "cushion": 7.5, "moisture": 11.2, "cat": "same_dist", "good": false, "num_horses": "12", "time_diff": "0.7", "passage": "5-5-5-7", "pace": "30.2-37.7", "agari": "37.9", "winner": "アイオリア"}, {"date": "2025/08/16", "venue": "札幌", "surface": "ダ", "distance": 1700, "race_name": "3歳以上1勝クラス", "result": 3, "cushion": 7.4, "moisture": 4.4, "cat": "same_dist", "good": true, "num_horses": "14", "time_diff": "0.4", "passage": "5-5-2-1", "pace": "30.3-38.7", "agari": "39.0", "winner": "ゼロスネーク"}, {"date": "2025/05/11", "venue": "新潟", "surface": "ダ", "distance": 1800, "race_name": "4歳以上1勝クラス", "result": 10, "cushion": 9.1, "moisture": 7.4, "cat": "diff_dist", "good": false, "num_horses": "15", "time_diff": "1.0", "passage": "6-7-5-5", "pace": "37.4-40.2", "agari": "40.6", "winner": "ワンダーカモン"}, {"date": "2025/04/13", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "4歳以上1勝クラス", "result": 4, "cushion": 9.2, "moisture": 6.4, "cat": "diff_dist", "good": false, "num_horses": "10", "time_diff": "0.9", "passage": "5-5-4-5", "pace": "38.1-37.8", "agari": "38.2", "winner": "バトンインディ"}]}, {"name": "ショーダンサー", "horse_num": "21", "races": [{"date": "2026/04/05", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 3, "cushion": 8.5, "moisture": 16.0, "cat": "diff_dist", "good": true, "num_horses": "15", "time_diff": "0.6", "passage": "9-7-5-4", "pace": "36.4-37.1", "agari": "36.9", "winner": "マテンロウブレイブ"}, {"date": "2026/03/08", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 4, "cushion": 9.0, "moisture": 7.0, "cat": "diff_dist", "good": false, "num_horses": "9", "time_diff": "0.9", "passage": "5-5-5-4", "pace": "39.2-36.4", "agari": "36.7", "winner": "ルクスフレンジー"}, {"date": "2026/01/18", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "大津特別(2勝クラス)", "result": 3, "cushion": 10.5, "moisture": 0.9, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "0.4", "passage": "8-8-8-8", "pace": "37.5-37.4", "agari": "36.9", "winner": "バッケンレコード"}, {"date": "2025/12/28", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "3歳以上2勝クラス", "result": 2, "cushion": 8.9, "moisture": 9.9, "cat": "diff_dist", "good": true, "num_horses": "13", "time_diff": "0.1", "passage": "7-7-7-7", "pace": "36.7-38.3", "agari": "37.4", "winner": "ゴールドダイアー"}, {"date": "2025/09/13", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "鳥取特別(2勝クラス)", "result": 5, "cushion": 9.0, "moisture": 6.3, "cat": "diff_dist", "good": false, "num_horses": "9", "time_diff": "0.3", "passage": "7-7-6-7", "pace": "36.8-37.7", "agari": "37.3", "winner": "マイノワール"}, {"date": "2025/08/24", "venue": "中京", "surface": "ダ", "distance": 1800, "race_name": "大府特別(2勝クラス)", "result": 3, "cushion": 10.9, "moisture": 1.3, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "0.5", "passage": "9-11-11-10", "pace": "37.3-38.9", "agari": "36.5", "winner": "パカーラン"}, {"date": "2025/08/02", "venue": "中京", "surface": "ダ", "distance": 1800, "race_name": "3歳以上1勝クラス", "result": 1, "cushion": 9.9, "moisture": 1.4, "cat": "diff_dist", "good": true, "num_horses": "10", "time_diff": "-0.2", "passage": "7-7-7-7", "pace": "38.0-38.4", "agari": "37.7", "winner": "(シャンパンポップ)"}, {"date": "2025/04/12", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "3歳1勝クラス", "result": 3, "cushion": 9.2, "moisture": 6.3, "cat": "diff_dist", "good": true, "num_horses": "11", "time_diff": "0.1", "passage": "6-5-5-5", "pace": "36.8-38.8", "agari": "38.6", "winner": "ヒルノハンブルク"}, {"date": "2025/03/23", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "3歳1勝クラス", "result": 6, "cushion": 9.0, "moisture": 4.9, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "2.0", "passage": "11-11-9-8", "pace": "37.8-38.5", "agari": "39.4", "winner": "カナルビーグル"}, {"date": "2024/12/15", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "2歳新馬", "result": 1, "cushion": 11.3, "moisture": 2.1, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "-0.3", "passage": "11-11-9-8", "pace": "36.6-38.3", "agari": "37.5", "winner": "(ハグ)"}]}, {"name": "ジーベック", "horse_num": "9", "races": [{"date": "2026/04/12", "venue": "福島", "surface": "ダ", "distance": 1150, "race_name": "喜多方特別(2勝クラス)", "result": 9, "cushion": 9.5, "moisture": 2.4, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.9", "passage": "13-11", "pace": "31.2-37.5", "agari": "36.8", "winner": "イマージョン"}, {"date": "2026/02/10", "venue": "京都", "surface": "ダ", "distance": 1200, "race_name": "4歳以上2勝クラス", "result": 9, "cushion": 10.9, "moisture": 3.5, "cat": "diff_dist", "good": false, "num_horses": "15", "time_diff": "0.7", "passage": "6-4", "pace": "34.8-37.7", "agari": "37.6", "winner": "ディニトーソ"}, {"date": "2026/01/24", "venue": "京都", "surface": "ダ", "distance": 1200, "race_name": "4歳以上2勝クラス", "result": 8, "cushion": 10.5, "moisture": 1.3, "cat": "diff_dist", "good": false, "num_horses": "15", "time_diff": "0.9", "passage": "9-8", "pace": "35.3-37.0", "agari": "36.6", "winner": "スペシャルナンバー"}, {"date": "2026/01/17", "venue": "中山", "surface": "ダ", "distance": 1200, "race_name": "4歳以上2勝クラス", "result": 6, "cushion": 10.1, "moisture": 1.3, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.7", "passage": "5-3", "pace": "33.8-38.0", "agari": "38.2", "winner": "ゴールドハンマー"}, {"date": "2025/12/13", "venue": "中山", "surface": "ダ", "distance": 1200, "race_name": "3歳以上2勝クラス", "result": 4, "cushion": 10.3, "moisture": 1.2, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "0.8", "passage": "6-6", "pace": "34.3-36.9", "agari": "37.1", "winner": "シュヴァルボヌール"}, {"date": "2025/11/30", "venue": "東京", "surface": "ダ", "distance": 1400, "race_name": "アプローズ賞(2勝クラス)", "result": 8, "cushion": 9.3, "moisture": 1.8, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.3", "passage": "7-7", "pace": "35.3-36.7", "agari": "37.1", "winner": "シャパリュ"}, {"date": "2025/08/17", "venue": "札幌", "surface": "ダ", "distance": 1000, "race_name": "大通公園特別(2勝クラス)", "result": 3, "cushion": 7.7, "moisture": 2.4, "cat": "diff_dist", "good": true, "num_horses": "11", "time_diff": "0.4", "passage": "8-8", "pace": "34.2-35.9", "agari": "35.1", "winner": "カウスリップ"}, {"date": "2025/08/03", "venue": "札幌", "surface": "ダ", "distance": 1000, "race_name": "3歳以上2勝クラス", "result": 2, "cushion": 7.5, "moisture": 2.2, "cat": "diff_dist", "good": true, "num_horses": "10", "time_diff": "0.6", "passage": "7-6", "pace": "34.5-35.7", "agari": "35.5", "winner": "メイショウキルギス"}, {"date": "2025/07/13", "venue": "函館", "surface": "ダ", "distance": 1000, "race_name": "噴火湾特別(2勝クラス)", "result": 5, "cushion": 7.7, "moisture": 1.7, "cat": "diff_dist", "good": false, "num_horses": "12", "time_diff": "0.5", "passage": "7-6", "pace": "34.4-36.0", "agari": "35.9", "winner": "テイエムタリスマ"}, {"date": "2025/06/01", "venue": "京都", "surface": "ダ", "distance": 1200, "race_name": "4歳以上2勝クラス", "result": 9, "cushion": 11.3, "moisture": 3.2, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.7", "passage": "8-8", "pace": "35.1-36.3", "agari": "36.5", "winner": "パドマ"}]}, {"name": "スマートプレシャス", "horse_num": "10", "races": [{"date": "2026/02/28", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "早鞆特別(2勝クラス)", "result": 13, "cushion": 8.8, "moisture": 14.5, "cat": "same_dist", "good": false, "num_horses": "16", "time_diff": "1.5", "passage": "3-3-4-4", "pace": "28.5-37.8", "agari": "39.0", "winner": "ジューンエオス"}, {"date": "2026/01/31", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "平尾台特別(2勝クラス)", "result": 4, "cushion": 10.5, "moisture": 1.4, "cat": "same_dist", "good": false, "num_horses": "16", "time_diff": "0.3", "passage": "2-2-2-2", "pace": "29.7-38.1", "agari": "38.4", "winner": "ドゥラリス"}, {"date": "2025/11/22", "venue": "京都", "surface": "ダ", "distance": 1400, "race_name": "3歳以上2勝クラス", "result": 14, "cushion": 10.7, "moisture": 1.7, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.7", "passage": "1-2", "pace": "34.1-37.8", "agari": "39.5", "winner": "リネアグローリア"}, {"date": "2025/09/21", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "3歳以上2勝クラス", "result": 14, "cushion": 9.5, "moisture": 7.2, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "2.8", "passage": "1-1-1-1", "pace": "36.9-39.0", "agari": "41.8", "winner": "サンセットブライト"}, {"date": "2025/07/12", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "八女特別(2勝クラス)", "result": 5, "cushion": 8.7, "moisture": 0.5, "cat": "same_dist", "good": false, "num_horses": "13", "time_diff": "0.6", "passage": "1-1-1-1", "pace": "30.0-39.5", "agari": "40.1", "winner": "ルフトクス"}, {"date": "2025/05/11", "venue": "新潟", "surface": "ダ", "distance": 1800, "race_name": "五泉特別(2勝クラス)", "result": 15, "cushion": 9.1, "moisture": 7.4, "cat": "diff_dist", "good": false, "num_horses": "15", "time_diff": "2.2", "passage": "1-1-1-1", "pace": "36.2-39.9", "agari": "42.1", "winner": "プレイサーゴールド"}, {"date": "2025/04/27", "venue": "福島", "surface": "ダ", "distance": 1700, "race_name": "尾瀬特別(2勝クラス)", "result": 5, "cushion": 9.9, "moisture": 1.0, "cat": "same_dist", "good": false, "num_horses": "15", "time_diff": "0.4", "passage": "1-1-1-1", "pace": "29.5-39.8", "agari": "40.2", "winner": "タガノアレハンドラ"}, {"date": "2025/03/01", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 6, "cushion": 9.0, "moisture": 2.5, "cat": "diff_dist", "good": false, "num_horses": "10", "time_diff": "0.7", "passage": "1-1-1-1", "pace": "36.2-39.5", "agari": "40.2", "winner": "ピジョンブラッド"}, {"date": "2025/02/01", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "平尾台特別(2勝クラス)", "result": 8, "cushion": 9.5, "moisture": 1.9, "cat": "same_dist", "good": false, "num_horses": "16", "time_diff": "1.4", "passage": "4-4-6-4", "pace": "29.4-38.7", "agari": "39.7", "winner": "カマチョクイン"}, {"date": "2024/11/17", "venue": "福島", "surface": "ダ", "distance": 1700, "race_name": "3歳以上1勝クラス", "result": 1, "cushion": 9.8, "moisture": 2.6, "cat": "same_dist", "good": true, "num_horses": "15", "time_diff": "-0.2", "passage": "1-1-1-1", "pace": "29.9-38.6", "agari": "38.6", "winner": "(サイモンブーケ)"}]}, {"name": "セザンワールド", "horse_num": "5", "races": [{"date": "2026/04/04", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "千葉日報杯(2勝クラス)", "result": 4, "cushion": 9.2, "moisture": 8.7, "cat": "diff_dist", "good": false, "num_horses": "15", "time_diff": "0.3", "passage": "9-6-3-3", "pace": "37.2-37.7", "agari": "37.7", "winner": "オリーブグリーン"}, {"date": "2026/03/08", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 6, "cushion": 9.5, "moisture": 11.0, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "0.8", "passage": "12-12-9-8", "pace": "36.9-39.7", "agari": "39.5", "winner": "ラオラシオン"}, {"date": "2026/01/24", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "初霞賞(2勝クラス)", "result": 4, "cushion": 10.7, "moisture": 1.0, "cat": "diff_dist", "good": false, "num_horses": "10", "time_diff": "0.7", "passage": "6-6-7-7", "pace": "37.7-39.3", "agari": "39.2", "winner": "プルナチャンドラ"}, {"date": "2026/01/05", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "初茜賞(2勝クラス)", "result": 4, "cushion": 9.7, "moisture": 7.2, "cat": "diff_dist", "good": false, "num_horses": "12", "time_diff": "1.0", "passage": "8-8-7-6", "pace": "37.1-38.7", "agari": "38.8", "winner": "オーケーバーディー"}, {"date": "2025/11/08", "venue": "福島", "surface": "芝", "distance": 1800, "race_name": "3歳以上1勝クラス", "result": 7, "cushion": 9.2, "moisture": 12.1, "cat": "diff_surface", "good": false, "num_horses": "16", "time_diff": "0.9", "passage": "10-9-9-6", "pace": "34.9-35.6", "agari": "35.7", "winner": "バセリーナ"}, {"date": "2025/10/25", "venue": "新潟", "surface": "芝", "distance": 1800, "race_name": "3歳以上1勝クラス", "result": 9, "cushion": 9.4, "moisture": 10.5, "cat": "diff_surface", "good": false, "num_horses": "15", "time_diff": "1.2", "passage": "13-13", "pace": "36.0-33.8", "agari": "34.3", "winner": "コンフォルツァ"}, {"date": "2025/09/20", "venue": "中山", "surface": "芝", "distance": 2000, "race_name": "3歳以上1勝クラス", "result": 16, "cushion": 9.2, "moisture": 13.8, "cat": "diff_surface", "good": false, "num_horses": "18", "time_diff": "1.7", "passage": "16-16-17-16", "pace": "35.9-35.0", "agari": "35.1", "winner": "レイヤードレッド"}, {"date": "2025/08/31", "venue": "新潟", "surface": "芝", "distance": 2200, "race_name": "瓢湖特別(1勝クラス)", "result": 6, "cushion": 9.5, "moisture": 12.3, "cat": "diff_surface", "good": false, "num_horses": "11", "time_diff": "0.8", "passage": "7-7-7-5", "pace": "35.6-35.5", "agari": "35.9", "winner": "トリプルコーク"}, {"date": "2025/07/06", "venue": "福島", "surface": "芝", "distance": 1800, "race_name": "3歳以上1勝クラス", "result": 4, "cushion": 8.9, "moisture": 10.5, "cat": "diff_surface", "good": false, "num_horses": "14", "time_diff": "0.4", "passage": "8-9-9-8", "pace": "35.1-37.0", "agari": "36.0", "winner": "コスモアンソロジー"}]}, {"name": "セボンサデッセ", "horse_num": "19", "races": [{"date": "2026/03/01", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "4歳以上1勝クラス", "result": 1, "cushion": 9.6, "moisture": 11.7, "cat": "same_dist", "good": true, "num_horses": "16", "time_diff": "-0.2", "passage": "1-1-1-1", "pace": "30.1-37.4", "agari": "37.4", "winner": "(ポイントネモ)"}, {"date": "2026/01/12", "venue": "京都", "surface": "ダ", "distance": 1400, "race_name": "4歳以上1勝クラス", "result": 4, "cushion": 11.0, "moisture": 1.2, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.3", "passage": "2-2", "pace": "36.2-36.8", "agari": "37.0", "winner": "メイケイレイン"}, {"date": "2025/12/13", "venue": "阪神", "surface": "ダ", "distance": 1400, "race_name": "3歳以上1勝クラス", "result": 2, "cushion": 9.1, "moisture": 1.6, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "0.6", "passage": "3-3", "pace": "34.5-37.2", "agari": "37.4", "winner": "ラファル"}, {"date": "2025/11/30", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "3歳以上1勝クラス", "result": 4, "cushion": 10.9, "moisture": 4.3, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.8", "passage": "6-5-3-2", "pace": "35.9-37.6", "agari": "38.0", "winner": "ドゥラエテルノ"}, {"date": "2025/05/25", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "3歳1勝クラス", "result": 2, "cushion": 8.6, "moisture": 16.3, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "0.3", "passage": "6-5-3-3", "pace": "35.5-36.6", "agari": "36.6", "winner": "トリポリタニア"}, {"date": "2025/03/23", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "3歳1勝クラス", "result": 3, "cushion": 9.0, "moisture": 4.9, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "1.1", "passage": "3-4-4-4", "pace": "37.8-38.5", "agari": "39.0", "winner": "カナルビーグル"}, {"date": "2025/02/02", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "3歳1勝クラス", "result": 2, "cushion": 8.3, "moisture": 17.4, "cat": "same_dist", "good": true, "num_horses": "8", "time_diff": "0.1", "passage": "2-2-2-2", "pace": "30.6-35.7", "agari": "35.8", "winner": "シュラザック"}, {"date": "2024/11/24", "venue": "京都", "surface": "ダ", "distance": 1400, "race_name": "2歳新馬", "result": 1, "cushion": 11.4, "moisture": 1.7, "cat": "diff_dist", "good": true, "num_horses": "14", "time_diff": "-0.6", "passage": "4-2", "pace": "35.8-38.1", "agari": "37.7", "winner": "(タマゴ)"}]}, {"name": "ダイシンバースディ", "horse_num": "6", "races": [{"date": "2026/04/05", "venue": "中山", "surface": "芝", "distance": 1600, "race_name": "4歳以上2勝クラス", "result": 12, "cushion": 7.9, "moisture": 13.7, "cat": "diff_surface", "good": false, "num_horses": "12", "time_diff": "1.8", "passage": "9-10-9", "pace": "36.2-34.7", "agari": "35.4", "winner": "リバーバレイト"}, {"date": "2026/03/21", "venue": "中山", "surface": "芝", "distance": 1800, "race_name": "館山特別(2勝クラス)", "result": 13, "cushion": 9.8, "moisture": 12.8, "cat": "diff_surface", "good": false, "num_horses": "15", "time_diff": "1.0", "passage": "2-2-2-2", "pace": "36.7-34.5", "agari": "35.4", "winner": "ダノンジャイアン"}, {"date": "2026/02/21", "venue": "東京", "surface": "芝", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 10, "cushion": 9.8, "moisture": 13.1, "cat": "diff_surface", "good": false, "num_horses": "12", "time_diff": "1.3", "passage": "5-7-7", "pace": "36.3-33.8", "agari": "34.4", "winner": "マイネルトルファン"}, {"date": "2026/02/01", "venue": "東京", "surface": "芝", "distance": 2000, "race_name": "4歳以上2勝クラス", "result": 7, "cushion": 9.7, "moisture": 12.3, "cat": "diff_surface", "good": false, "num_horses": "9", "time_diff": "1.5", "passage": "3-3-3", "pace": "36.5-34.3", "agari": "35.3", "winner": "ログラール"}, {"date": "2026/01/10", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 12, "cushion": 10.0, "moisture": 5.5, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "2.4", "passage": "3-2-3-4", "pace": "36.8-37.7", "agari": "39.9", "winner": "エクリプスルバン"}]}, {"name": "テンクウジョー", "horse_num": "12", "races": [{"date": "2026/04/04", "venue": "阪神", "surface": "ダ", "distance": 1400, "race_name": "4歳以上2勝クラス", "result": 9, "cushion": 9.2, "moisture": 7.7, "cat": "diff_dist", "good": false, "num_horses": "15", "time_diff": "0.9", "passage": "7-6", "pace": "34.8-36.1", "agari": "36.2", "winner": "テイエムヒショウ"}, {"date": "2026/02/10", "venue": "東京", "surface": "ダ", "distance": 1300, "race_name": "4歳以上2勝クラス", "result": 8, "cushion": 10.1, "moisture": 9.1, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.8", "passage": "14-14", "pace": "30.1-35.9", "agari": "35.2", "winner": "ドラゴンテイラー"}, {"date": "2025/09/28", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "3歳以上2勝クラス", "result": 10, "cushion": 10.3, "moisture": 1.7, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.7", "passage": "13-14-15-14", "pace": "35.9-38.5", "agari": "38.2", "winner": "チュウワクリスエス"}, {"date": "2025/09/15", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "鋸山特別(2勝クラス)", "result": 6, "cushion": 9.9, "moisture": 5.7, "cat": "diff_dist", "good": false, "num_horses": "11", "time_diff": "1.9", "passage": "8-8-8-7", "pace": "36.4-37.6", "agari": "38.6", "winner": "リアライズカミオン"}, {"date": "2025/05/18", "venue": "東京", "surface": "ダ", "distance": 1600, "race_name": "青梅特別(2勝クラス)", "result": 11, "cushion": 8.9, "moisture": 12.5, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.4", "passage": "8-9", "pace": "34.1-36.2", "agari": "36.0", "winner": "オウギノカナメ"}, {"date": "2025/04/26", "venue": "東京", "surface": "ダ", "distance": 1600, "race_name": "4歳以上2勝クラス", "result": 14, "cushion": 9.5, "moisture": 6.8, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "3.1", "passage": "12-9", "pace": "34.5-37.2", "agari": "39.5", "winner": "ターコイズフリンジ"}, {"date": "2025/02/23", "venue": "東京", "surface": "ダ", "distance": 1400, "race_name": "大島特別(2勝クラス)", "result": 12, "cushion": 9.5, "moisture": 1.6, "cat": "diff_dist", "good": false, "num_horses": "14", "time_diff": "2.6", "passage": "10-7", "pace": "35.7-36.7", "agari": "38.6", "winner": "ヴァンドーム"}, {"date": "2024/10/06", "venue": "東京", "surface": "ダ", "distance": 1600, "race_name": "3歳以上2勝クラス", "result": 5, "cushion": 9.6, "moisture": 2.9, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.9", "passage": "8-7", "pace": "35.0-34.5", "agari": "35.8", "winner": "ボールドゾーン"}, {"date": "2024/07/14", "venue": "函館", "surface": "ダ", "distance": 1700, "race_name": "駒場特別(2勝クラス)", "result": 13, "cushion": 8.3, "moisture": 3.6, "cat": "same_dist", "good": false, "num_horses": "14", "time_diff": "1.4", "passage": "13-13-9-10", "pace": "29.2-38.6", "agari": "38.6", "winner": "レッドラグラス"}, {"date": "2024/06/15", "venue": "函館", "surface": "ダ", "distance": 1700, "race_name": "3歳以上1勝クラス", "result": 1, "cushion": 7.6, "moisture": 2.8, "cat": "same_dist", "good": true, "num_horses": "14", "time_diff": "-0.1", "passage": "12-11-8-4", "pace": "29.7-39.9", "agari": "38.6", "winner": "(カリフォルニア)"}]}, {"name": "トルショー", "horse_num": "18", "races": [{"date": "2026/03/08", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 8, "cushion": 9.5, "moisture": 11.0, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "1.3", "passage": "3-3-3-3", "pace": "36.9-39.7", "agari": "40.7", "winner": "ラオラシオン"}, {"date": "2026/02/28", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 11, "cushion": 10.0, "moisture": 10.6, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.4", "passage": "7-7-8-9", "pace": "37.1-38.7", "agari": "39.3", "winner": "メリークリスマス"}, {"date": "2026/01/10", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 9, "cushion": 10.0, "moisture": 5.5, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "1.4", "passage": "13-12-3-2", "pace": "36.8-37.7", "agari": "38.9", "winner": "エクリプスルバン"}, {"date": "2025/11/23", "venue": "東京", "surface": "ダ", "distance": 1600, "race_name": "3歳以上2勝クラス", "result": 11, "cushion": 9.2, "moisture": 2.9, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.0", "passage": "10-9", "pace": "37.1-35.6", "agari": "35.9", "winner": "セギレエルビエント"}, {"date": "2025/10/19", "venue": "東京", "surface": "ダ", "distance": 1600, "race_name": "西湖特別(2勝クラス)", "result": 12, "cushion": 9.6, "moisture": 2.5, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "1.8", "passage": "1-1", "pace": "35.5-36.3", "agari": "38.1", "winner": "クールブロン"}, {"date": "2025/04/26", "venue": "東京", "surface": "ダ", "distance": 1600, "race_name": "3歳1勝クラス", "result": 1, "cushion": 9.5, "moisture": 6.8, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "0.0", "passage": "2-2", "pace": "35.4-36.5", "agari": "36.4", "winner": "(クラリネットソナタ)"}, {"date": "2025/03/02", "venue": "中山", "surface": "ダ", "distance": 1800, "race_name": "3歳1勝クラス", "result": 6, "cushion": 10.1, "moisture": 1.9, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.2", "passage": "5-5-6-7", "pace": "37.3-38.1", "agari": "38.8", "winner": "アメージング"}, {"date": "2025/02/16", "venue": "東京", "surface": "ダ", "distance": 1600, "race_name": "3歳1勝クラス", "result": 3, "cushion": 9.3, "moisture": 1.7, "cat": "diff_dist", "good": true, "num_horses": "11", "time_diff": "0.1", "passage": "2-2", "pace": "35.6-37.3", "agari": "37.3", "winner": "サノノワンダー"}, {"date": "2024/11/03", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "もちの木賞(1勝クラス)", "result": 11, "cushion": 11.1, "moisture": 3.3, "cat": "diff_dist", "good": false, "num_horses": "12", "time_diff": "5.9", "passage": "5-6-9-9", "pace": "36.1-37.7", "agari": "42.8", "winner": "クァンタムウェーブ"}]}, {"name": "トーレ", "horse_num": "8", "races": [{"date": "2026/02/28", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "早鞆特別(2勝クラス)", "result": 16, "cushion": 8.8, "moisture": 14.5, "cat": "same_dist", "good": false, "num_horses": "16", "time_diff": "3.0", "passage": "1-1-2-3", "pace": "28.5-37.8", "agari": "40.8", "winner": "ジューンエオス"}, {"date": "2026/01/11", "venue": "京都", "surface": "ダ", "distance": 1400, "race_name": "4歳以上2勝クラス", "result": 13, "cushion": 10.4, "moisture": 1.0, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.5", "passage": "14-12", "pace": "36.0-37.2", "agari": "37.2", "winner": "ラファル"}, {"date": "2025/10/19", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "聚楽第特別(2勝クラス)", "result": 13, "cushion": 10.8, "moisture": 7.2, "cat": "diff_dist", "good": false, "num_horses": "14", "time_diff": "3.1", "passage": "2-3-2-2", "pace": "34.9-37.4", "agari": "40.2", "winner": "テスティモーネ"}, {"date": "2025/10/04", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "3歳以上2勝クラス", "result": 10, "cushion": 9.4, "moisture": 12.2, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "1.4", "passage": "1-1-1-1", "pace": "36.3-36.7", "agari": "38.1", "winner": "ヒルノハンブルク"}, {"date": "2025/07/05", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "TAインディア賞(2勝クラス)", "result": 6, "cushion": 8.8, "moisture": 0.5, "cat": "same_dist", "good": false, "num_horses": "11", "time_diff": "0.9", "passage": "1-1-1-1", "pace": "30.6-37.2", "agari": "38.1", "winner": "メイショウズイウン"}, {"date": "2025/05/17", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 3, "cushion": 10.1, "moisture": 6.9, "cat": "diff_dist", "good": true, "num_horses": "10", "time_diff": "0.4", "passage": "1-1-1-1", "pace": "35.6-37.0", "agari": "37.4", "winner": "ヒロノラメール"}, {"date": "2025/04/20", "venue": "福島", "surface": "ダ", "distance": 1700, "race_name": "4歳以上1勝クラス", "result": 1, "cushion": 9.0, "moisture": 4.6, "cat": "same_dist", "good": true, "num_horses": "15", "time_diff": "-0.8", "passage": "1-1-1-1", "pace": "30.7-37.6", "agari": "37.6", "winner": "(レイワサンサン)"}, {"date": "2025/03/29", "venue": "中京", "surface": "ダ", "distance": 1800, "race_name": "4歳以上1勝クラス", "result": 5, "cushion": 8.6, "moisture": 11.6, "cat": "diff_dist", "good": false, "num_horses": "14", "time_diff": "1.4", "passage": "3-3-2-2", "pace": "37.2-38.9", "agari": "40.3", "winner": "バルダンツァ"}, {"date": "2025/02/02", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "4歳以上1勝クラス", "result": 13, "cushion": 9.5, "moisture": 7.2, "cat": "diff_dist", "good": false, "num_horses": "13", "time_diff": "6.5", "passage": "3-3-3-3", "pace": "38.0-39.0", "agari": "45.2", "winner": "メイショウトム"}, {"date": "2024/11/30", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "3歳以上1勝クラス", "result": 3, "cushion": 11.5, "moisture": 4.7, "cat": "diff_dist", "good": true, "num_horses": "12", "time_diff": "0.6", "passage": "2-2-2-2", "pace": "36.9-38.1", "agari": "38.5", "winner": "シャンデルナゴル"}]}, {"name": "マイレーヌ", "horse_num": "3", "races": [{"date": "2026/02/21", "venue": "東京", "surface": "芝", "distance": 1800, "race_name": "4歳以上2勝クラス", "result": 11, "cushion": 9.8, "moisture": 13.1, "cat": "diff_surface", "good": false, "num_horses": "12", "time_diff": "1.5", "passage": "2-4-4", "pace": "36.3-33.8", "agari": "35.0", "winner": "マイネルトルファン"}, {"date": "2026/02/10", "venue": "東京", "surface": "ダ", "distance": 1300, "race_name": "4歳以上2勝クラス", "result": 14, "cushion": 10.1, "moisture": 9.1, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.8", "passage": "7-6", "pace": "30.1-35.9", "agari": "37.1", "winner": "ドラゴンテイラー"}, {"date": "2025/11/22", "venue": "福島", "surface": "ダ", "distance": 1150, "race_name": "福島放送賞(2勝クラス)", "result": 7, "cushion": 9.2, "moisture": 1.4, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.0", "passage": "10-10", "pace": "31.4-37.3", "agari": "37.3", "winner": "ルージュアズライト"}, {"date": "2025/09/07", "venue": "中山", "surface": "ダ", "distance": 1200, "race_name": "浦安特別(2勝クラス)", "result": 12, "cushion": 9.9, "moisture": 6.3, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "2.0", "passage": "12-12", "pace": "33.8-37.3", "agari": "37.7", "winner": "モンドプリューム"}, {"date": "2025/07/26", "venue": "中京", "surface": "ダ", "distance": 1400, "race_name": "四日市特別(2勝クラス)", "result": 12, "cushion": 9.7, "moisture": 2.1, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.9", "passage": "6-6", "pace": "34.0-37.5", "agari": "38.5", "winner": "ワイワイレジェンド"}, {"date": "2025/07/06", "venue": "福島", "surface": "ダ", "distance": 1150, "race_name": "さくらんぼ特別(2勝クラス)", "result": 11, "cushion": 8.9, "moisture": 4.0, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "2.2", "passage": "6-9", "pace": "31.2-36.5", "agari": "38.1", "winner": "ビバップ"}, {"date": "2025/04/12", "venue": "福島", "surface": "ダ", "distance": 1150, "race_name": "喜多方特別(2勝クラス)", "result": 9, "cushion": 9.0, "moisture": 2.0, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.7", "passage": "12-11", "pace": "30.7-37.9", "agari": "37.2", "winner": "ブレーザー"}, {"date": "2025/03/22", "venue": "中山", "surface": "ダ", "distance": 1200, "race_name": "4歳以上2勝クラス", "result": 7, "cushion": 9.3, "moisture": 11.6, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.9", "passage": "3-3", "pace": "34.3-37.1", "agari": "37.8", "winner": "スマイルアップ"}, {"date": "2025/01/25", "venue": "中山", "surface": "ダ", "distance": 1200, "race_name": "4歳以上1勝クラス", "result": 1, "cushion": 10.2, "moisture": 2.7, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "-0.2", "passage": "2-2", "pace": "33.4-37.9", "agari": "37.8", "winner": "(ロサンゼルス)"}, {"date": "2025/01/12", "venue": "中山", "surface": "ダ", "distance": 1200, "race_name": "4歳以上1勝クラス", "result": 2, "cushion": 10.0, "moisture": 5.9, "cat": "diff_dist", "good": true, "num_horses": "16", "time_diff": "0.1", "passage": "1-1", "pace": "34.0-37.9", "agari": "38.0", "winner": "ケープアグラス"}]}, {"name": "マーウォルス", "horse_num": "17", "races": [{"date": "2026/02/28", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "早鞆特別(2勝クラス)", "result": 5, "cushion": 8.8, "moisture": 14.5, "cat": "same_dist", "good": false, "num_horses": "16", "time_diff": "0.8", "passage": "12-12-12-12", "pace": "28.5-37.8", "agari": "37.4", "winner": "ジューンエオス"}, {"date": "2026/02/15", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "4歳以上1勝クラス", "result": 1, "cushion": 9.1, "moisture": 6.3, "cat": "same_dist", "good": true, "num_horses": "13", "time_diff": "-0.1", "passage": "11-11-10-8", "pace": "29.2-39.2", "agari": "38.3", "winner": "(ショウナンタハティ)"}, {"date": "2025/12/20", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "3歳以上1勝クラス", "result": 5, "cushion": 9.1, "moisture": 6.9, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "0.9", "passage": "10-7-7-5", "pace": "37.7-36.9", "agari": "37.3", "winner": "アカデミア"}, {"date": "2025/11/23", "venue": "京都", "surface": "ダ", "distance": 1400, "race_name": "3歳以上1勝クラス", "result": 9, "cushion": 10.5, "moisture": 1.7, "cat": "diff_dist", "good": false, "num_horses": "16", "time_diff": "1.0", "passage": "13-12", "pace": "34.9-37.1", "agari": "37.0", "winner": "ポッドドンナー"}, {"date": "2025/11/08", "venue": "福島", "surface": "ダ", "distance": 1700, "race_name": "3歳以上1勝クラス", "result": 3, "cushion": 9.2, "moisture": 3.7, "cat": "same_dist", "good": true, "num_horses": "15", "time_diff": "0.4", "passage": "8-7-8-8", "pace": "30.0-38.5", "agari": "38.2", "winner": "タイセイマンボ"}, {"date": "2025/08/10", "venue": "札幌", "surface": "ダ", "distance": 1700, "race_name": "3歳未勝利", "result": 1, "cushion": 7.2, "moisture": 10.2, "cat": "same_dist", "good": true, "num_horses": "14", "time_diff": "-0.1", "passage": "7-7-4-2", "pace": "30.1-39.8", "agari": "39.1", "winner": "(ジョードリウム)"}, {"date": "2025/07/13", "venue": "小倉", "surface": "ダ", "distance": 1700, "race_name": "3歳未勝利", "result": 2, "cushion": 9.1, "moisture": 0.5, "cat": "same_dist", "good": true, "num_horses": "16", "time_diff": "0.5", "passage": "9-9-1-2", "pace": "30.3-38.9", "agari": "39.4", "winner": "ハッコウイチウ"}, {"date": "2025/06/21", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "3歳未勝利", "result": 2, "cushion": 9.0, "moisture": 2.9, "cat": "diff_dist", "good": true, "num_horses": "13", "time_diff": "0.4", "passage": "7-7-3-3", "pace": "37.2-39.4", "agari": "39.5", "winner": "エテルノレガーメ"}, {"date": "2025/03/02", "venue": "阪神", "surface": "ダ", "distance": 1800, "race_name": "3歳未勝利", "result": 4, "cushion": 9.0, "moisture": 1.5, "cat": "diff_dist", "good": false, "num_horses": "12", "time_diff": "0.2", "passage": "5-5-4-3", "pace": "38.7-38.0", "agari": "37.7", "winner": "ディープサミット"}, {"date": "2025/02/01", "venue": "京都", "surface": "ダ", "distance": 1800, "race_name": "3歳未勝利", "result": 2, "cushion": 10.8, "moisture": 1.0, "cat": "diff_dist", "good": true, "num_horses": "9", "time_diff": "0.0", "passage": "2-2-2-2", "pace": "37.6-38.6", "agari": "38.5", "winner": "コウジョリョウゾク"}]}];
+const TX = 9.2;
+const TY = 4.0;
 const LINE_X = 9.5;
 const LINE_Y = 12.0;
 const TDIST = 1700;
@@ -2994,7 +3022,7 @@ function buildPanel(){
     html+=`<div class="rating-row" id="rate-${i}">`;
     RANKS.forEach(r=>{html+=`<button class="rating-btn" data-horse="${i}" data-rank="${r}">${r}</button>`;});
     html+=`</div>`;
-    html+=`<div class="horse-detail" id="detail-${i}"><div class="race-card">${h.races.map((r,ri)=>{const rrKey=h.name+'_'+ri;return`<div class="race-item" style="border-width:2px;border-color:${_wc.bg}66;border-top-color:${_wc.bg}bb;box-shadow:inset 0 1px 0 ${_wc.bg}44,0 2px 8px rgba(0,0,0,0.25)" data-horse="${i}" data-ri="${ri}"><div class="date">${r.date} ${r.venue}</div><div class="rname">${r.race_name}</div><div class="cond">${r.surface}${r.distance}m ${r.distance===TDIST?'(同)':r.distance>TDIST?'(短)':'(延)'}</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#b8d8f8">CV${r.cushion} / ${r.moisture}%</span><span style="font-size:9px;color:#b8d8f8;text-align:right">${r.winner?`${r.winner}${r.time_diff?'('+r.time_diff+')':''} `:''}<span class="result" style="color:${COLORS[r.cat]}">${r.result!==null?r.result+'着':'取消'}</span></span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#b8d8f8">${r.num_horses?r.num_horses+'頭':''}${r.passage?'・'+r.passage:''}</span><div class="race-mark-row" data-rrkey="${rrKey}"><button class="race-mark-btn" data-mark="◎">◎</button><button class="race-mark-btn" data-mark="○">○</button><button class="race-mark-btn" data-mark="×">×</button></div></div>${r.agari?`<div style="font-size:9px;color:#b8d8f8;margin-top:1px">${r.agari}</div>`:''}</div>`}).join('')}</div></div>`;
+    html+=`<div class="horse-detail" id="detail-${i}"><div class="race-card">${h.races.map((r,ri)=>{const rrKey=h.name+'_'+ri;return`<div class="race-item" style="border-width:2px;border-color:${_wc.bg}66;border-top-color:${_wc.bg}bb;box-shadow:inset 0 1px 0 ${_wc.bg}44,0 2px 8px rgba(0,0,0,0.25)" data-horse="${i}" data-ri="${ri}"><div class="date">${r.date} ${r.venue}</div><div class="rname">${r.race_name}</div><div class="cond">${r.surface}${r.distance}m ${r.distance===TDIST?'(同)':r.distance>TDIST?'(短)':'(延)'}</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#b8d8f8">CV${r.cushion} / ${r.moisture}%</span><span style="font-size:9px;color:#b8d8f8;text-align:right">${r.winner?`${r.winner}${r.time_diff?'('+r.time_diff+')':''} `:''}<span class="result" style="color:${COLORS[r.cat]}">${r.result!==null?r.result+'着':'取消'}</span></span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#b8d8f8">${r.num_horses?r.num_horses+'頭':''}${r.passage?'・'+r.passage:''}</span><div class="race-mark-row" data-rrkey="${rrKey}"><button class="race-mark-btn" data-mark="◎">◎</button><button class="race-mark-btn" data-mark="○">○</button><button class="race-mark-btn" data-mark="×">×</button></div></div>${r.agari?`<div style="font-size:9px;color:#b8d8f8;margin-top:1px">${r.agari}</div>`:''}</div>`}).join('')}</div><button class="sns-btn" id="snsb-${i}" data-hi="${i}">📸 SNS画像生成</button><div class="sns-prev" id="snsp-${i}"></div></div>`;
   });
   panel.innerHTML=html;
   HORSES.forEach((h,i)=>{document.getElementById('btn-'+i).addEventListener('click',()=>{
@@ -3017,6 +3045,7 @@ function buildPanel(){
   document.querySelectorAll('.race-item').forEach(el=>{
     el.addEventListener('click',(e)=>{
       if(e.target.classList.contains('race-mark-btn'))return;
+      e.preventDefault();
       e.stopPropagation();
       el.classList.toggle('highlighted');
       const key=el.dataset.horse+'-'+el.dataset.ri;
@@ -3034,6 +3063,24 @@ function buildPanel(){
       else{raceRatings[rrKey]=mark;}
       updateRaceMarks();
       saveRaceRatings();
+    });
+  });
+  document.querySelectorAll('.sns-btn').forEach(btn=>{
+    btn.addEventListener('click',async(e)=>{
+      e.stopPropagation();
+      const hi=parseInt(btn.dataset.hi);
+      const name=HORSES[hi].name;
+      const fname=window.location.pathname.split('/').pop()||'';
+      const prev=document.getElementById('snsp-'+hi);
+      btn.disabled=true; btn.textContent='⏳ 生成中...';
+      try{
+        const r=await fetch('http://localhost:5000/api/sns_positioning',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({file:fname,horse:name})});
+        const d=await r.json();
+        if(d.ok){
+          prev.innerHTML=`<img src="http://localhost:5000${d.url}" alt=""><a href="http://localhost:5000${d.url}" download="${d.filename}">⬇ ダウンロード</a>`;
+          prev.style.display='block'; btn.textContent='✓ 完了';
+        }else{btn.textContent='⚠ '+d.error; btn.disabled=false;}
+      }catch(ex){btn.textContent='⚠ サーバー未起動'; btn.disabled=false;}
     });
   });
 }
