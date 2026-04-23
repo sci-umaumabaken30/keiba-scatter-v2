@@ -1361,7 +1361,8 @@ def deploy_to_github(out_dir, date_str, cleanup=False):
         for item in r.json():
             existing[item['name']] = item['sha']
 
-    html_files = [f for f in os.listdir(out_dir) if f.endswith('.html')]
+    # index.html はこの後グローバル版を生成してアップするので除外
+    html_files = [f for f in os.listdir(out_dir) if f.endswith('.html') and f != 'index.html']
     for fname in sorted(html_files):
         fpath = os.path.join(out_dir, fname)
         with open(fpath, 'rb') as f:
