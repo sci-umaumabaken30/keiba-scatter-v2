@@ -290,6 +290,50 @@ def get_race_list(date_str):
     return races
 
 
+# ===== 枠番のみ軽量更新 =====
+def fetch_and_update_horse_nums(race_id):
+    """出馬表のみスクレイピングして horse_nums をキャッシュに上書きする（過去成績は取得しない）"""
+    cache_file = os.path.join(CACHE_DIR, f'race_{race_id}.json')
+    if not os.path.exists(cache_file):
+        return False
+    try:
+        session = requests.Session()
+        session.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
+        url = f'https://race.netkeiba.com/race/shutuba.html?race_id={race_id}'
+        r = session.get(url, timeout=15)
+        r.encoding = 'euc-jp'
+        soup = BeautifulSoup(r.text, 'html.parser')
+        table = soup.find('table', class_='Shutuba_Table') or soup.find('table', id='shutuba_table')
+        if not table:
+            return False
+        horse_nums = {}
+        for row in table.find_all('tr', class_='HorseList'):
+            horse_link = row.find('a', href=re.compile(r'/horse/\d+'))
+            if not horse_link:
+                continue
+            horse_name = horse_link.get_text(strip=True)
+            umaban_td = row.find('td', class_=re.compile(r'^Umaban\d*$'))
+            horse_num = umaban_td.get_text(strip=True) if umaban_td else ''
+            if not horse_num:
+                m = re.search(r'tr_(\d+)', row.get('id', ''))
+                if m:
+                    horse_num = m.group(1)
+            if horse_name:
+                horse_nums[horse_name] = horse_num
+        if not any(v and v != '0' for v in horse_nums.values()):
+            return False  # 枠番未確定
+        with open(cache_file, encoding='utf-8') as f:
+            cache = json.load(f)
+        cache['horse_nums'] = horse_nums
+        with open(cache_file, 'w', encoding='utf-8') as f:
+            json.dump(cache, f, ensure_ascii=False, indent=2)
+        print(f"  枠番更新: {race_id} → {horse_nums}")
+        return True
+    except Exception as e:
+        print(f"  枠番取得エラー {race_id}: {e}")
+        return False
+
+
 # ===== Step 3: 出走馬+過去成績取得 =====
 def scrape_race_data(race_id):
     """netkeiba から出走馬と各馬の過去成績を取得"""

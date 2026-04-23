@@ -16,6 +16,7 @@ from bs4 import BeautifulSoup
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CUSHION_DB_PATH = os.path.join(BASE_DIR, 'cushion_db_full.json')
+CACHE_DIR = os.path.join(BASE_DIR, 'cache')
 LOG_PATH = os.path.join(BASE_DIR, 'auto_update.log')
 
 logging.basicConfig(
@@ -108,6 +109,49 @@ def run_pipeline(date_yyyymmdd):
     return True
 
 
+def find_races_missing_umaban(dates):
+    """指定日付のキャッシュから枠番が空または'0'のレースIDを返す"""
+    missing = []
+    if not os.path.exists(CACHE_DIR):
+        return missing
+    for fname in os.listdir(CACHE_DIR):
+        if not fname.startswith('race_') or not fname.endswith('.json'):
+            continue
+        race_id = fname[5:-5]  # race_XXXXXXXXXX.json → XXXXXXXXXX
+        # race_id の日付部分 (先頭8桁) が対象日付に含まれるか確認
+        if not any(race_id.startswith(d) for d in dates):
+            continue
+        try:
+            with open(os.path.join(CACHE_DIR, fname), encoding='utf-8') as f:
+                cache = json.load(f)
+            horse_nums = cache.get('horse_nums', {})
+            if not horse_nums or all(not v or v == '0' for v in horse_nums.values()):
+                missing.append(race_id)
+        except Exception:
+            pass
+    return missing
+
+
+def run_umaban_update(race_ids, dates):
+    """枠番のみ軽量スクレイピングしてキャッシュを更新し、パイプラインを再実行"""
+    log.info(f"枠番更新対象: {len(race_ids)}レース")
+    cmd = [sys.executable, '-c',
+           'import sys; sys.path.insert(0, r"{}"); from pipeline import fetch_and_update_horse_nums; '
+           'updated = [r for r in {} if fetch_and_update_horse_nums(r)]; '
+           'print(f"枠番更新: {{len(updated)}}件")'.format(BASE_DIR, race_ids)]
+    result = subprocess.run(cmd, capture_output=True, text=True,
+                            encoding='utf-8', errors='replace', cwd=BASE_DIR)
+    for line in result.stdout.splitlines():
+        log.info(f"  {line}")
+    if result.returncode != 0:
+        log.error("枠番更新失敗")
+        return False
+    # 枠番が更新された日付のパイプラインを再実行
+    for d in sorted(set(dates)):
+        run_pipeline(d)
+    return True
+
+
 def affected_dates(new_keys):
     """新規キーから影響を受ける日付 (YYYYMMDD) を抽出"""
     dates = set()
@@ -138,12 +182,31 @@ def main():
 
     log.info(f"=== 自動更新チェック開始 ({today} {['月','火','水','木','金','土','日'][weekday]}) ===")
 
+    # ── 枠番チェック ──
+    # 金曜11〜16時 → 土曜分、土曜11〜16時 → 日曜分
+    umaban_updated = False
+    from datetime import timedelta
+    if weekday == 4 and 11 <= hour <= 16:
+        target_dates = [(today + timedelta(days=1)).strftime('%Y%m%d')]
+        missing = find_races_missing_umaban(target_dates)
+        if missing:
+            log.info(f"枠番未確定レース検出 (土曜分): {missing}")
+            umaban_updated = run_umaban_update(missing, target_dates)
+    elif weekday == 5 and 11 <= hour <= 16:
+        target_dates = [(today + timedelta(days=1)).strftime('%Y%m%d')]
+        missing = find_races_missing_umaban(target_dates)
+        if missing:
+            log.info(f"枠番未確定レース検出 (日曜分): {missing}")
+            umaban_updated = run_umaban_update(missing, target_dates)
+
+    # ── クッション値・含水率チェック ──
     live_keys = fetch_live_cushion_keys()
     db_keys = load_db_keys()
     new_keys = live_keys - db_keys
 
     if not new_keys:
-        log.info("新データなし (DB最新)")
+        if not umaban_updated:
+            log.info("新データなし (DB最新)")
         return
 
     log.info(f"新データ検出: {len(new_keys)}件 → {sorted(new_keys)}")
