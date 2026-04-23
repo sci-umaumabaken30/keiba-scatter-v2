@@ -442,7 +442,7 @@ function buildPanel(){
   let html='';
   HORSES.forEach((h,i)=>{
     const cnt=h.races.length;
-    const _uma=parseInt(h.horse_num)||i+1;const _wc=getWakuColor(HORSES.length,_uma);
+    const _umaRaw=parseInt(h.horse_num);const _umaValid=_umaRaw>0;const _uma=_umaValid?_umaRaw:i+1;const _wc=_umaValid?getWakuColor(HORSES.length,_uma):{bg:'#4a5568',tc:'#94a3b8'};
     html+=`<button class="horse-btn" id="btn-${i}"><span class="waku-badge" style="background:${_wc.bg};color:${_wc.tc}">${h.horse_num}</span>${h.name}<span class="count">${cnt>0?cnt+'走':'データなし'}</span></button>`;
     html+=`<div class="rating-row" id="rate-${i}">`;
     RANKS.forEach(r=>{html+=`<button class="rating-btn" data-horse="${i}" data-rank="${r}">${r}</button>`;});
