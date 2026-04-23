@@ -57,18 +57,19 @@ def get_waku_color(num_horses, umaban):
     return WAKU_PALETTE[1]
 
 
-def _shorten_race_name(name, max_chars=10):
-    """グレード（）を末尾に保持しつつ先頭を…で省略。max_charsはグレード込みの合計文字数上限。"""
-    # 全角・半角どちらのカッコにも対応
+def _split_race_name(name):
+    """レース名とグレード（）を分離して返す: (base, grade)"""
     m = re.search(r'([（(][^）)]+[）)])$', name.strip())
     grade = m.group(1) if m else ''
     base  = name[:m.start()].strip() if m else name.strip()
-    avail = max_chars - len(grade)
-    if avail < 2:
-        avail = 2
-    if len(base) > avail:
-        base = base[:avail - 1] + '…'
-    return base + grade
+    return base, grade
+
+
+def _rname_html(name, base_cls, grade_cls):
+    """レース名をbase+gradeのspan2つに分けたHTMLを返す"""
+    base, grade = _split_race_name(name)
+    g = f'<span class="{grade_cls}">{grade}</span>' if grade else ''
+    return f'<span class="{base_cls}">{base}</span>{g}'
 
 
 def parse_scatter(html_path):
@@ -142,12 +143,12 @@ def make_card(scatter_html, horse_name, out_path=None):
         # 1着・2着は前面
         z = (15 if result is not None and result <= 2 else 10) + (len(races) - i)
 
-        rname = _shorten_race_name(r['race_name'])
+        rname_html = _rname_html(r['race_name'], 'rn-base', 'rn-grade')
 
         cards_html += f'''
       <div class="race-card" style="left:{left_pct:.1f}%;top:{top_pct:.1f}%;z-index:{z};border-color:{border};">
         <div class="date">{r['date']}</div>
-        <div class="rname">{rname}</div>
+        <div class="rname">{rname_html}</div>
         <div class="result">
           <span class="course">{r['venue']} {r['distance']}m</span>
           <span class="pos" style="background:{pos_bg};color:{pos_tc};">{pos_txt}</span>
@@ -263,15 +264,13 @@ def make_card(scatter_html, horse_name, out_path=None):
     margin-bottom: 4px;
   }}
   .race-card .rname {{
-    font-size: 16px;
-    color: white;
-    font-weight: bold;
-    margin-bottom: 6px;
-    line-height: 1.2;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    display: flex; align-items: baseline; gap: 5px;
+    margin-bottom: 6px; font-size: 16px; color: white; font-weight: bold; line-height: 1.2;
   }}
+  .race-card .rname .rn-base {{
+    flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }}
+  .race-card .rname .rn-grade {{ flex-shrink: 0; font-size: 14px; }}
   .race-card .result {{
     display: flex;
     align-items: center;
@@ -373,10 +372,10 @@ def _build_cell(tx, ty, horses, horse_name, star_size=36):
         ptc    = CAT_TC.get(cat, 'white')
         ptxt   = f'{result}着' if result is not None else '取消'
         z      = (15 if result is not None and result <= 2 else 10) + (len(races) - i)
-        rname  = _shorten_race_name(r['race_name'], max_chars=9)
+        rname_html = _rname_html(r['race_name'], 'rn-base', 'rn-grade')
         cards += f'''<div class="rc" style="left:{lp:.1f}%;top:{tp:.1f}%;z-index:{z};border-color:{bc};">
           <div class="rc-date">{r['date']}</div>
-          <div class="rc-name">{rname}</div>
+          <div class="rc-name">{rname_html}</div>
           <div class="rc-foot"><span class="rc-crs">{r['venue']} {r['distance']}m</span>
             <span class="rc-pos" style="background:{bc};color:{ptc};">{ptxt}</span></div></div>'''
 
@@ -441,7 +440,9 @@ def make_grid_card(scatter_html, horse_names, out_path=None):
          mix-blend-mode: normal; border: 2px solid; border-radius: 8px; padding: 6px 10px;
          width: 155px; height: 72px; overflow: hidden; box-shadow: 0 3px 10px rgba(0,0,0,0.5); }}
   .rc-date {{ font-size: 9px; color: #8fa3d4; margin-bottom: 2px; text-shadow: 0 1px 4px rgba(0,0,0,1); }}
-  .rc-name {{ font-size: 12px; color: white; font-weight: bold; margin-bottom: 4px; line-height: 1.2; text-shadow: 0 1px 4px rgba(0,0,0,1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
+  .rc-name {{ display: flex; align-items: baseline; gap: 3px; margin-bottom: 4px; line-height: 1.2; text-shadow: 0 1px 4px rgba(0,0,0,1); font-size: 12px; color: white; font-weight: bold; }}
+  .rc-name .rn-base {{ flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
+  .rc-name .rn-grade {{ flex-shrink: 0; font-size: 10px; }}
   .rc-foot {{ display: flex; align-items: center; justify-content: space-between; gap: 4px; }}
   .rc-crs {{ font-size: 9px; color: #aab; text-shadow: 0 1px 4px rgba(0,0,0,1); }}
   .rc-pos {{ font-size: 13px; font-weight: 900; padding: 1px 7px; border-radius: 4px; }}
