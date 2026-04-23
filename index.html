@@ -16,7 +16,7 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif; b
 .admin-btn { display:inline-flex; align-items:center; gap:6px; background:linear-gradient(180deg,rgba(255,255,255,0.15) 0%,rgba(255,255,255,0.05) 100%),#3a6d9a; border:1px solid rgba(255,255,255,0.25); border-top:1px solid rgba(255,255,255,0.4); color:#fff; font-size:12px; font-weight:700; padding:7px 14px; border-radius:8px; text-decoration:none; transition:all 0.15s; white-space:nowrap; flex-shrink:0; box-shadow:inset 0 1px 0 rgba(255,255,255,0.2),0 3px 10px rgba(0,0,0,0.3); }
 .date-section { margin-bottom:8px; padding:0 10px; }
 .date-header { font-size:15px; font-weight:800; padding:14px 18px; background:linear-gradient(180deg,rgba(255,255,255,0.12) 0%,rgba(255,255,255,0.03) 60%,rgba(0,0,0,0.08) 100%),#1a5276; color:#ddeeff; cursor:pointer; display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:12px; border:1px solid rgba(255,255,255,0.15); border-top:1px solid rgba(255,255,255,0.30); border-radius:12px; box-shadow:inset 0 1px 0 rgba(255,255,255,0.22),0 6px 20px rgba(0,0,0,0.45); transition:all 0.2s; }
-.date-header:active { background:linear-gradient(180deg,rgba(255,255,255,0.18) 0%,rgba(255,255,255,0.06) 100%),#1a5276; border-color:rgba(255,255,255,0.35); box-shadow:inset 0 1px 0 rgba(255,255,255,0.3),0 8px 28px rgba(0,0,0,0.5); }
+.date-header:active { background:linear-gradient(180deg,rgba(255,255,255,0.18) 0%,rgba(255,255,255,0.06) 100%),#1a5276; border-color:rgba(255,255,255,0.35); box-shadow:inset 0 1px 0 rgba(255,255,255,0.3),0 8px 28px rgba(0,0,0,0.5); transform:scale(0.98); opacity:0.85; }
 @media (hover: hover) { .admin-btn:hover { background:linear-gradient(180deg,rgba(255,255,255,0.22) 0%,rgba(255,255,255,0.08) 100%),#3a6d9a; border-color:rgba(255,255,255,0.5); } .date-header:hover { background:linear-gradient(180deg,rgba(255,255,255,0.18) 0%,rgba(255,255,255,0.06) 100%),#1a5276; border-color:rgba(255,255,255,0.35); box-shadow:inset 0 1px 0 rgba(255,255,255,0.3),0 8px 28px rgba(0,0,0,0.5); } }
 .date-header .toggle { font-size:11px; color:#a8c8e8; transition:transform 0.2s; }
 .date-header.open .toggle { transform:rotate(180deg); }
@@ -39,7 +39,7 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif; b
 .weather-label { font-size:8px; color:#7aa8c8; font-weight:600; }
 a { display:flex; align-items:center; gap:8px; padding:9px 14px; color:#ddeeff; text-decoration:none; font-size:12px; font-weight:700; border-bottom:1px solid rgba(255,255,255,0.07); transition:background 0.12s; }
 a:last-child { border-bottom:none; }
-a:active { background:rgba(255,255,255,0.08); }
+a:active { background:rgba(255,255,255,0.15); opacity:0.8; }
 @media (hover: hover) { a:hover { background:rgba(255,255,255,0.08); } }
 .rinfo { display:flex; flex-direction:column; min-width:44px; flex-shrink:0; }
 .rnum { font-size:13px; font-weight:800; color:#c8e0f8; }
