@@ -193,10 +193,12 @@ a.site-link:hover { text-decoration: underline; }
         </div>
       </div>
     </div>
-    <div style="display:flex;gap:12px;align-items:center">
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
       <button class="btn-run" id="btn-run" onclick="runPipeline()">▶ 実行</button>
+      <button class="btn-run" id="btn-weekend-scrape" style="background:linear-gradient(180deg,rgba(255,255,255,0.18) 0%,rgba(255,255,255,0.05) 100%),#e11d48" onclick="runWeekendScrape()">📥 今週末を一括取得</button>
       <button class="btn-open" onclick="stopPipeline()">■ 停止</button>
     </div>
+    <p style="font-size:11px;color:#7aa8c8;margin-top:8px">一括取得: 今週土日のレースをフルスクレイピング（木曜夜に実行）</p>
   </div>
 
   <!-- ログ -->
@@ -455,6 +457,36 @@ function runBatch(){
   };
 }
 
+function runWeekendScrape(){
+  const btn = document.getElementById('btn-weekend-scrape');
+  btn.disabled=true; btn.textContent='⏳ 取得中...';
+  document.getElementById('log').innerHTML='';
+  setStatus('running','今週末一括取得中...');
+  if(evtSource){ evtSource.close(); evtSource=null; }
+  evtSource = new EventSource('/api/weekend_scrape');
+  evtSource.onmessage = e => {
+    const line = JSON.parse(e.data);
+    let cls='';
+    if(line.startsWith('  ✓') || line.includes('完了')) cls='ok';
+    else if(line.includes('ERROR') || line.includes('エラー') || line.startsWith('  ✗')) cls='err';
+    else if(line.startsWith('===') || line.startsWith('[')) cls='head';
+    if(line==='__DONE__'){
+      setStatus('done','一括取得完了');
+      btn.disabled=false; btn.textContent='📥 今週末を一括取得';
+      evtSource.close(); evtSource=null;
+    } else if(line==='__ERROR__'){
+      setStatus('error','エラー');
+      btn.disabled=false; btn.textContent='📥 今週末を一括取得';
+      evtSource.close(); evtSource=null;
+    } else { appendLog(line, cls); }
+  };
+  evtSource.onerror = ()=>{
+    setStatus('error','接続エラー');
+    btn.disabled=false; btn.textContent='📥 今週末を一括取得';
+    evtSource.close(); evtSource=null;
+  };
+}
+
 function runWeekendUpdate(){
   const btn = document.getElementById('btn-weekend');
   btn.disabled=true; btn.textContent='⏳ 更新中...';
@@ -708,6 +740,42 @@ def api_run():
             yield f'data: {json.dumps("__ERROR__")}\n\n'
 
     return Response(generate(), mimetype='text/event-stream',
+                    headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
+
+
+@app.route('/api/weekend_scrape')
+def api_weekend_scrape():
+    """今週土日をフルスクレイピング（木曜夜用）"""
+    import datetime as _dt
+    today = _dt.date.today()
+    weekday = today.weekday()
+    days_to_sat = (5 - weekday) % 7
+    sat = today + _dt.timedelta(days=days_to_sat)
+    sun = sat + _dt.timedelta(days=1)
+    weekend_dates = [sat.strftime('%Y%m%d'), sun.strftime('%Y%m%d')]
+
+    def generate():
+        for date_str in weekend_dates:
+            yield f'data: {json.dumps(f"=== {date_str} フルスクレイピング ===")}\n\n'
+            deploy = 'true'
+            pip_cmd = [sys.executable, '-u', '-X', 'utf8',
+                       os.path.join(BASE_DIR, 'pipeline.py'),
+                       date_str, '--deploy']
+            proc = subprocess.Popen(pip_cmd, stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT, cwd=BASE_DIR,
+                                    encoding='utf-8', errors='replace')
+            for line in proc.stdout:
+                yield f'data: {json.dumps(line.rstrip())}\n\n'
+            proc.wait()
+            if proc.returncode != 0:
+                yield f'data: {json.dumps(f"{date_str} 失敗")}\n\n'
+                yield f'data: {json.dumps("__ERROR__")}\n\n'
+                return
+            yield f'data: {json.dumps(f"  ✓ {date_str} 完了")}\n\n'
+        yield f'data: {json.dumps("=== 今週末一括取得完了 ===")}\n\n'
+        yield f'data: {json.dumps("__DONE__")}\n\n'
+
+    return Response(stream_with_context(generate()), mimetype='text/event-stream',
                     headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
 
 
