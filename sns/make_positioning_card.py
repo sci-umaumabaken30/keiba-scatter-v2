@@ -424,8 +424,8 @@ def make_grid_card(scatter_html, horse_names, out_path=None):
   .app {{ width: 1200px; height: 675px; background: #1e2b4a; display: flex; flex-direction: column; overflow: hidden; }}
   .shared-header {{ padding: 10px 24px 8px; background: #1a2035; flex-shrink: 0; }}
   .race-title {{ color: white; font-size: 18px; font-weight: bold; }}
-  .grid-wrap {{ flex: 1; display: grid; grid-template-columns: repeat({cols}, 1fr); grid-template-rows: repeat({rows}, 1fr); gap: 2px; background: #1e2b4a; overflow: hidden; }}
-  .cell {{ background: #1e2b4a; display: flex; flex-direction: column; overflow: hidden; }}
+  .grid-wrap {{ display: grid; grid-template-columns: repeat({cols}, 1fr); gap: 2px; background: #1e2b4a; align-content: start; }}
+  .cell {{ background: #1e2b4a; display: flex; flex-direction: column; overflow: hidden; height: 310px; }}
   .cell-empty {{ background: #2d4a68; }}
   .cell-horse {{ padding: 5px 12px; background: #243554; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }}
   .cell-num {{ padding: 2px 8px; border-radius: 4px; font-size: 13px; font-weight: bold; }}
