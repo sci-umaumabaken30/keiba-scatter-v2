@@ -57,13 +57,17 @@ def get_waku_color(num_horses, umaban):
     return WAKU_PALETTE[1]
 
 
-def _shorten_race_name(name, max_base=10):
-    """グレード部分を末尾に残しつつ先頭を省略: 朝日フューチュ…(GI)"""
-    m = re.search(r'(\([^)]+\))$', name.strip())
+def _shorten_race_name(name, max_chars=10):
+    """グレード（）を末尾に保持しつつ先頭を…で省略。max_charsはグレード込みの合計文字数上限。"""
+    # 全角・半角どちらのカッコにも対応
+    m = re.search(r'([（(][^）)]+[）)])$', name.strip())
     grade = m.group(1) if m else ''
     base  = name[:m.start()].strip() if m else name.strip()
-    if len(base) > max_base:
-        base = base[:max_base - 1] + '…'
+    avail = max_chars - len(grade)
+    if avail < 2:
+        avail = 2
+    if len(base) > avail:
+        base = base[:avail - 1] + '…'
     return base + grade
 
 
@@ -265,6 +269,8 @@ def make_card(scatter_html, horse_name, out_path=None):
     margin-bottom: 6px;
     line-height: 1.2;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }}
   .race-card .result {{
     display: flex;
@@ -367,7 +373,7 @@ def _build_cell(tx, ty, horses, horse_name, star_size=36):
         ptc    = CAT_TC.get(cat, 'white')
         ptxt   = f'{result}着' if result is not None else '取消'
         z      = (15 if result is not None and result <= 2 else 10) + (len(races) - i)
-        rname  = _shorten_race_name(r['race_name'], max_base=7)
+        rname  = _shorten_race_name(r['race_name'], max_chars=9)
         cards += f'''<div class="rc" style="left:{lp:.1f}%;top:{tp:.1f}%;z-index:{z};border-color:{bc};">
           <div class="rc-date">{r['date']}</div>
           <div class="rc-name">{rname}</div>
@@ -435,7 +441,7 @@ def make_grid_card(scatter_html, horse_names, out_path=None):
          mix-blend-mode: normal; border: 2px solid; border-radius: 8px; padding: 6px 10px;
          width: 155px; height: 72px; overflow: hidden; box-shadow: 0 3px 10px rgba(0,0,0,0.5); }}
   .rc-date {{ font-size: 9px; color: #8fa3d4; margin-bottom: 2px; text-shadow: 0 1px 4px rgba(0,0,0,1); }}
-  .rc-name {{ font-size: 12px; color: white; font-weight: bold; margin-bottom: 4px; line-height: 1.2; text-shadow: 0 1px 4px rgba(0,0,0,1); white-space: nowrap; }}
+  .rc-name {{ font-size: 12px; color: white; font-weight: bold; margin-bottom: 4px; line-height: 1.2; text-shadow: 0 1px 4px rgba(0,0,0,1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
   .rc-foot {{ display: flex; align-items: center; justify-content: space-between; gap: 4px; }}
   .rc-crs {{ font-size: 9px; color: #aab; text-shadow: 0 1px 4px rgba(0,0,0,1); }}
   .rc-pos {{ font-size: 13px; font-weight: 900; padding: 1px 7px; border-radius: 4px; }}
