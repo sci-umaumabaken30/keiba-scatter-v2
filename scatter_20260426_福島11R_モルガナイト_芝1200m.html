@@ -156,7 +156,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
     <span style="color:#94a3b8">4/26（日） 福島</span>
   </div>
 </div>
-<div class="bet-bar"><span class="bet-tan">単勝 8番</span><span class="bet-add">馬連3点: 8-17 / 8-1 / 8-11</span><span class="bet-meta">SCI=100 gap=0 [OP]</span></div><div class="sci-ranks"><span class="sci-rank"><b>8番</b>アクートゥス<em>100</em></span><span class="sci-rank"><b>17番</b>イツモニコニコ<em>100</em></span><span class="sci-rank"><b>1番</b>カリボール<em>100</em></span><span class="sci-rank"><b>11番</b>カルロヴェローチェ<em>100</em></span><span class="sci-rank"><b>10番</b>クファシル<em>100</em></span><span class="sci-rank"><b>2番</b>クムシラコ<em>100</em></span></div>
+
 <div class="main">
   <div class="chart-area"><canvas id="chart"></canvas><div class="tooltip" id="tooltip"></div></div>
   <div class="panel" id="panel"></div>
@@ -3035,7 +3035,7 @@ function buildPanel(){
   let html='';
   HORSES.forEach((h,i)=>{
     const cnt=h.races.length;
-    const _uma=parseInt(h.horse_num)||i+1;const _wc=getWakuColor(HORSES.length,_uma);
+    const _umaRaw=parseInt(h.horse_num);const _umaValid=_umaRaw>0;const _uma=_umaValid?_umaRaw:i+1;const _wc=_umaValid?getWakuColor(HORSES.length,_uma):{bg:'#4a5568',tc:'#94a3b8'};
     html+=`<button class="horse-btn" id="btn-${i}"><span class="waku-badge" style="background:${_wc.bg};color:${_wc.tc}">${h.horse_num}</span>${h.name}<span class="count">${cnt>0?cnt+'走':'データなし'}</span></button>`;
     html+=`<div class="rating-row" id="rate-${i}">`;
     RANKS.forEach(r=>{html+=`<button class="rating-btn" data-horse="${i}" data-rank="${r}">${r}</button>`;});
