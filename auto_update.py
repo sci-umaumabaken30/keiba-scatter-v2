@@ -163,59 +163,62 @@ def affected_dates(new_keys):
 
 
 def main():
+    from datetime import timedelta
     today = date.today()
+    now = datetime.now()
     weekday = today.weekday()  # 0=月, 4=金, 5=土, 6=日
-    hour = datetime.now().hour
+    hour, minute = now.hour, now.minute
+    day_name = ['月','火','水','木','金','土','日'][weekday]
 
     # 金土日以外はスキップ
     if weekday not in (4, 5, 6):
-        log.info(f"本日({today}, {['月','火','水','木','金','土','日'][weekday]})は対象外")
+        log.info(f"本日({today}, {day_name})は対象外")
         return
 
-    # 時間帯チェック: 金曜は11〜14時、土日は7〜16時
-    if weekday == 4 and not (11 <= hour <= 14):
-        log.info(f"金曜の監視時間外 (現在{hour}時)")
-        return
-    if weekday in (5, 6) and not (7 <= hour <= 16):
-        log.info(f"土日の監視時間外 (現在{hour}時)")
+    # 発表時刻ウィンドウ判定
+    # 枠番: 金・土 11:00〜11:30
+    in_umaban_window = (weekday in (4, 5)) and (hour == 11 and minute <= 30)
+    # クッション値・含水率: 金曜 12:00〜14:30、土日 9:15〜9:45
+    if weekday == 4:
+        in_cushion_window = (hour == 12) or (hour == 13) or (hour == 14 and minute <= 30)
+    else:
+        in_cushion_window = (hour == 9 and 15 <= minute <= 45)
+
+    if not in_umaban_window and not in_cushion_window:
+        log.info(f"発表時刻ウィンドウ外 ({day_name} {hour:02d}:{minute:02d})")
         return
 
-    log.info(f"=== 自動更新チェック開始 ({today} {['月','火','水','木','金','土','日'][weekday]}) ===")
+    log.info(f"=== 自動更新チェック開始 ({today} {day_name} {hour:02d}:{minute:02d}) ===")
 
-    # ── 枠番チェック ──
-    # 金曜11〜16時 → 土曜分、土曜11〜16時 → 日曜分
+    # ── 枠番チェック (金曜→土曜分、土曜→日曜分) ──
     umaban_updated = False
-    from datetime import timedelta
-    if weekday == 4 and 11 <= hour <= 16:
+    if in_umaban_window:
         target_dates = [(today + timedelta(days=1)).strftime('%Y%m%d')]
         missing = find_races_missing_umaban(target_dates)
         if missing:
-            log.info(f"枠番未確定レース検出 (土曜分): {missing}")
+            log.info(f"枠番未確定レース検出: {missing}")
             umaban_updated = run_umaban_update(missing, target_dates)
-    elif weekday == 5 and 11 <= hour <= 16:
-        target_dates = [(today + timedelta(days=1)).strftime('%Y%m%d')]
-        missing = find_races_missing_umaban(target_dates)
-        if missing:
-            log.info(f"枠番未確定レース検出 (日曜分): {missing}")
-            umaban_updated = run_umaban_update(missing, target_dates)
+        else:
+            log.info("枠番は確定済み")
 
     # ── クッション値・含水率チェック ──
-    live_keys = fetch_live_cushion_keys()
-    db_keys = load_db_keys()
-    new_keys = live_keys - db_keys
+    if in_cushion_window:
+        live_keys = fetch_live_cushion_keys()
+        db_keys = load_db_keys()
+        new_keys = live_keys - db_keys
 
-    if not new_keys:
-        if not umaban_updated:
-            log.info("新データなし (DB最新)")
-        return
+        if not new_keys:
+            if not umaban_updated:
+                log.info("新データなし (DB最新)")
+            return
 
-    log.info(f"新データ検出: {len(new_keys)}件 → {sorted(new_keys)}")
+        log.info(f"新データ検出: {len(new_keys)}件 → {sorted(new_keys)}")
 
-    if not run_db_update():
-        return
+        if not run_db_update():
+            return
 
-    for d in affected_dates(new_keys):
-        run_pipeline(d)
+        for d in affected_dates(new_keys):
+            run_pipeline(d)
 
     log.info("=== 自動更新完了 ===")
 
