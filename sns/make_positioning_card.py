@@ -249,7 +249,7 @@ def make_card(scatter_html, horse_name, out_path=None):
     border-radius: 10px;
     padding: 12px 16px;
     width: 220px;
-    height: 116px;
+    height: 108px;
     overflow: hidden;
     box-shadow: 0 4px 16px rgba(0,0,0,0.5);
   }}
@@ -438,7 +438,7 @@ def make_grid_card(scatter_html, horse_names, out_path=None):
   .star {{ color: #ffd43b; filter: drop-shadow(0 0 10px rgba(255,212,59,1)); line-height: 1; }}
   .rc {{ position: absolute; transform: translate(-50%,-50%); background: rgba(26,82,118,0.72);
          mix-blend-mode: normal; border: 2px solid; border-radius: 8px; padding: 6px 10px;
-         width: 155px; height: 84px; overflow: hidden; box-shadow: 0 3px 10px rgba(0,0,0,0.5); }}
+         width: 155px; height: 78px; overflow: hidden; box-shadow: 0 3px 10px rgba(0,0,0,0.5); }}
   .rc-date {{ font-size: 9px; color: #8fa3d4; margin-bottom: 2px; text-shadow: 0 1px 4px rgba(0,0,0,1); }}
   .rc-name {{ display: flex; align-items: baseline; gap: 3px; margin-bottom: 4px; line-height: 1.2; text-shadow: 0 1px 4px rgba(0,0,0,1); font-size: 12px; color: white; font-weight: bold; }}
   .rc-name .rn-base {{ flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
