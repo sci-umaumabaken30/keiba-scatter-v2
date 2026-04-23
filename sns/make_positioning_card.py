@@ -120,12 +120,10 @@ def make_card(scatter_html, horse_name, out_path=None):
     star_left = 50.0
     star_top  = 50.0
 
-    # 散布図のX:Y比率 (cushion 5単位 : moisture 22単位) を維持しつつ
-    # 最遠カードが中心から±40%になるよう自動スケール
-    SCALE_RATIO = 22.0 / 5.0   # scale_c = SCALE_RATIO * scale_m
+    SCALE_RATIO = 22.0 / 5.0
     max_c = max((abs(r['cushion'] - tx) for r in races), default=0.5) + 0.5
     max_m = max((abs(r['moisture'] - ty) for r in races), default=0.5) + 0.5
-    scale_m = min(40.0 / (SCALE_RATIO * max_c), 40.0 / max_m)
+    scale_m = min(30.0 / (SCALE_RATIO * max_c), 30.0 / max_m)
     scale_c = scale_m * SCALE_RATIO
 
     cards_html = ''
@@ -235,7 +233,7 @@ def make_card(scatter_html, horse_name, out_path=None):
     top: {star_top:.1f}%;
   }}
   .current-race .star {{
-    font-size: 56px;
+    font-size: 36px;
     color: #ffd43b;
     filter: drop-shadow(0 0 16px rgba(255,212,59,1));
     line-height: 1;
@@ -246,10 +244,10 @@ def make_card(scatter_html, horse_name, out_path=None):
     background: rgba(26, 82, 118, 0.72);
     mix-blend-mode: normal;
     border: 2px solid;
-    border-radius: 10px;
-    padding: 12px 16px;
-    width: 220px;
-    height: 108px;
+    border-radius: 7px;
+    padding: 8px 10px;
+    width: 130px;
+    height: 82px;
     overflow: hidden;
     box-shadow: 0 4px 16px rgba(0,0,0,0.5);
   }}
@@ -259,33 +257,33 @@ def make_card(scatter_html, horse_name, out_path=None):
     text-shadow: 0 1px 5px rgba(0,0,0,1);
   }}
   .race-card .date {{
-    font-size: 12px;
+    font-size: 9px;
     color: #8fa3d4;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
   }}
   .race-card .rname {{
-    display: flex; align-items: baseline; gap: 5px;
-    margin-bottom: 6px; font-size: 16px; color: white; font-weight: bold; line-height: 1.2;
+    display: flex; align-items: baseline; gap: 3px;
+    margin-bottom: 4px; font-size: 11px; color: white; font-weight: bold; line-height: 1.2;
   }}
   .race-card .rname .rn-base {{
     flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }}
-  .race-card .rname .rn-grade {{ flex-shrink: 0; font-size: 14px; }}
+  .race-card .rname .rn-grade {{ flex-shrink: 0; font-size: 9px; }}
   .race-card .result {{
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: 4px;
   }}
   .race-card .course {{
-    font-size: 12px;
+    font-size: 9px;
     color: #aab;
   }}
   .race-card .pos {{
-    font-size: 18px;
+    font-size: 12px;
     font-weight: 900;
-    padding: 2px 10px;
-    border-radius: 5px;
+    padding: 2px 6px;
+    border-radius: 4px;
   }}
 </style>
 </head>
@@ -355,11 +353,10 @@ def _build_cell(tx, ty, horses, horse_name, star_size=36):
         umaban = 1
     waku   = get_waku_color(len(horses), umaban)
 
-    # スケール計算（make_card と同一ロジック）
     SCALE_RATIO = 22.0 / 5.0
     max_c = max((abs(r['cushion'] - tx) for r in races), default=0.5) + 0.5
     max_m = max((abs(r['moisture'] - ty) for r in races), default=0.5) + 0.5
-    scale_m = min(40.0 / (SCALE_RATIO * max_c), 40.0 / max_m)
+    scale_m = min(30.0 / (SCALE_RATIO * max_c), 30.0 / max_m)
     scale_c = scale_m * SCALE_RATIO
 
     cards = ''
@@ -401,13 +398,79 @@ def make_grid_card(scatter_html, horse_names, out_path=None):
     venue_r, race_name, course_str = _race_header(scatter_html)
 
     n = len(horse_names)
-    cols = 2
+    cols = min(2, n)
     rows = (n + 1) // 2
+    total_w = 1200 * cols
+    total_h = 675 * rows
 
-    cells_html = ''.join(_build_cell(tx, ty, horses, name) for name in horse_names)
-    # 奇数頭のとき空きセルを追加
-    if n % 2 == 1:
-        cells_html += '<div class="cell cell-empty"></div>'
+    # 選択馬全体の共通スケール（同じレースが同じ位置に表示されるよう統一）
+    SCALE_RATIO = 22.0 / 5.0
+    valid = [h for h in horses if h['name'] in horse_names]
+    all_c = [abs(r['cushion'] - tx) for h in valid for r in h.get('races', [])]
+    all_m = [abs(r['moisture'] - ty) for h in valid for r in h.get('races', [])]
+    g_max_c = (max(all_c) if all_c else 0.0) + 0.5
+    g_max_m = (max(all_m) if all_m else 0.0) + 0.5
+    g_scale_m = min(30.0 / (SCALE_RATIO * g_max_c), 30.0 / g_max_m)
+    g_scale_c = g_scale_m * SCALE_RATIO
+
+    # 各馬をフルサイズパネルで生成
+    panels_html = ''
+    for horse_name in horse_names:
+        horse = next((h for h in horses if h['name'] == horse_name), None)
+        if horse is None:
+            panels_html += '<div class="panel panel-empty"></div>'
+            continue
+
+        races = horse['races']
+        horse_num = horse.get('horse_num', '?')
+        try:
+            umaban = int(horse_num)
+        except (ValueError, TypeError):
+            umaban = 1
+        waku   = get_waku_color(len(horses), umaban)
+        num_bg = waku['bg']
+        num_tc = waku['tc']
+
+        scale_c = g_scale_c
+        scale_m = g_scale_m
+
+        cards_html = ''
+        for i, r in enumerate(races):
+            lp   = 50.0 + (r['cushion']  - tx) * scale_c
+            tp   = 50.0 - (r['moisture'] - ty) * scale_m
+            result = r.get('result')
+            cat    = r.get('cat', 'diff_dist') if result is not None else 'cancel'
+            bc     = CAT_COLORS.get(cat, '#60a5fa')
+            ptc    = CAT_TC.get(cat, 'white')
+            ptxt   = f'{result}着' if result is not None else '取消'
+            z      = (15 if result is not None and result <= 2 else 10) + (len(races) - i)
+            rname_html = _rname_html(r['race_name'], 'rn-base', 'rn-grade')
+            cards_html += f'''
+      <div class="race-card" style="left:{lp:.1f}%;top:{tp:.1f}%;z-index:{z};border-color:{bc};">
+        <div class="date">{r['date']}</div>
+        <div class="rname">{rname_html}</div>
+        <div class="result">
+          <span class="course">{r['venue']} {r['distance']}m</span>
+          <span class="pos" style="background:{bc};color:{ptc};">{ptxt}</span>
+        </div>
+      </div>'''
+
+        panels_html += f'''<div class="panel">
+  <div class="app-header"><div class="race-title">{venue_r} {race_name} <span style="font-size:14px;color:#8fa3d4;font-weight:normal;">{course_str}</span></div></div>
+  <div class="app-horse-row"><div class="app-horse">
+    <span class="num" style="background:{num_bg};color:{num_tc};">{horse_num}</span>
+    <span class="name">{horse_name}</span>
+    <span style="margin-left:auto;color:#8fa3d4;font-size:13px;">好走パターン分析</span>
+  </div></div>
+  <div class="chart"><div class="plot">
+    <div class="grid-bg"></div>
+{cards_html}
+    <div class="current-race"><div class="star">★</div></div>
+  </div></div>
+</div>'''
+
+    if n % 2 == 1 and n > 1:
+        panels_html += '<div class="panel panel-empty"></div>'
 
     html = f'''<!DOCTYPE html>
 <html lang="ja">
@@ -420,42 +483,38 @@ def make_grid_card(scatter_html, horse_names, out_path=None):
     background: #666;
     display: flex; justify-content: center; align-items: center; min-height: 100vh;
   }}
-  .app {{ width: 1200px; height: 675px; background: #1e2b4a; display: flex; flex-direction: column; overflow: hidden; }}
-  .shared-header {{ padding: 10px 24px 8px; background: #1a2035; flex-shrink: 0; }}
-  .race-title {{ color: white; font-size: 18px; font-weight: bold; }}
-  .grid-wrap {{ display: grid; grid-template-columns: repeat({cols}, 1fr); gap: 2px; background: #1e2b4a; align-content: start; }}
-  .cell {{ background: #1e2b4a; display: flex; flex-direction: column; overflow: hidden; height: 310px; }}
-  .cell-empty {{ background: #2d4a68; }}
-  .cell-horse {{ padding: 5px 12px; background: #243554; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }}
-  .cell-num {{ padding: 2px 8px; border-radius: 4px; font-size: 13px; font-weight: bold; }}
-  .cell-hname {{ color: white; font-size: 14px; font-weight: bold; }}
-  .cell-chart {{ flex: 1; position: relative; }}
-  .cell-plot {{ position: absolute; inset: 6px; isolation: isolate; }}
+  .wrapper {{ width: {total_w}px; height: {total_h}px; display: grid; grid-template-columns: repeat({cols}, 1200px); gap: 0; }}
+  .panel {{ width: 1200px; height: 675px; background: #1e2b4a; overflow: hidden; display: flex; flex-direction: column; border-right: 2px solid #2d4a68; }}
+  .panel-empty {{ background: #1a2035; }}
+  .app-header {{ padding: 16px 28px 6px; background: #1a2035; }}
+  .race-title {{ color: white; font-size: 22px; font-weight: bold; }}
+  .app-horse-row {{ padding: 10px 28px; background: #243554; display: flex; align-items: center; }}
+  .app-horse {{ display: flex; align-items: center; gap: 12px; padding: 10px 14px; width: 100%; }}
+  .app-horse .num {{ padding: 5px 12px; border-radius: 5px; font-size: 16px; font-weight: bold; }}
+  .app-horse .name {{ color: white; font-size: 20px; font-weight: bold; }}
+  .chart {{ flex: 1; background: #1e2b4a; padding: 10px; position: relative; }}
+  .plot {{ position: absolute; inset: 10px; isolation: isolate; }}
   .grid-bg {{ position: absolute; inset: 0;
     background: linear-gradient(to right, rgba(143,163,212,0.06) 1px, transparent 1px) 0 0 / calc(100%/14) 100%,
                 linear-gradient(to bottom, rgba(143,163,212,0.06) 1px, transparent 1px) 0 0 / 100% calc(100%/8); }}
-  .cur {{ position: absolute; transform: translate(-50%,-50%); z-index: 30; }}
-  .star {{ color: #ffd43b; filter: drop-shadow(0 0 10px rgba(255,212,59,1)); line-height: 1; }}
-  .rc {{ position: absolute; transform: translate(-50%,-50%); background: rgba(26,82,118,0.72);
-         mix-blend-mode: normal; border: 2px solid; border-radius: 8px; padding: 6px 10px;
-         width: 155px; height: 78px; overflow: hidden; box-shadow: 0 3px 10px rgba(0,0,0,0.5); }}
-  .rc-date {{ font-size: 9px; color: #8fa3d4; margin-bottom: 2px; text-shadow: 0 1px 4px rgba(0,0,0,1); }}
-  .rc-name {{ display: flex; align-items: baseline; gap: 3px; margin-bottom: 4px; line-height: 1.2; text-shadow: 0 1px 4px rgba(0,0,0,1); font-size: 12px; color: white; font-weight: bold; }}
-  .rc-name .rn-base {{ flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
-  .rc-name .rn-grade {{ flex-shrink: 0; font-size: 10px; }}
-  .rc-foot {{ display: flex; align-items: center; justify-content: space-between; gap: 4px; }}
-  .rc-crs {{ font-size: 9px; color: #aab; text-shadow: 0 1px 4px rgba(0,0,0,1); }}
-  .rc-pos {{ font-size: 13px; font-weight: 900; padding: 1px 7px; border-radius: 4px; }}
+  .current-race {{ position: absolute; transform: translate(-50%,-50%); z-index: 30; left: 50%; top: 50%; }}
+  .current-race .star {{ font-size: 36px; color: #ffd43b; filter: drop-shadow(0 0 16px rgba(255,212,59,1)); line-height: 1; }}
+  .race-card {{ position: absolute; transform: translate(-50%,-50%); background: rgba(26,82,118,0.72);
+    mix-blend-mode: normal; border: 2px solid; border-radius: 7px; padding: 8px 10px;
+    width: 130px; height: 82px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.5); }}
+  .race-card .date, .race-card .rname, .race-card .course {{ text-shadow: 0 1px 5px rgba(0,0,0,1); }}
+  .race-card .date {{ font-size: 9px; color: #8fa3d4; margin-bottom: 3px; }}
+  .race-card .rname {{ display: flex; align-items: baseline; gap: 3px; margin-bottom: 4px; font-size: 11px; color: white; font-weight: bold; line-height: 1.2; }}
+  .race-card .rname .rn-base {{ flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
+  .race-card .rname .rn-grade {{ flex-shrink: 0; font-size: 9px; }}
+  .race-card .result {{ display: flex; align-items: center; justify-content: space-between; gap: 4px; }}
+  .race-card .course {{ font-size: 9px; color: #aab; }}
+  .race-card .pos {{ font-size: 12px; font-weight: 900; padding: 2px 6px; border-radius: 4px; }}
 </style>
 </head>
 <body>
-<div class="app" id="capture">
-  <div class="shared-header">
-    <div class="race-title">{venue_r} {race_name} <span style="font-size:12px;color:#8fa3d4;font-weight:normal;">{course_str}</span></div>
-  </div>
-  <div class="grid-wrap">
-    {cells_html}
-  </div>
+<div class="wrapper" id="capture">
+  {panels_html}
 </div>
 </body>
 </html>'''
@@ -474,7 +533,7 @@ def make_grid_card(scatter_html, horse_names, out_path=None):
         with sync_playwright() as p:
             browser = p.chromium.launch()
             ctx = browser.new_context(
-                viewport={'width': 1200, 'height': 675},
+                viewport={'width': total_w, 'height': total_h},
                 device_scale_factor=2,
                 locale='ja-JP'
             )
