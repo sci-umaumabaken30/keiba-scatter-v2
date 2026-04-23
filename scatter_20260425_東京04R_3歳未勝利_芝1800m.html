@@ -93,13 +93,6 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
 .race-mark-btn.marked-× { background:linear-gradient(180deg,rgba(255,255,255,0.15) 0%,rgba(255,255,255,0.03) 100%),#3a6d9a; border-color:rgba(255,255,255,0.25); color:#fff; }
 .horse-detail { display: none; padding: 8px 4px; }
 .horse-detail.show { display: block; }
-.sns-btn { display:block; width:100%; padding:7px 12px; margin-top:8px; border:1px solid rgba(255,169,77,0.45); border-radius:8px; background:rgba(255,169,77,0.08); color:#ffa94d; font-size:12px; font-weight:700; cursor:pointer; text-align:left; -webkit-tap-highlight-color:transparent; transition:all 0.2s; }
-.sns-btn:hover { background:rgba(255,169,77,0.16); }
-.sns-btn:active { transform:scale(0.98); }
-.sns-btn:disabled { opacity:0.55; cursor:not-allowed; }
-.sns-prev { margin-top:8px; display:none; }
-.sns-prev img { width:100%; border-radius:6px; border:1px solid rgba(255,255,255,0.15); }
-.sns-prev a { display:block; text-align:center; margin-top:4px; font-size:11px; color:#7aa8c8; }
 .race-card { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
 .race-item {
   padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.14); border-top: 1px solid rgba(255,255,255,0.25);
@@ -885,7 +878,7 @@ function buildPanel(){
     html+=`<div class="rating-row" id="rate-${i}">`;
     RANKS.forEach(r=>{html+=`<button class="rating-btn" data-horse="${i}" data-rank="${r}">${r}</button>`;});
     html+=`</div>`;
-    html+=`<div class="horse-detail" id="detail-${i}"><div class="race-card">${h.races.map((r,ri)=>{const rrKey=h.name+'_'+ri;return`<div class="race-item" style="border-width:2px;border-color:${_wc.bg}66;border-top-color:${_wc.bg}bb;box-shadow:inset 0 1px 0 ${_wc.bg}44,0 2px 8px rgba(0,0,0,0.25)" data-horse="${i}" data-ri="${ri}"><div class="date">${r.date} ${r.venue}</div><div class="rname">${r.race_name}</div><div class="cond">${r.surface}${r.distance}m ${r.distance===TDIST?'(同)':r.distance>TDIST?'(短)':'(延)'}</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#b8d8f8">CV${r.cushion} / ${r.moisture}%</span><span style="font-size:9px;color:#b8d8f8;text-align:right">${r.winner?`${r.winner}${r.time_diff?'('+r.time_diff+')':''} `:''}<span class="result" style="color:${COLORS[r.cat]}">${r.result!==null?r.result+'着':'取消'}</span></span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#b8d8f8">${r.num_horses?r.num_horses+'頭':''}${r.passage?'・'+r.passage:''}</span><div class="race-mark-row" data-rrkey="${rrKey}"><button class="race-mark-btn" data-mark="◎">◎</button><button class="race-mark-btn" data-mark="○">○</button><button class="race-mark-btn" data-mark="×">×</button></div></div>${r.agari?`<div style="font-size:9px;color:#b8d8f8;margin-top:1px">${r.agari}</div>`:''}</div>`}).join('')}</div><button class="sns-btn" id="snsb-${i}" data-hi="${i}">📸 SNS画像生成</button><div class="sns-prev" id="snsp-${i}"></div></div>`;
+    html+=`<div class="horse-detail" id="detail-${i}"><div class="race-card">${h.races.map((r,ri)=>{const rrKey=h.name+'_'+ri;return`<div class="race-item" style="border-width:2px;border-color:${_wc.bg}66;border-top-color:${_wc.bg}bb;box-shadow:inset 0 1px 0 ${_wc.bg}44,0 2px 8px rgba(0,0,0,0.25)" data-horse="${i}" data-ri="${ri}"><div class="date">${r.date} ${r.venue}</div><div class="rname">${r.race_name}</div><div class="cond">${r.surface}${r.distance}m ${r.distance===TDIST?'(同)':r.distance>TDIST?'(短)':'(延)'}</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#b8d8f8">CV${r.cushion} / ${r.moisture}%</span><span style="font-size:9px;color:#b8d8f8;text-align:right">${r.winner?`${r.winner}${r.time_diff?'('+r.time_diff+')':''} `:''}<span class="result" style="color:${COLORS[r.cat]}">${r.result!==null?r.result+'着':'取消'}</span></span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-size:9px;color:#b8d8f8">${r.num_horses?r.num_horses+'頭':''}${r.passage?'・'+r.passage:''}</span><div class="race-mark-row" data-rrkey="${rrKey}"><button class="race-mark-btn" data-mark="◎">◎</button><button class="race-mark-btn" data-mark="○">○</button><button class="race-mark-btn" data-mark="×">×</button></div></div>${r.agari?`<div style="font-size:9px;color:#b8d8f8;margin-top:1px">${r.agari}</div>`:''}</div>`}).join('')}</div></div>`;
   });
   panel.innerHTML=html;
   HORSES.forEach((h,i)=>{document.getElementById('btn-'+i).addEventListener('click',()=>{
@@ -926,24 +919,6 @@ function buildPanel(){
       else{raceRatings[rrKey]=mark;}
       updateRaceMarks();
       saveRaceRatings();
-    });
-  });
-  document.querySelectorAll('.sns-btn').forEach(btn=>{
-    btn.addEventListener('click',async(e)=>{
-      e.stopPropagation();
-      const hi=parseInt(btn.dataset.hi);
-      const name=HORSES[hi].name;
-      const fname=window.location.pathname.split('/').pop()||'';
-      const prev=document.getElementById('snsp-'+hi);
-      btn.disabled=true; btn.textContent='⏳ 生成中...';
-      try{
-        const r=await fetch('http://localhost:5000/api/sns_positioning',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({file:fname,horse:name})});
-        const d=await r.json();
-        if(d.ok){
-          prev.innerHTML=`<img src="http://localhost:5000${d.url}" alt=""><a href="http://localhost:5000${d.url}" download="${d.filename}">⬇ ダウンロード</a>`;
-          prev.style.display='block'; btn.textContent='✓ 完了';
-        }else{btn.textContent='⚠ '+d.error; btn.disabled=false;}
-      }catch(ex){btn.textContent='⚠ サーバー未起動'; btn.disabled=false;}
     });
   });
 }
