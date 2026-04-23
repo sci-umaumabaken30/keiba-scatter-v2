@@ -6,23 +6,16 @@ desktop = subprocess.check_output(
     encoding='cp932'
 ).strip()
 
-vbs = (
-    'Set objShell = CreateObject("WScript.Shell")\r\n'
-    'Set objHTTP = CreateObject("MSXML2.XMLHTTP")\r\n'
-    'running = False\r\n'
-    'On Error Resume Next\r\n'
-    'objHTTP.Open "GET", "http://localhost:5000", False\r\n'
-    'objHTTP.Send\r\n'
-    'If objHTTP.Status = 200 Then running = True\r\n'
-    'On Error GoTo 0\r\n'
-    'If Not running Then\r\n'
-    '    objShell.Run Chr(34) & "C:\\Users\\sena0\\AppData\\Local\\Programs\\Python\\Python312\\pythonw.exe" & Chr(34) & " " & Chr(34) & "C:\\Users\\sena0\\keiba-scatter-v2\\admin_server.py" & Chr(34), 0, False\r\n'
-    '    WScript.Sleep 2000\r\n'
-    'End If\r\n'
-    'objShell.Run Chr(34) & "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" & Chr(34) & " http://localhost:5000/", 1, False\r\n'
-)
+bat_src = 'C:\\Users\\sena0\\keiba-scatter-v2\\start_admin_server.bat'
 
-path = os.path.join(desktop, '\u7af6\u99ac\u6563\u5e03\u56f3.vbs')
-with open(path, 'w', encoding='cp932') as f:
-    f.write(vbs)
-print('OK:', path)
+# \u30c7\u30b9\u30af\u30c8\u30c3\u30d7\u306b.lnk\u30b7\u30e7\u30fc\u30c8\u30ab\u30c3\u30c8\u3092\u4f5c\u6210
+lnk_path = os.path.join(desktop, '\u7af6\u99ac\u6563\u5e03\u56f3.lnk')
+ps_cmd = (
+    f'$ws = New-Object -ComObject WScript.Shell; '
+    f'$sc = $ws.CreateShortcut("{lnk_path}"); '
+    f'$sc.TargetPath = "{bat_src}"; '
+    f'$sc.WorkingDirectory = "C:\\Users\\sena0\\keiba-scatter-v2"; '
+    f'$sc.Save()'
+)
+subprocess.run(['powershell', '-Command', ps_cmd], check=True)
+print('OK:', lnk_path)
