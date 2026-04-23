@@ -144,6 +144,57 @@ def api_deploy_only():
     _start_job(cmd)
     return jsonify({'ok': True, 'cmd': ' '.join(cmd)})
 
+@app.route('/api/weekend-scrape', methods=['POST'])
+def api_weekend_scrape():
+    global current_job
+    if current_job['running']:
+        return jsonify({'error': '既に実行中です'}), 400
+    import datetime as _dt
+    today = _dt.date.today()
+    days_to_sat = (5 - today.weekday()) % 7
+    sat = today + _dt.timedelta(days=days_to_sat)
+    sun = sat + _dt.timedelta(days=1)
+    cmds = [
+        ['python', 'pipeline.py', sat.strftime('%Y%m%d'), '--deploy'],
+        ['python', 'pipeline.py', sun.strftime('%Y%m%d'), '--deploy'],
+    ]
+
+    current_job['queue'] = queue.Queue()
+    current_job['running'] = True
+
+    def run():
+        try:
+            env = os.environ.copy()
+            env['PYTHONIOENCODING'] = 'utf-8'
+            env['PYTHONUTF8'] = '1'
+            env['PYTHONUNBUFFERED'] = '1'
+            for cmd in cmds:
+                run_cmd = [cmd[0], '-u'] + cmd[1:]
+                current_job['queue'].put(f'=== {cmd[2]} フルスクレイピング ===')
+                proc = subprocess.Popen(
+                    run_cmd, cwd=BASE_DIR,
+                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                    encoding='utf-8', errors='replace', bufsize=1, env=env,
+                )
+                current_job['process'] = proc
+                for line in proc.stdout:
+                    current_job['queue'].put(line.rstrip())
+                proc.wait()
+                if proc.returncode != 0:
+                    current_job['queue'].put(f'__EXIT__{proc.returncode}')
+                    return
+            current_job['queue'].put('=== 今週末一括取得完了 ===')
+            current_job['queue'].put('__EXIT__0')
+        except Exception as e:
+            current_job['queue'].put(f'エラー: {e}')
+            current_job['queue'].put('__EXIT__1')
+        finally:
+            current_job['running'] = False
+
+    threading.Thread(target=run, daemon=True).start()
+    return jsonify({'ok': True})
+
+
 @app.route('/api/stop', methods=['POST'])
 def api_stop():
     if current_job['process']:
@@ -1001,6 +1052,11 @@ details.collapsible .detail-body { padding: 0 14px 14px; }
           <div class="card-header"><h2><span>⚡</span> クイックアクション</h2></div>
           <div class="card-body">
             <div class="quick-grid">
+              <button class="quick-btn" onclick="weekendScrape()" style="border-color:rgba(225,29,72,0.5);background:rgba(225,29,72,0.1)">
+                <div class="qb-icon">📥</div>
+                <div class="qb-label">今週末を一括取得</div>
+                <div class="qb-desc">土日フルスクレイピング（木曜夜）</div>
+              </button>
               <button class="quick-btn" onclick="updateDb()">
                 <div class="qb-icon">🗄</div>
                 <div class="qb-label">DB更新</div>
@@ -1630,6 +1686,14 @@ async function runPipeline() {
   const data = await r.json();
   if (data.error) { toast(data.error, 'error'); return; }
   startStream(`$ ${data.cmd}`);
+}
+
+async function weekendScrape() {
+  if (!confirm('今週末（土・日）のフルスクレイピングを実行します。\\n時間がかかります。よろしいですか？')) return;
+  const r = await fetch('/api/weekend-scrape', { method: 'POST' });
+  const data = await r.json();
+  if (data.error) { toast(data.error, 'error'); return; }
+  startStream('$ python pipeline.py 土曜 --deploy && python pipeline.py 日曜 --deploy');
 }
 
 async function updateDb() {
