@@ -716,7 +716,7 @@ canvas {{ display: block; width: 100% !important; height: 100% !important; touch
   background: linear-gradient(180deg,rgba(255,255,255,0.08) 0%,rgba(255,255,255,0.01) 100%),#1a5276; font-size: 10px; cursor: pointer;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.15),0 2px 8px rgba(0,0,0,0.25);
 }}
-.race-item.highlighted {{ border-color: #f59e0b; box-shadow: 0 0 0 2px rgba(245,158,11,0.3); }}
+.race-item.highlighted {{ border-color: #f59e0b !important; border-top-color: #f59e0b !important; box-shadow: 0 0 0 2px rgba(245,158,11,0.3) !important; }}
 .race-item .date {{ color: #c8e4ff; font-weight: 600; font-family: monospace; }}
 .race-item .rname {{ color: #ffffff; font-weight: 700; font-size: 10px; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }}
 .race-item .result {{ font-size: 13px; font-weight: 900; text-shadow: 0 1px 4px rgba(0,0,0,0.6); }}
