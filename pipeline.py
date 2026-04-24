@@ -501,7 +501,7 @@ def link_cushion_data(race_data, cushion_db):
 
 
 # ===== Step 5: 散布図HTML生成 =====
-def generate_scatter_html(race_data, target_cushion, target_moisture, output_path, date_label='', race_num=0, race_date=''):
+def generate_scatter_html(race_data, target_cushion, target_moisture, output_path, date_label='', race_num=0, race_date='', prev_file=None, next_file=None):
     """散布図HTMLを生成"""
     race_info = race_data['race_info']
     venue = race_info['venue']
@@ -615,6 +615,15 @@ def generate_scatter_html(race_data, target_cushion, target_moisture, output_pat
             ai_text_lines.append(f"  {r['date']} {r['venue']} {r['surface']}{r['distance']}m {r['race_name']} {result_str} CV={r['cushion']} 含水率={r['moisture']}% {mark}")
     ai_text_summary = '\n'.join(ai_text_lines)
 
+    if prev_file:
+        prev_btn = f'<a class="nav-btn" href="{prev_file}" title="前のレース">&#8592;</a>'
+    else:
+        prev_btn = '<span class="nav-btn disabled">&#8592;</span>'
+    if next_file:
+        next_btn = f'<a class="nav-btn" href="{next_file}" title="次のレース">&#8594;</a>'
+    else:
+        next_btn = '<span class="nav-btn disabled">&#8594;</span>'
+
     html = f"""<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -633,6 +642,7 @@ body {{
   padding: 12px 16px; z-index: 100;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.2),0 4px 20px rgba(0,0,0,0.5); flex-shrink: 0;
 }}
+.hdr-row {{ display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }}
 .header h1 {{ font-size: 16px; font-weight: 900; letter-spacing: -0.5px; color: #fff; }}
 .header .sub {{ font-size: 11px; color: #a8c8e8; margin-top: 2px; }}
 .header .target {{
@@ -645,6 +655,20 @@ body {{
   padding: 2px 8px; border-radius: 4px; color: #c8e4ff;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.15);
 }}
+.race-nav {{ display:flex; gap:4px; flex-shrink:0; margin-top:2px; }}
+.nav-btn {{
+  display:flex; align-items:center; justify-content:center;
+  width:32px; height:32px; border-radius:8px;
+  background:linear-gradient(180deg,rgba(255,255,255,0.12) 0%,rgba(255,255,255,0.03) 100%),#1a5276;
+  border:1px solid rgba(255,255,255,0.2); border-top:1px solid rgba(255,255,255,0.35);
+  color:#c8e4ff; font-size:16px; font-weight:900; text-decoration:none;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.15),0 2px 6px rgba(0,0,0,0.3);
+  transition:all 0.15s; -webkit-tap-highlight-color:transparent; cursor:pointer;
+}}
+.nav-btn:hover {{ background:linear-gradient(180deg,rgba(255,255,255,0.18) 0%,rgba(255,255,255,0.06) 100%),#1a5276; }}
+.nav-btn:active {{ transform:scale(0.93); }}
+.nav-btn.disabled {{ opacity:0.25; pointer-events:none; }}
+.nav-btn.nav-index {{ font-size:11px; font-weight:800; }}
 .main {{ display: flex; flex-direction: column; flex: 1; overflow: hidden; }}
 @media (min-width: 768px) {{ .main {{ flex-direction: row; }} }}
 .chart-area {{ position: relative; width: 100%; height: 40vh; min-height: 250px; flex-shrink: 0; }}
@@ -741,8 +765,17 @@ canvas {{ display: block; width: 100% !important; height: 100% !important; touch
 </head>
 <body style="display:flex;flex-direction:column;">
 <div class="header">
-  <h1>{venue}{race_num}R {race_name} {surface}{distance}m</h1>
-  <div class="sub">出走馬 クッション値×含水率 解析</div>
+  <div class="hdr-row">
+    <div>
+      <h1>{venue}{race_num}R {race_name} {surface}{distance}m</h1>
+      <div class="sub">出走馬 クッション値×含水率 解析</div>
+    </div>
+    <nav class="race-nav">
+      {prev_btn}
+      <a class="nav-btn nav-index" href="index.html" title="一覧">一覧</a>
+      {next_btn}
+    </nav>
+  </div>
   <div class="target">
     <span>CV: <b style="color:#94a3b8">{target_cushion}</b></span>
     <span>含水率: <b style="color:#94a3b8">{target_moisture}%</b></span>
@@ -1099,6 +1132,16 @@ def main():
     results_summary = []
     start_times_map = {}  # {venue_rnum: "HH:MM"}
 
+    # ナビ用: 全レースの出力ファイル名を事前計算
+    def _race_fname(r):
+        rn = r['race_name']
+        cn = re.sub(r'(芝|ダ|障)\d+m', '', rn)
+        cn = re.sub(r'\d+頭', '', cn)
+        cn = re.sub(r'^0?\d+R', '', cn)
+        sn = cn.strip().replace('/', '_').replace(' ', '') or rn.replace('/', '_').replace(' ', '')
+        return f'scatter_{date_str}_{r["venue"]}{r["race_num"]:02d}R_{sn}_{r["surface"]}{r["distance"]}m.html'
+    all_race_fnames = [_race_fname(r) for r in races]
+
     for race in races:
         rid = race['race_id']
         venue = race['venue']
@@ -1166,10 +1209,17 @@ def main():
                 os.remove(os.path.join(out_dir, old_f))
                 print(f"  旧ファイル削除: {old_f}")
 
+        _fname = os.path.basename(output_file)
+        try:
+            _idx = all_race_fnames.index(_fname)
+            _prev = all_race_fnames[_idx - 1] if _idx > 0 else None
+            _next = all_race_fnames[_idx + 1] if _idx < len(all_race_fnames) - 1 else None
+        except ValueError:
+            _prev = _next = None
         pts, with_data, total = generate_scatter_html(
             race_data, target_cushion, target_moisture,
             output_file, date_label=date_label, race_num=race_num,
-            race_date=date_str,
+            race_date=date_str, prev_file=_prev, next_file=_next,
         )
         print(f"  ✓ 生成完了: {total}頭 ({with_data}頭データあり) {pts}ポイント")
         print(f"  → {output_file}")
