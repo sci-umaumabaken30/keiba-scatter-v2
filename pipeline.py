@@ -1476,26 +1476,6 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 .month-header:hover { background:linear-gradient(180deg,rgba(255,255,255,0.11) 0%,rgba(255,255,255,0.03) 100%),#2d4a68; border-color:rgba(255,255,255,0.25); }
 .month-header .toggle { font-size:11px; color:#7aa8c8; transition:transform 0.2s; }
 .month-header.open .toggle { transform:rotate(180deg); }
-@media (max-width: 600px) {
-  .race-list.open { gap:5px; padding:6px 5px; }
-  .venue-col { flex:1 1 0; min-width:0; }
-  .venue-head { padding:5px 8px; }
-  .venue-head h3 { font-size:12px; }
-  .cv-inline { font-size:8px; }
-  .cv-ref-date { display:none; }
-  .weather-row { gap:4px; margin-top:3px; }
-  .weather-icon { font-size:12px; }
-  .weather-label { font-size:6px; }
-  a { padding:5px 6px; gap:3px; font-size:10px; }
-  .race-check { display:none; }
-  .rinfo { min-width:22px; }
-  .rnum { font-size:10px; }
-  .rtime { display:none; }
-  .rname { font-size:10px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .surf-badge { font-size:7px; padding:1px 3px; }
-  .dist { font-size:9px; }
-  .grade-g1,.grade-g2,.grade-g3 { font-size:7px; padding:1px 3px; }
-}
 .month-body { display:none; padding:6px 0 0; }
 .month-body.open { display:block; }
 .month-count { font-size:11px; color:#7aa8c8; margin-left:8px; font-weight:600; }
