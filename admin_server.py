@@ -10,8 +10,10 @@ import sys
 import json
 import os
 import logging
+import threading
 from datetime import datetime, timedelta
 from flask import Flask, Response, request, render_template_string, stream_with_context
+from apscheduler.schedulers.background import BackgroundScheduler
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -37,6 +39,195 @@ def add_cors(response):
 @app.route('/api/sns_positioning', methods=['OPTIONS'])
 def api_sns_positioning_options():
     return '', 204
+
+
+# ── スケジューラ設定 ──────────────────────────────────────────────────────────
+SCHED_STATE_FILE = os.path.join(BASE_DIR, 'schedule_state.json')
+_sched_lock = threading.Lock()
+_sched_jobs: dict = {}
+
+try:
+    from zoneinfo import ZoneInfo as _ZoneInfo
+    _JST = _ZoneInfo('Asia/Tokyo')
+except ImportError:
+    import pytz as _pytz  # type: ignore
+    _JST = _pytz.timezone('Asia/Tokyo')
+
+_scheduler = BackgroundScheduler(timezone='Asia/Tokyo')
+_scheduler.start()
+logging.info('APScheduler started')
+
+
+def _save_sched_state():
+    try:
+        with open(SCHED_STATE_FILE, 'w', encoding='utf-8') as f:
+            json.dump(_sched_jobs, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        logging.error(f'sched state save error: {e}')
+
+
+def _run_job_fn(job_id, date_str, with_db, no_scrape, retry_count=0):
+    """スケジュールされたジョブを実行（APSchedulerスレッドから呼ばれる）"""
+    logging.info(f'[sched] start: {job_id} date={date_str} retry={retry_count}')
+    with _sched_lock:
+        if job_id in _sched_jobs:
+            _sched_jobs[job_id]['status'] = 'running'
+            _sched_jobs[job_id]['last_run'] = datetime.now().isoformat()
+    _save_sched_state()
+
+    success = True
+    try:
+        if with_db:
+            db_cmd = [sys.executable, '-u', '-X', 'utf8',
+                      os.path.join(BASE_DIR, 'update_cushion_db.py')]
+            proc = subprocess.run(db_cmd, cwd=BASE_DIR,
+                                  capture_output=True, encoding='utf-8', errors='replace')
+            if proc.returncode != 0:
+                logging.error(f'[sched] update_cushion_db failed rc={proc.returncode}')
+                success = False
+
+        if success:
+            pip_cmd = [sys.executable, '-u', '-X', 'utf8',
+                       os.path.join(BASE_DIR, 'pipeline.py'), date_str, '--deploy']
+            if no_scrape:
+                pip_cmd.append('--no-scrape')
+            proc = subprocess.run(pip_cmd, cwd=BASE_DIR,
+                                  capture_output=True, encoding='utf-8', errors='replace')
+            if proc.returncode != 0:
+                logging.error(f'[sched] pipeline failed rc={proc.returncode}')
+                success = False
+    except Exception as e:
+        logging.error(f'[sched] job exception: {e}')
+        success = False
+
+    if success:
+        logging.info(f'[sched] done: {job_id}')
+        with _sched_lock:
+            if job_id in _sched_jobs:
+                _sched_jobs[job_id]['status'] = 'done'
+    else:
+        MAX_RETRY = 5
+        if retry_count < MAX_RETRY:
+            from datetime import timezone as _tz
+            retry_at = datetime.now(tz=_tz.utc) + timedelta(minutes=10)
+            retry_num = retry_count + 1
+            logging.info(f'[sched] scheduling retry {retry_num} for {job_id}')
+            with _sched_lock:
+                if job_id in _sched_jobs:
+                    _sched_jobs[job_id]['status'] = f'retry_{retry_num}'
+            _scheduler.add_job(
+                _run_job_fn,
+                trigger='date',
+                run_date=retry_at,
+                args=[job_id, date_str, with_db, no_scrape, retry_num],
+                id=f'{job_id}_r{retry_num}',
+                replace_existing=True,
+            )
+        else:
+            logging.error(f'[sched] max retry reached: {job_id}')
+            with _sched_lock:
+                if job_id in _sched_jobs:
+                    _sched_jobs[job_id]['status'] = 'error'
+    _save_sched_state()
+
+
+def _register_weekend_schedule(sat_date_str, sun_date_str):
+    """今週末の自動実行スケジュールを登録する"""
+    import datetime as _dmod
+    sat = _dmod.datetime.strptime(sat_date_str, '%Y%m%d').date()
+    sun = _dmod.datetime.strptime(sun_date_str, '%Y%m%d').date()
+    fri = sat - _dmod.timedelta(days=1)
+    now_jst = _dmod.datetime.now(tz=_JST)
+
+    job_specs = [
+        ('fri_scrape_sat', fri, 10,  0, sat_date_str, False, False, '金曜 土曜馬番取得'),
+        ('fri_update_sat', fri, 14,  0, sat_date_str, True,  True,  '金曜 土曜クッション値更新'),
+        ('sat_update_sat', sat,  9,  0, sat_date_str, True,  True,  '土曜 土曜クッション値更新'),
+        ('sat_scrape_sun', sat, 10,  0, sun_date_str, False, False, '土曜 日曜馬番取得'),
+        ('sun_update_sun', sun,  9,  0, sun_date_str, True,  True,  '日曜 日曜クッション値更新'),
+    ]
+
+    with _sched_lock:
+        for old_id in list(_sched_jobs.keys()):
+            try:
+                _scheduler.remove_job(old_id)
+            except Exception:
+                pass
+        _sched_jobs.clear()
+
+    for jid, day, hh, mm, ds, with_db, no_scrape, name in job_specs:
+        run_at = _dmod.datetime(day.year, day.month, day.day, hh, mm, 0, tzinfo=_JST)
+        status = 'scheduled' if run_at > now_jst else 'skipped'
+        with _sched_lock:
+            _sched_jobs[jid] = {
+                'name': name,
+                'scheduled_at': run_at.isoformat(),
+                'date_str': ds,
+                'with_db': with_db,
+                'no_scrape': no_scrape,
+                'status': status,
+                'last_run': None,
+            }
+        if status == 'scheduled':
+            _scheduler.add_job(
+                _run_job_fn,
+                trigger='date',
+                run_date=run_at,
+                args=[jid, ds, with_db, no_scrape, 0],
+                id=jid,
+                replace_existing=True,
+            )
+            logging.info(f'[sched] registered: {jid} at {run_at.isoformat()}')
+
+    _save_sched_state()
+    logging.info(f'[sched] weekend schedule set: sat={sat_date_str} sun={sun_date_str}')
+
+
+def _load_sched_state():
+    """起動時に保存済みスケジュールを復元する"""
+    global _sched_jobs
+    if not os.path.exists(SCHED_STATE_FILE):
+        return
+    try:
+        with open(SCHED_STATE_FILE, encoding='utf-8') as f:
+            saved = json.load(f)
+    except Exception as e:
+        logging.error(f'sched state load error: {e}')
+        return
+
+    import datetime as _dmod
+    now_jst = _dmod.datetime.now(tz=_JST)
+    with _sched_lock:
+        _sched_jobs = saved
+
+    for jid, info in saved.items():
+        if info.get('status') == 'scheduled':
+            try:
+                run_at = _dmod.datetime.fromisoformat(info['scheduled_at'])
+                if run_at.tzinfo is None:
+                    run_at = run_at.replace(tzinfo=_JST)
+                if run_at > now_jst:
+                    _scheduler.add_job(
+                        _run_job_fn,
+                        trigger='date',
+                        run_date=run_at,
+                        args=[jid, info['date_str'], info['with_db'], info['no_scrape'], 0],
+                        id=jid,
+                        replace_existing=True,
+                    )
+                    logging.info(f'[sched] restored: {jid} at {run_at.isoformat()}')
+                else:
+                    with _sched_lock:
+                        _sched_jobs[jid]['status'] = 'skipped'
+                    _save_sched_state()
+            except Exception as e:
+                logging.error(f'[sched] restore error {jid}: {e}')
+
+    logging.info(f'[sched] loaded {len(saved)} jobs from state file')
+
+
+_load_sched_state()
+# ─────────────────────────────────────────────────────────────────────────────
 
 
 ADMIN_HTML = """<!DOCTYPE html>
@@ -295,6 +486,17 @@ a.site-link:hover { text-decoration: underline; }
       </label>
     </div>
     <p style="font-size:11px;color:#5a80a8;margin-top:10px">一括更新: DB更新 → 今週土日のパイプライン自動実行（再スクレイピングなし）</p>
+  </div>
+
+  <!-- 自動実行スケジュール -->
+  <div class="card">
+    <h2>自動実行スケジュール</h2>
+    <p style="font-size:12px;color:#7aa8c8;margin-bottom:12px">「今週末を一括取得」後に登録されます。実行ログは admin_server.log をご確認ください。</p>
+    <div id="sched-jobs"><p style="font-size:12px;color:#7aa8c8">読込中...</p></div>
+    <div style="margin-top:12px;display:flex;gap:10px;align-items:center">
+      <button class="btn-open" onclick="clearSchedule()">スケジュールをクリア</button>
+      <button class="btn-open" onclick="loadScheduleStatus()">↻ 更新</button>
+    </div>
   </div>
 
 </div>
@@ -665,6 +867,54 @@ async function restartServer(){
   }
   alert('再起動に失敗しました。手動で再起動してください。');
 }
+
+// ---- スケジュール状態 ----
+async function loadScheduleStatus(){
+  try {
+    const r = await fetch('/api/schedule_status');
+    const jobs = await r.json();
+    renderScheduleJobs(jobs);
+  } catch(e) { console.error('schedule fetch error:', e); }
+}
+
+function renderScheduleJobs(jobs){
+  const container = document.getElementById('sched-jobs');
+  if(!jobs || jobs.length === 0){
+    container.innerHTML = '<p style="font-size:12px;color:#7aa8c8">スケジュールなし（「今週末を一括取得」後に自動登録されます）</p>';
+    return;
+  }
+  const statusMap = {
+    scheduled: {dot:'',    label:'待機中',   color:'#7aa8c8'},
+    running:   {dot:'running', label:'実行中', color:'#f59e0b'},
+    done:      {dot:'done',    label:'完了',   color:'#34d399'},
+    error:     {dot:'error',   label:'エラー', color:'#f87171'},
+    skipped:   {dot:'',    label:'スキップ', color:'#5a80a8'},
+  };
+  container.innerHTML = jobs.map(j => {
+    const dt = new Date(j.scheduled_at);
+    const dtStr = dt.toLocaleString('ja-JP',{month:'numeric',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit'});
+    let s = statusMap[j.status];
+    if(!s && j.status && j.status.startsWith('retry_')){
+      s = {dot:'running', label:'リトライ待機', color:'#f59e0b'};
+    }
+    s = s || {dot:'', label:j.status, color:'#7aa8c8'};
+    return \`<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:12px">
+      <div class="dot \${s.dot}" style="flex-shrink:0"></div>
+      <span style="color:#c8e0f8;min-width:190px;flex-shrink:0">\${j.name}</span>
+      <span style="color:#7aa8c8;min-width:140px;flex-shrink:0">\${dtStr}</span>
+      <span style="color:\${s.color};font-weight:600">\${s.label}</span>
+    </div>\`;
+  }).join('');
+}
+
+async function clearSchedule(){
+  if(!confirm('スケジュールをクリアしますか？\\n登録済みのジョブはすべて削除されます。')) return;
+  await fetch('/api/schedule_clear', {method:'POST'});
+  loadScheduleStatus();
+}
+
+loadScheduleStatus();
+setInterval(loadScheduleStatus, 30000);
 </script>
 </body>
 </html>
@@ -773,6 +1023,12 @@ def api_weekend_scrape():
                 return
             yield f'data: {json.dumps(f"  ✓ {date_str} 完了")}\n\n'
         yield f'data: {json.dumps("=== 今週末一括取得完了 ===")}\n\n'
+        # 自動実行スケジュールを登録
+        try:
+            _register_weekend_schedule(weekend_dates[0], weekend_dates[1])
+            yield f'data: {json.dumps("  ✓ 自動実行スケジュール登録完了")}\n\n'
+        except Exception as _se:
+            yield f'data: {json.dumps(f"  ✗ スケジュール登録失敗: {_se}")}\n\n'
         yield f'data: {json.dumps("__DONE__")}\n\n'
 
     return Response(stream_with_context(generate()), mimetype='text/event-stream',
@@ -1027,6 +1283,27 @@ def api_stop():
     if _current_proc:
         _current_proc.terminate()
         _current_proc = None
+    return 'ok'
+
+
+@app.route('/api/schedule_status')
+def api_schedule_status():
+    with _sched_lock:
+        jobs = [{'id': jid, **info} for jid, info in _sched_jobs.items()]
+    jobs.sort(key=lambda j: j.get('scheduled_at', ''))
+    return json.dumps(jobs, ensure_ascii=False)
+
+
+@app.route('/api/schedule_clear', methods=['POST'])
+def api_schedule_clear():
+    with _sched_lock:
+        for jid in list(_sched_jobs.keys()):
+            try:
+                _scheduler.remove_job(jid)
+            except Exception:
+                pass
+        _sched_jobs.clear()
+    _save_sched_state()
     return 'ok'
 
 
