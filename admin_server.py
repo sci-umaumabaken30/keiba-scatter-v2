@@ -486,6 +486,15 @@ a.site-link:hover { text-decoration: underline; }
       </label>
     </div>
     <p style="font-size:11px;color:#5a80a8;margin-top:10px">一括更新: DB更新 → 今週土日のパイプライン自動実行（再スクレイピングなし）</p>
+    <div style="margin-top:14px;border-top:1px solid rgba(255,255,255,0.08);padding-top:14px">
+      <p style="font-size:12px;color:#7aa8c8;margin-bottom:10px">⚡ スケジュール実行を逃した場合の手動補完</p>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <button class="btn-run" id="btn-catch-up"
+          style="background:linear-gradient(180deg,rgba(255,255,255,0.18) 0%,rgba(255,255,255,0.05) 100%),#d97706"
+          onclick="runWeekendCatchUp()">⚡ 手動補完（クッション値＋馬番）</button>
+      </div>
+      <p style="font-size:11px;color:#5a80a8;margin-top:8px">クッション値DB更新 → 今週土日の馬番・散布図を再生成してデプロイ（データがなければ自動でフルスクレイプ）</p>
+    </div>
   </div>
 
   <!-- 自動実行スケジュール -->
@@ -866,6 +875,36 @@ async function restartServer(){
     }catch(e){}
   }
   alert('再起動に失敗しました。手動で再起動してください。');
+}
+
+function runWeekendCatchUp(){
+  const btn = document.getElementById('btn-catch-up');
+  btn.disabled=true; btn.textContent='⏳ 補完中...';
+  document.getElementById('log').innerHTML='';
+  setStatus('running','手動補完中...');
+  if(evtSource){ evtSource.close(); evtSource=null; }
+  evtSource = new EventSource('/api/weekend_catch_up');
+  evtSource.onmessage = e => {
+    const line = JSON.parse(e.data);
+    let cls='';
+    if(line.startsWith('  ✓') || line.includes('完了')) cls='ok';
+    else if(line.includes('ERROR') || line.includes('エラー') || line.startsWith('  ✗')) cls='err';
+    else if(line.startsWith('===') || line.startsWith('[')) cls='head';
+    if(line==='__DONE__'){
+      setStatus('done','手動補完完了');
+      btn.disabled=false; btn.textContent='⚡ 手動補完（クッション値＋馬番）';
+      evtSource.close(); evtSource=null;
+    } else if(line==='__ERROR__'){
+      setStatus('error','エラー');
+      btn.disabled=false; btn.textContent='⚡ 手動補完（クッション値＋馬番）';
+      evtSource.close(); evtSource=null;
+    } else { appendLog(line, cls); }
+  };
+  evtSource.onerror = ()=>{
+    setStatus('error','接続エラー');
+    btn.disabled=false; btn.textContent='⚡ 手動補完（クッション値＋馬番）';
+    evtSource.close(); evtSource=null;
+  };
 }
 
 // ---- スケジュール状態 ----
@@ -1284,6 +1323,62 @@ def api_stop():
         _current_proc.terminate()
         _current_proc = None
     return 'ok'
+
+
+@app.route('/api/weekend_catch_up')
+def api_weekend_catch_up():
+    """スケジュール実行を逃した場合の手動補完：DB更新 → 土日パイプライン（データなければフルスクレイプ）"""
+    import datetime as _dt
+    today = _dt.date.today()
+    weekday = today.weekday()
+    days_to_sat = (5 - weekday) % 7
+    sat = today + _dt.timedelta(days=days_to_sat)
+    sun = sat + _dt.timedelta(days=1)
+    weekend_dates = [sat.strftime('%Y%m%d'), sun.strftime('%Y%m%d')]
+
+    def generate():
+        # Step1: DB更新
+        yield f'data: {json.dumps("=== Step1: クッション値・含水率 DB更新 ===")}\n\n'
+        db_cmd = [sys.executable, '-u', '-X', 'utf8',
+                  os.path.join(BASE_DIR, 'update_cushion_db.py')]
+        proc = subprocess.Popen(db_cmd, stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT, cwd=BASE_DIR,
+                                encoding='utf-8', errors='replace')
+        for line in proc.stdout:
+            yield f'data: {json.dumps(line.rstrip())}\n\n'
+        proc.wait()
+        if proc.returncode != 0:
+            yield f'data: {json.dumps("  ✗ DB更新失敗")}\n\n'
+            yield f'data: {json.dumps("__ERROR__")}\n\n'
+            return
+        yield f'data: {json.dumps("  ✓ DB更新完了")}\n\n'
+
+        # Step2: 土日パイプライン（データ有無で自動判断）
+        for date_str in weekend_dates:
+            out_dir = os.path.join(BASE_DIR, 'output', date_str)
+            has_data = os.path.exists(out_dir)
+            mode = '再実行（--no-scrape）' if has_data else 'フルスクレイプ'
+            yield f'data: {json.dumps(f"=== Step2: {date_str} パイプライン {mode} ===")}\n\n'
+            pip_cmd = [sys.executable, '-u', '-X', 'utf8',
+                       os.path.join(BASE_DIR, 'pipeline.py'), date_str, '--deploy']
+            if has_data:
+                pip_cmd.append('--no-scrape')
+            proc2 = subprocess.Popen(pip_cmd, stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT, cwd=BASE_DIR,
+                                     encoding='utf-8', errors='replace')
+            for line in proc2.stdout:
+                yield f'data: {json.dumps(line.rstrip())}\n\n'
+            proc2.wait()
+            if proc2.returncode != 0:
+                yield f'data: {json.dumps(f"  ✗ {date_str} 失敗")}\n\n'
+            else:
+                yield f'data: {json.dumps(f"  ✓ {date_str} 完了")}\n\n'
+
+        yield f'data: {json.dumps("=== 手動補完完了 ===")}\n\n'
+        yield f'data: {json.dumps("__DONE__")}\n\n'
+
+    return Response(stream_with_context(generate()), mimetype='text/event-stream',
+                    headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
 
 
 @app.route('/api/schedule_status')
