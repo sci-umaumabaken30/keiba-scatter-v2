@@ -651,7 +651,7 @@ body {{
 @media (min-width: 768px) {{ .chart-area {{ flex: 1; height: 100%; }} }}
 canvas {{ display: block; width: 100% !important; height: 100% !important; touch-action: pan-y; }}
 .panel {{
-  border-top: 1px solid rgba(255,255,255,0.12); overflow-y: auto; padding: 8px 8px 80px 8px; background: linear-gradient(180deg,rgba(255,255,255,0.04) 0%,rgba(0,0,0,0.05) 100%),#2d4a68;
+  border-top: 1px solid rgba(255,255,255,0.12); overflow-y: auto; padding: 8px 8px 130px 8px; background: linear-gradient(180deg,rgba(255,255,255,0.04) 0%,rgba(0,0,0,0.05) 100%),#2d4a68;
   flex: 1;
 }}
 @media (min-width: 768px) {{
@@ -1395,6 +1395,7 @@ a.race-checked { background:rgba(34,197,94,0.07) !important; border-left:3px sol
 .venue-title { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
 .venue-head h3 { font-size:14px; font-weight:900; color:#fff; }
 .cv-inline { font-size:10px; color:#c8e0f8; font-weight:600; }
+.cv-ref-date { font-size:9px; color:#7aa8c8; font-weight:500; margin-left:4px; }
 .weather-row { display:flex; gap:8px; margin-top:5px; }
 .weather-slot { display:flex; flex-direction:column; align-items:center; gap:1px; }
 .weather-icon { font-size:16px; line-height:1; }
@@ -1544,6 +1545,17 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
                     if db_key in cushion_db:
                         e = cushion_db[db_key]
                         cv_inline = f'CV {e.get("cushion","?")} 芝{e.get("turf_goal","?")}% ダ{e.get("dirt_goal","?")}%'
+                    else:
+                        # 当日データ未取得の場合、同会場の最新データをフォールバック表示
+                        past = [(k, v) for k, v in cushion_db.items()
+                                if k.endswith(f'_{venue_name}') and k[:10].replace('/', '') < raw_date]
+                        if past:
+                            latest_k, latest_e = max(past, key=lambda x: x[0])
+                            ref_parts = latest_k[:10].split('/')
+                            ref_label = f'{int(ref_parts[1])}/{int(ref_parts[2])}'
+                            cv_inline = (f'CV {latest_e.get("cushion","?")} 芝{latest_e.get("turf_goal","?")}%'
+                                         f' ダ{latest_e.get("dirt_goal","?")}%'
+                                         f'<span class="cv-ref-date">({ref_label})</span>')
 
             # 9/12/15時の天気アイコン
             wemojis = weather_by_venue.get(venue_name, [])
