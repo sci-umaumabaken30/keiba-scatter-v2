@@ -937,12 +937,12 @@ function renderScheduleJobs(jobs){
       s = {dot:'running', label:'リトライ待機', color:'#f59e0b'};
     }
     s = s || {dot:'', label:j.status, color:'#7aa8c8'};
-    return \`<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:12px">
-      <div class="dot \${s.dot}" style="flex-shrink:0"></div>
-      <span style="color:#c8e0f8;min-width:190px;flex-shrink:0">\${j.name}</span>
-      <span style="color:#7aa8c8;min-width:140px;flex-shrink:0">\${dtStr}</span>
-      <span style="color:\${s.color};font-weight:600">\${s.label}</span>
-    </div>\`;
+    return '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:12px">'
+      + '<div class="dot ' + s.dot + '" style="flex-shrink:0"></div>'
+      + '<span style="color:#c8e0f8;min-width:190px;flex-shrink:0">' + j.name + '</span>'
+      + '<span style="color:#7aa8c8;min-width:140px;flex-shrink:0">' + dtStr + '</span>'
+      + '<span style="color:' + s.color + ';font-weight:600">' + s.label + '</span>'
+      + '</div>';
   }).join('');
 }
 
