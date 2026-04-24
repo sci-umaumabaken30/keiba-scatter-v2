@@ -772,7 +772,7 @@ canvas {{ display: block; width: 100% !important; height: 100% !important; touch
     </div>
     <nav class="race-nav">
       {prev_btn}
-      <a class="nav-btn nav-index" href="index.html" title="一覧">一覧</a>
+      <a class="nav-btn nav-index" href="index.html#d{race_date}" title="一覧">一覧</a>
       {next_btn}
     </nav>
   </div>
@@ -1476,6 +1476,26 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 .month-header:hover { background:linear-gradient(180deg,rgba(255,255,255,0.11) 0%,rgba(255,255,255,0.03) 100%),#2d4a68; border-color:rgba(255,255,255,0.25); }
 .month-header .toggle { font-size:11px; color:#7aa8c8; transition:transform 0.2s; }
 .month-header.open .toggle { transform:rotate(180deg); }
+@media (max-width: 600px) {
+  .race-list.open { gap:5px; padding:6px 5px; }
+  .venue-col { flex:1 1 0; min-width:0; }
+  .venue-head { padding:5px 8px; }
+  .venue-head h3 { font-size:12px; }
+  .cv-inline { font-size:8px; }
+  .cv-ref-date { display:none; }
+  .weather-row { gap:4px; margin-top:3px; }
+  .weather-icon { font-size:12px; }
+  .weather-label { font-size:6px; }
+  a { padding:5px 6px; gap:3px; font-size:10px; }
+  .race-check { display:none; }
+  .rinfo { min-width:22px; }
+  .rnum { font-size:10px; }
+  .rtime { display:none; }
+  .rname { font-size:10px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .surf-badge { font-size:7px; padding:1px 3px; }
+  .dist { font-size:9px; }
+  .grade-g1,.grade-g2,.grade-g3 { font-size:7px; padding:1px 3px; }
+}
 .month-body { display:none; padding:6px 0 0; }
 .month-body.open { display:block; }
 .month-count { font-size:11px; color:#7aa8c8; margin-left:8px; font-weight:600; }
@@ -1551,7 +1571,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
             '</span>'
         ) if graded_parts else ''
 
-        _dc += f'<div class="date-section">'
+        _dc += f'<div class="date-section" id="d{raw_date_hdr}">'
         _dc += (
             f'<div class="date-header{open_class}" onclick="toggleDate(this)">'
             f'<span class="date-left">{d_fmt}{week_badge_html}</span>'
@@ -1691,6 +1711,23 @@ function toggleMonth(el){
   el.classList.toggle('open');
   el.nextElementSibling.classList.toggle('open');
 }
+
+// ハッシュで指定された日付セクションを開いてスクロール
+function openByHash(){
+  var hash = window.location.hash;
+  if(!hash) return;
+  var id = hash.replace('#','');
+  var sec = document.getElementById(id);
+  if(!sec) return;
+  var hdr = sec.querySelector('.date-header');
+  var lst = sec.querySelector('.race-list');
+  if(hdr && lst && !hdr.classList.contains('open')){
+    hdr.classList.add('open');
+    lst.classList.add('open');
+  }
+  setTimeout(function(){ sec.scrollIntoView({behavior:'smooth',block:'start'}); }, 80);
+}
+window.addEventListener('load', openByHash);
 
 function todayStr(){
   var d = new Date();
