@@ -68,6 +68,26 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 .month-header:hover { background:linear-gradient(180deg,rgba(255,255,255,0.11) 0%,rgba(255,255,255,0.03) 100%),#2d4a68; border-color:rgba(255,255,255,0.25); }
 .month-header .toggle { font-size:11px; color:#7aa8c8; transition:transform 0.2s; }
 .month-header.open .toggle { transform:rotate(180deg); }
+@media (max-width: 600px) {
+  .race-list.open { gap:5px; padding:6px 5px; }
+  .venue-col { flex:1 1 0; min-width:0; }
+  .venue-head { padding:5px 8px; }
+  .venue-head h3 { font-size:12px; }
+  .cv-inline { font-size:8px; }
+  .cv-ref-date { display:none; }
+  .weather-row { gap:4px; margin-top:3px; }
+  .weather-icon { font-size:12px; }
+  .weather-label { font-size:6px; }
+  a { padding:5px 6px; gap:3px; font-size:10px; }
+  .race-check { display:none; }
+  .rinfo { min-width:22px; }
+  .rnum { font-size:10px; }
+  .rtime { display:none; }
+  .rname { font-size:10px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .surf-badge { font-size:7px; padding:1px 3px; }
+  .dist { font-size:9px; }
+  .grade-g1,.grade-g2,.grade-g3 { font-size:7px; padding:1px 3px; }
+}
 .month-body { display:none; padding:6px 0 0; }
 .month-body.open { display:block; }
 .month-count { font-size:11px; color:#7aa8c8; margin-left:8px; font-weight:600; }
@@ -81,7 +101,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
   <a class="admin-btn" href="http://localhost:5000" target="_blank">⚙ 管理</a>
 </div>
 <div class="content">
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">4/25（土）<span class="week-badge">今週</span></span><span class="graded-center"><span class="graded-in-date">東京11R <span class="hdr-badge hdr-g2">GⅡ</span> 青葉賞</span></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260425"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">4/25（土）<span class="week-badge">今週</span></span><span class="graded-center"><span class="graded-in-date">東京11R <span class="hdr-badge hdr-g2">GⅡ</span> 青葉賞</span></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>東京</h3><span class="cv-inline">CV 9.5 芝15.7% ダ11.8%</span></div><div class="weather-row"><div class="weather-slot"><span class="weather-icon">🌤️</span><span class="weather-label">9時</span></div><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">12時</span></div><div class="weather-slot"><span class="weather-icon">🌥️</span><span class="weather-label">15時</span></div></div></div>
 <a href="scatter_20260425_東京01R_3歳未勝利_ダ1600m.html" data-venue="東京" data-rnum="1" data-date="20260425"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="10:05"></span><span class="rtime-text">10:05</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1600m</span></a>
@@ -126,7 +146,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260425_福島12R_4歳以上1勝クラス_芝1800m.html" data-venue="福島" data-rnum="12" data-date="20260425"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:00"></span><span class="rtime-text">16:00</span></span></span><span class="rname">4歳以上1勝クラス</span><span class="surf-badge surf-turf">芝</span><span class="dist">1800m</span></a>
 </div>
 </div></div>
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">4/26（日）<span class="week-badge">今週</span></span><span class="graded-center"><span class="graded-in-date">東京11R <span class="hdr-badge hdr-g2">GⅡ</span> フローラS　/　京都11R <span class="hdr-badge hdr-g2">GⅡ</span> マイラーズC</span></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260426"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">4/26（日）<span class="week-badge">今週</span></span><span class="graded-center"><span class="graded-in-date">東京11R <span class="hdr-badge hdr-g2">GⅡ</span> フローラS　/　京都11R <span class="hdr-badge hdr-g2">GⅡ</span> マイラーズC</span></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>東京</h3><span class="cv-inline">CV 9.5 芝15.7% ダ11.8%<span class="cv-ref-date">(4/25)</span></span></div><div class="weather-row"><div class="weather-slot"><span class="weather-icon">🌤️</span><span class="weather-label">9時</span></div><div class="weather-slot"><span class="weather-icon">🌤️</span><span class="weather-label">12時</span></div><div class="weather-slot"><span class="weather-icon">🌥️</span><span class="weather-label">15時</span></div></div></div>
 <a href="scatter_20260426_東京01R_3歳未勝利_ダ1400m.html" data-venue="東京" data-rnum="1" data-date="20260426"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="10:05"></span><span class="rtime-text">10:05</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1400m</span></a>
@@ -171,7 +191,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260426_福島12R_4歳以上1勝クラス_ダ1150m.html" data-venue="福島" data-rnum="12" data-date="20260426"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:00"></span><span class="rtime-text">16:00</span></span></span><span class="rname">4歳以上1勝クラス</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1150m</span></a>
 </div>
 </div></div>
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">4/19（日）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g1">GⅠ</span> 皐月賞　/　福島11R <span class="hdr-badge hdr-g3">GⅢ</span> 福島牝馬S</span></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260419"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">4/19（日）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g1">GⅠ</span> 皐月賞　/　福島11R <span class="hdr-badge hdr-g3">GⅢ</span> 福島牝馬S</span></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>中山</h3><span class="cv-inline">CV 9.8 芝10.3% ダ4.6%</span></div><div class="weather-row"><div class="weather-slot"><span class="weather-icon">🌤️</span><span class="weather-label">9時</span></div><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">12時</span></div><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">15時</span></div></div></div>
 <a href="scatter_20260419_中山01R_3歳未勝利_ダ1800m.html" data-venue="中山" data-rnum="1" data-date="20260419"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="10:00"></span><span class="rtime-text">10:00</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1800m</span></a>
@@ -216,7 +236,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260419_福島12R_4歳以上1勝クラス_ダ1150m.html" data-venue="福島" data-rnum="12" data-date="20260419"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:01"></span><span class="rtime-text">16:01</span></span></span><span class="rname">4歳以上1勝クラス</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1150m</span></a>
 </div>
 </div></div>
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">4/18（土）</span><span class="graded-center"><span class="graded-in-date">阪神11R <span class="hdr-badge hdr-g3">GⅢ</span> アンタレスS</span></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260418"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">4/18（土）</span><span class="graded-center"><span class="graded-in-date">阪神11R <span class="hdr-badge hdr-g3">GⅢ</span> アンタレスS</span></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>中山</h3><span class="cv-inline">CV 9.6 芝10.6% ダ5.8%</span></div><div class="weather-row"><div class="weather-slot"><span class="weather-icon">⛅</span><span class="weather-label">9時</span></div><div class="weather-slot"><span class="weather-icon">⛅</span><span class="weather-label">12時</span></div><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">15時</span></div></div></div>
 <a href="scatter_20260418_中山01R_3歳未勝利_ダ1200m.html" data-venue="中山" data-rnum="1" data-date="20260418"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="10:05"></span><span class="rtime-text">10:05</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1200m</span></a>
@@ -260,7 +280,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260418_福島12R_4歳以上1勝クラス_芝1200m.html" data-venue="福島" data-rnum="12" data-date="20260418"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:01"></span><span class="rtime-text">16:01</span></span></span><span class="rname">4歳以上1勝クラス</span><span class="surf-badge surf-turf">芝</span><span class="dist">1200m</span></a>
 </div>
 </div></div>
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">4/12（日）</span><span class="graded-center"><span class="graded-in-date">阪神11R <span class="hdr-badge hdr-g1">GⅠ</span> 桜花賞</span></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260412"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">4/12（日）</span><span class="graded-center"><span class="graded-in-date">阪神11R <span class="hdr-badge hdr-g1">GⅠ</span> 桜花賞</span></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>中山</h3><span class="cv-inline">CV 9.3 芝12.0% ダ7.9%</span></div><div class="weather-row"><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">9時</span></div><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">12時</span></div><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">15時</span></div></div></div>
 <a href="scatter_20260412_中山01R_3歳未勝利_ダ1200m.html" data-venue="中山" data-rnum="1" data-date="20260412"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="09:50"></span><span class="rtime-text">09:50</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1200m</span></a>
@@ -304,7 +324,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260412_福島12R_4歳以上1勝クラス_ダ1700m.html" data-venue="福島" data-rnum="12" data-date="20260412"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:01"></span><span class="rtime-text">16:01</span></span></span><span class="rname">4歳以上1勝クラス</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1700m</span></a>
 </div>
 </div></div>
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">4/4（土）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g3">GⅢ</span> ダービーCT　/　阪神11R <span class="hdr-badge hdr-g3">GⅢ</span> チャーチルC</span></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260404"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">4/4（土）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g3">GⅢ</span> ダービーCT　/　阪神11R <span class="hdr-badge hdr-g3">GⅢ</span> チャーチルC</span></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>中山</h3><span class="cv-inline">CV 9.2 芝13.0% ダ8.7%</span></div><div class="weather-row"><div class="weather-slot"><span class="weather-icon">⛅</span><span class="weather-label">9時</span></div><div class="weather-slot"><span class="weather-icon">🌧️</span><span class="weather-label">12時</span></div><div class="weather-slot"><span class="weather-icon">🌧️</span><span class="weather-label">15時</span></div></div></div>
 <a href="scatter_20260404_中山01R_3歳未勝利_ダ1200m.html" data-venue="中山" data-rnum="1" data-date="20260404"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="10:05"></span><span class="rtime-text">10:05</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1200m</span></a>
@@ -334,7 +354,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260404_阪神12R_4歳以上2勝クラス_ダ1400m.html" data-venue="阪神" data-rnum="12" data-date="20260404"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:10"></span><span class="rtime-text">16:10</span></span></span><span class="rname">4歳以上2勝クラス</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1400m</span></a>
 </div>
 </div></div>
-<div class="month-section"><div class="month-header" onclick="toggleMonth(this)"><span>2026年3月<span class="month-count">（9日）</span></span><span class="toggle">▼</span></div><div class="month-body"><div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">3/29（日）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g3">GⅢ</span> マーチS　/　中京11R <span class="hdr-badge hdr-g1">GⅠ</span> 高松宮記念</span></span><span class="toggle">▼</span></div>
+<div class="month-section"><div class="month-header" onclick="toggleMonth(this)"><span>2026年3月<span class="month-count">（9日）</span></span><span class="toggle">▼</span></div><div class="month-body"><div class="date-section" id="d20260329"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">3/29（日）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g3">GⅢ</span> マーチS　/　中京11R <span class="hdr-badge hdr-g1">GⅠ</span> 高松宮記念</span></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>中山</h3><span class="cv-inline">CV 9.4 芝13.8% ダ10.8%</span></div><div class="weather-row"><div class="weather-slot"><span class="weather-icon">🌥️</span><span class="weather-label">9時</span></div><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">12時</span></div><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">15時</span></div></div></div>
 <a href="scatter_20260329_中山01R_3歳未勝利_ダ1800m.html" data-venue="中山" data-rnum="1" data-date="20260329"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="09:55"></span><span class="rtime-text">09:55</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1800m</span></a>
@@ -378,7 +398,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260329_中京12R_鈴鹿特別_ダ1400m.html" data-venue="中京" data-rnum="12" data-date="20260329"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:30"></span><span class="rtime-text">16:30</span></span></span><span class="rname">鈴鹿特別</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1400m</span></a>
 </div>
 </div></div>
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">3/28（土）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g2">GⅡ</span> 日経賞　/　阪神11R <span class="hdr-badge hdr-g3">GⅢ</span> 毎日杯</span></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260328"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">3/28（土）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g2">GⅡ</span> 日経賞　/　阪神11R <span class="hdr-badge hdr-g3">GⅢ</span> 毎日杯</span></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>中山</h3><span class="cv-inline">CV 9.1 芝14.4% ダ13.2%</span></div><div class="weather-row"><div class="weather-slot"><span class="weather-icon">🌤️</span><span class="weather-label">9時</span></div><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">12時</span></div><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">15時</span></div></div></div>
 <a href="scatter_20260328_中山01R_3歳未勝利_ダ1200m.html" data-venue="中山" data-rnum="1" data-date="20260328"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="10:05"></span><span class="rtime-text">10:05</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1200m</span></a>
@@ -422,7 +442,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260328_中京12R_フィリピンT_芝1400m.html" data-venue="中京" data-rnum="12" data-date="20260328"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:01"></span><span class="rtime-text">16:01</span></span></span><span class="rname">フィリピンT</span><span class="surf-badge surf-turf">芝</span><span class="dist">1400m</span></a>
 </div>
 </div></div>
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">3/22（日）</span><span class="graded-center"><span class="graded-in-date">阪神11R <span class="hdr-badge hdr-g2">GⅡ</span> 阪神大賞典　/　中京11R <span class="hdr-badge hdr-g3">GⅢ</span> 愛知杯</span></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260322"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">3/22（日）</span><span class="graded-center"><span class="graded-in-date">阪神11R <span class="hdr-badge hdr-g2">GⅡ</span> 阪神大賞典　/　中京11R <span class="hdr-badge hdr-g3">GⅢ</span> 愛知杯</span></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>中山</h3><span class="cv-inline">CV 10.0 芝11.7% ダ4.0%</span></div><div class="weather-row"><div class="weather-slot"><span class="weather-icon">🌤️</span><span class="weather-label">9時</span></div><div class="weather-slot"><span class="weather-icon">⛅</span><span class="weather-label">12時</span></div><div class="weather-slot"><span class="weather-icon">⛅</span><span class="weather-label">15時</span></div></div></div>
 <a href="scatter_20260322_中山01R_3歳未勝利_ダ1200m.html" data-venue="中山" data-rnum="1" data-date="20260322"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="09:55"></span><span class="rtime-text">09:55</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1200m</span></a>
@@ -466,7 +486,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260322_中京12R_4歳以上1勝クラス_ダ1200m.html" data-venue="中京" data-rnum="12" data-date="20260322"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:01"></span><span class="rtime-text">16:01</span></span></span><span class="rname">4歳以上1勝クラス</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1200m</span></a>
 </div>
 </div></div>
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">3/21（土）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g3">GⅢ</span> フラワーC　/　中京11R <span class="hdr-badge hdr-g3">GⅢ</span> ファルコンS</span></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260321"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">3/21（土）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g3">GⅢ</span> フラワーC　/　中京11R <span class="hdr-badge hdr-g3">GⅢ</span> ファルコンS</span></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>中山</h3><span class="cv-inline">CV 9.8 芝12.8% ダ4.2%</span></div><div class="weather-row"><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">9時</span></div><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">12時</span></div><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">15時</span></div></div></div>
 <a href="scatter_20260321_中山01R_3歳未勝利_ダ1200m.html" data-venue="中山" data-rnum="1" data-date="20260321"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="10:05"></span><span class="rtime-text">10:05</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1200m</span></a>
@@ -510,7 +530,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260321_中京12R_4歳以上1勝クラス_芝1600m.html" data-venue="中京" data-rnum="12" data-date="20260321"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:01"></span><span class="rtime-text">16:01</span></span></span><span class="rname">4歳以上1勝クラス</span><span class="surf-badge surf-turf">芝</span><span class="dist">1600m</span></a>
 </div>
 </div></div>
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">3/15（日）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g2">GⅡ</span> スプリングS　/　中京11R <span class="hdr-badge hdr-g2">GⅡ</span> 金鯱賞</span></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260315"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">3/15（日）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g2">GⅡ</span> スプリングS　/　中京11R <span class="hdr-badge hdr-g2">GⅡ</span> 金鯱賞</span></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>中山</h3><span class="cv-inline">CV 10.0 芝10.6% ダ2.4%</span></div><div class="weather-row"><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">9時</span></div><div class="weather-slot"><span class="weather-icon">🌤️</span><span class="weather-label">12時</span></div><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">15時</span></div></div></div>
 <a href="scatter_20260315_中山01R_3歳未勝利_ダ1200m.html" data-venue="中山" data-rnum="1" data-date="20260315"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="10:05"></span><span class="rtime-text">10:05</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1200m</span></a>
@@ -554,7 +574,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260315_中京12R_4歳以上1勝クラス_芝1200m.html" data-venue="中京" data-rnum="12" data-date="20260315"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:01"></span><span class="rtime-text">16:01</span></span></span><span class="rname">4歳以上1勝クラス</span><span class="surf-badge surf-turf">芝</span><span class="dist">1200m</span></a>
 </div>
 </div></div>
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">3/14（土）</span><span class="graded-center"></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260314"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">3/14（土）</span><span class="graded-center"></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>中山</h3><span class="cv-inline">CV 9.8 芝12.3% ダ3.4%</span></div><div class="weather-row"><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">9時</span></div><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">12時</span></div><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">15時</span></div></div></div>
 <a href="scatter_20260314_中山01R_3歳未勝利_ダ1800m.html" data-venue="中山" data-rnum="1" data-date="20260314"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="10:05"></span><span class="rtime-text">10:05</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1800m</span></a>
@@ -598,7 +618,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260314_中京12R_4歳以上1勝クラス_芝1400m.html" data-venue="中京" data-rnum="12" data-date="20260314"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:01"></span><span class="rtime-text">16:01</span></span></span><span class="rname">4歳以上1勝クラス</span><span class="surf-badge surf-turf">芝</span><span class="dist">1400m</span></a>
 </div>
 </div></div>
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">3/8（日）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g2">GⅡ</span> 弥生賞</span></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260308"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">3/8（日）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g2">GⅡ</span> 弥生賞</span></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>中山</h3><span class="cv-inline">CV 9.5 芝12.9% ダ11.0%</span></div><div class="weather-row"><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">9時</span></div><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">12時</span></div><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">15時</span></div></div></div>
 <a href="scatter_20260308_中山01R_3歳未勝利_ダ1800m.html" data-venue="中山" data-rnum="1" data-date="20260308"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="10:05"></span><span class="rtime-text">10:05</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1800m</span></a>
@@ -628,7 +648,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260308_阪神12R_4歳以上2勝クラス_ダ1400m.html" data-venue="阪神" data-rnum="12" data-date="20260308"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:10"></span><span class="rtime-text">16:10</span></span></span><span class="rname">4歳以上2勝クラス</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1400m</span></a>
 </div>
 </div></div>
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">3/7（土）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g3">GⅢ</span> 中山牝馬S　/　阪神11R <span class="hdr-badge hdr-g2">GⅡ</span> フィリーズR</span></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260307"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">3/7（土）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g3">GⅢ</span> 中山牝馬S　/　阪神11R <span class="hdr-badge hdr-g2">GⅡ</span> フィリーズR</span></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>中山</h3><span class="cv-inline">CV 8.9 芝13.5% ダ12.2%</span></div><div class="weather-row"><div class="weather-slot"><span class="weather-icon">🌤️</span><span class="weather-label">9時</span></div><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">12時</span></div><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">15時</span></div></div></div>
 <a href="scatter_20260307_中山01R_3歳未勝利_ダ1200m.html" data-venue="中山" data-rnum="1" data-date="20260307"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="10:05"></span><span class="rtime-text">10:05</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1200m</span></a>
@@ -658,7 +678,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260307_阪神12R_4歳以上1勝クラス_ダ1200m.html" data-venue="阪神" data-rnum="12" data-date="20260307"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:10"></span><span class="rtime-text">16:10</span></span></span><span class="rname">4歳以上1勝クラス</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1200m</span></a>
 </div>
 </div></div>
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">3/1（日）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g2">GⅡ</span> 中山記念　/　阪神11R <span class="hdr-badge hdr-g2">GⅡ</span> チューリップ</span></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260301"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">3/1（日）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g2">GⅡ</span> 中山記念　/　阪神11R <span class="hdr-badge hdr-g2">GⅡ</span> チューリップ</span></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>小倉</h3><span class="cv-inline">CV 9.6 芝9.0% ダ11.7%</span></div><div class="weather-row"><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">9時</span></div><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">12時</span></div><div class="weather-slot"><span class="weather-icon">🌤️</span><span class="weather-label">15時</span></div></div></div>
 <a href="scatter_20260301_小倉01R_3歳未勝利_ダ1700m.html" data-venue="小倉" data-rnum="1" data-date="20260301"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="09:45"></span><span class="rtime-text">09:45</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1700m</span></a>
@@ -703,7 +723,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 </div>
 </div></div>
 </div></div>
-<div class="month-section"><div class="month-header" onclick="toggleMonth(this)"><span>2026年2月<span class="month-count">（8日）</span></span><span class="toggle">▼</span></div><div class="month-body"><div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">2/28（土）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g3">GⅢ</span> オーシャンS</span></span><span class="toggle">▼</span></div>
+<div class="month-section"><div class="month-header" onclick="toggleMonth(this)"><span>2026年2月<span class="month-count">（8日）</span></span><span class="toggle">▼</span></div><div class="month-body"><div class="date-section" id="d20260228"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">2/28（土）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g3">GⅢ</span> オーシャンS</span></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>小倉</h3><span class="cv-inline">CV 8.8 芝10.5% ダ14.5%</span></div><div class="weather-row"><div class="weather-slot"><span class="weather-icon">🌤️</span><span class="weather-label">9時</span></div><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">12時</span></div><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">15時</span></div></div></div>
 <a href="scatter_20260228_小倉01R_3歳未勝利_ダ1700m.html" data-venue="小倉" data-rnum="1" data-date="20260228"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="09:45"></span><span class="rtime-text">09:45</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1700m</span></a>
@@ -746,7 +766,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260228_阪神12R_4歳以上2勝クラス_芝1400m.html" data-venue="阪神" data-rnum="12" data-date="20260228"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:10"></span><span class="rtime-text">16:10</span></span></span><span class="rname">4歳以上2勝クラス</span><span class="surf-badge surf-turf">芝</span><span class="dist">1400m</span></a>
 </div>
 </div></div>
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">2/22（日）</span><span class="graded-center"><span class="graded-in-date">東京11R <span class="hdr-badge hdr-g1">GⅠ</span> フェブラリー　/　小倉11R <span class="hdr-badge hdr-g3">GⅢ</span> 小倉大賞典</span></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260222"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">2/22（日）</span><span class="graded-center"><span class="graded-in-date">東京11R <span class="hdr-badge hdr-g1">GⅠ</span> フェブラリー　/　小倉11R <span class="hdr-badge hdr-g3">GⅢ</span> 小倉大賞典</span></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>東京</h3><span class="cv-inline">CV 9.7 芝12.1% ダ1.0%</span></div><div class="weather-row"><div class="weather-slot"><span class="weather-icon">🌤️</span><span class="weather-label">9時</span></div><div class="weather-slot"><span class="weather-icon">⛅</span><span class="weather-label">12時</span></div><div class="weather-slot"><span class="weather-icon">🌥️</span><span class="weather-label">15時</span></div></div></div>
 <a href="scatter_20260222_東京01R_3歳未勝利_ダ1400m.html" data-venue="東京" data-rnum="1" data-date="20260222"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="10:05"></span><span class="rtime-text">10:05</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1400m</span></a>
@@ -790,7 +810,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260222_阪神12R_4歳以上2勝クラス_ダ1400m.html" data-venue="阪神" data-rnum="12" data-date="20260222"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:10"></span><span class="rtime-text">16:10</span></span></span><span class="rname">4歳以上2勝クラス</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1400m</span></a>
 </div>
 </div></div>
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">2/21（土）</span><span class="graded-center"><span class="graded-in-date">東京11R <span class="hdr-badge hdr-g3">GⅢ</span> ダイヤモンド　/　阪神11R <span class="hdr-badge hdr-g3">GⅢ</span> 阪急杯</span></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260221"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">2/21（土）</span><span class="graded-center"><span class="graded-in-date">東京11R <span class="hdr-badge hdr-g3">GⅢ</span> ダイヤモンド　/　阪神11R <span class="hdr-badge hdr-g3">GⅢ</span> 阪急杯</span></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>東京</h3><span class="cv-inline">CV 9.8 芝13.1% ダ1.6%</span></div><div class="weather-row"><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">9時</span></div><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">12時</span></div><div class="weather-slot"><span class="weather-icon">🌤️</span><span class="weather-label">15時</span></div></div></div>
 <a href="scatter_20260221_東京01R_3歳未勝利_ダ1400m.html" data-venue="東京" data-rnum="1" data-date="20260221"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="10:05"></span><span class="rtime-text">10:05</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1400m</span></a>
@@ -833,7 +853,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260221_阪神12R_4歳以上2勝クラス_ダ1800m.html" data-venue="阪神" data-rnum="12" data-date="20260221"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:10"></span><span class="rtime-text">16:10</span></span></span><span class="rname">4歳以上2勝クラス</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1800m</span></a>
 </div>
 </div></div>
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">2/15（日）</span><span class="graded-center"><span class="graded-in-date">東京11R <span class="hdr-badge hdr-g3">GⅢ</span> 共同通信杯　/　京都11R <span class="hdr-badge hdr-g2">GⅡ</span> 京都記念</span></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260215"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">2/15（日）</span><span class="graded-center"><span class="graded-in-date">東京11R <span class="hdr-badge hdr-g3">GⅢ</span> 共同通信杯　/　京都11R <span class="hdr-badge hdr-g2">GⅡ</span> 京都記念</span></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>東京</h3><span class="cv-inline">CV 9.4 芝11.3% ダ5.5%</span></div><div class="weather-row"><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">9時</span></div><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">12時</span></div><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">15時</span></div></div></div>
 <a href="scatter_20260215_東京01R_3歳未勝利_ダ1300m.html" data-venue="東京" data-rnum="1" data-date="20260215"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="10:05"></span><span class="rtime-text">10:05</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1300m</span></a>
@@ -877,7 +897,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260215_小倉12R_4歳以上1勝クラス_ダ1700m.html" data-venue="小倉" data-rnum="12" data-date="20260215"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:01"></span><span class="rtime-text">16:01</span></span></span><span class="rname">4歳以上1勝クラス</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1700m</span></a>
 </div>
 </div></div>
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">2/14（土）</span><span class="graded-center"><span class="graded-in-date">東京11R <span class="hdr-badge hdr-g3">GⅢ</span> クイーンC</span></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260214"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">2/14（土）</span><span class="graded-center"><span class="graded-in-date">東京11R <span class="hdr-badge hdr-g3">GⅢ</span> クイーンC</span></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>東京</h3><span class="cv-inline">CV 9.6 芝13.6% ダ6.8%</span></div><div class="weather-row"><div class="weather-slot"><span class="weather-icon">☀️</span><span class="weather-label">9時</span></div><div class="weather-slot"><span class="weather-icon">🌥️</span><span class="weather-label">12時</span></div><div class="weather-slot"><span class="weather-icon">🌥️</span><span class="weather-label">15時</span></div></div></div>
 <a href="scatter_20260214_東京01R_3歳未勝利_ダ1400m.html" data-venue="東京" data-rnum="1" data-date="20260214"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="10:05"></span><span class="rtime-text">10:05</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1400m</span></a>
@@ -920,7 +940,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260214_小倉12R_4歳以上1勝クラス_芝1800m.html" data-venue="小倉" data-rnum="12" data-date="20260214"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:01"></span><span class="rtime-text">16:01</span></span></span><span class="rname">4歳以上1勝クラス</span><span class="surf-badge surf-turf">芝</span><span class="dist">1800m</span></a>
 </div>
 </div></div>
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">2/8（日）</span><span class="graded-center"></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260208"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">2/8（日）</span><span class="graded-center"></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>小倉</h3><span class="cv-inline">CV 9.6 芝9.8% ダ5.0%</span></div><div class="weather-row"><div class="weather-slot"><span class="weather-icon">❓</span><span class="weather-label">9時</span></div><div class="weather-slot"><span class="weather-icon">❓</span><span class="weather-label">12時</span></div><div class="weather-slot"><span class="weather-icon">❓</span><span class="weather-label">15時</span></div></div></div>
 <a href="scatter_20260208_小倉01R_3歳未勝利_ダ1700m.html" data-venue="小倉" data-rnum="1" data-date="20260208"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="11:35"></span><span class="rtime-text">11:35</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1700m</span></a>
@@ -936,7 +956,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260208_小倉12R_4歳以上1勝クラス_芝1200m.html" data-venue="小倉" data-rnum="12" data-date="20260208"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:20"></span><span class="rtime-text">16:20</span></span></span><span class="rname">4歳以上1勝クラス</span><span class="surf-badge surf-turf">芝</span><span class="dist">1200m</span></a>
 </div>
 </div></div>
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">2/7（土）</span><span class="graded-center"></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260207"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">2/7（土）</span><span class="graded-center"></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>東京</h3><span class="cv-inline">CV 9.6 芝13.2% ダ1.4%</span></div><div class="weather-row"><div class="weather-slot"><span class="weather-icon">❓</span><span class="weather-label">9時</span></div><div class="weather-slot"><span class="weather-icon">❓</span><span class="weather-label">12時</span></div><div class="weather-slot"><span class="weather-icon">❓</span><span class="weather-label">15時</span></div></div></div>
 <a href="scatter_20260207_東京01R_3歳未勝利_ダ1400m.html" data-venue="東京" data-rnum="1" data-date="20260207"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="10:05"></span><span class="rtime-text">10:05</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1400m</span></a>
@@ -974,7 +994,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260207_小倉12R_4歳以上1勝クラス_芝1200m.html" data-venue="小倉" data-rnum="12" data-date="20260207"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:01"></span><span class="rtime-text">16:01</span></span></span><span class="rname">4歳以上1勝クラス</span><span class="surf-badge surf-turf">芝</span><span class="dist">1200m</span></a>
 </div>
 </div></div>
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">2/1（日）</span><span class="graded-center"><span class="graded-in-date">東京11R <span class="hdr-badge hdr-g3">GⅢ</span> 根岸S　/　京都11R <span class="hdr-badge hdr-g3">GⅢ</span> シルクロード</span></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260201"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">2/1（日）</span><span class="graded-center"><span class="graded-in-date">東京11R <span class="hdr-badge hdr-g3">GⅢ</span> 根岸S　/　京都11R <span class="hdr-badge hdr-g3">GⅢ</span> シルクロード</span></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>東京</h3><span class="cv-inline">CV 9.7 芝12.3% ダ1.1%</span></div><div class="weather-row"><div class="weather-slot"><span class="weather-icon">❓</span><span class="weather-label">9時</span></div><div class="weather-slot"><span class="weather-icon">❓</span><span class="weather-label">12時</span></div><div class="weather-slot"><span class="weather-icon">❓</span><span class="weather-label">15時</span></div></div></div>
 <a href="scatter_20260201_東京01R_3歳未勝利_ダ1400m.html" data-venue="東京" data-rnum="1" data-date="20260201"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="10:05"></span><span class="rtime-text">10:05</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1400m</span></a>
@@ -1019,7 +1039,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 </div>
 </div></div>
 </div></div>
-<div class="month-section"><div class="month-header" onclick="toggleMonth(this)"><span>2026年1月<span class="month-count">（8日）</span></span><span class="toggle">▼</span></div><div class="month-body"><div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">1/31（土）</span><span class="graded-center"></span><span class="toggle">▼</span></div>
+<div class="month-section"><div class="month-header" onclick="toggleMonth(this)"><span>2026年1月<span class="month-count">（8日）</span></span><span class="toggle">▼</span></div><div class="month-body"><div class="date-section" id="d20260131"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">1/31（土）</span><span class="graded-center"></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>東京</h3><span class="cv-inline">CV 9.6 芝14.1% ダ1.2%</span></div><div class="weather-row"><div class="weather-slot"><span class="weather-icon">❓</span><span class="weather-label">9時</span></div><div class="weather-slot"><span class="weather-icon">❓</span><span class="weather-label">12時</span></div><div class="weather-slot"><span class="weather-icon">❓</span><span class="weather-label">15時</span></div></div></div>
 <a href="scatter_20260131_東京01R_3歳未勝利_ダ1400m.html" data-venue="東京" data-rnum="1" data-date="20260131"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="10:05"></span><span class="rtime-text">10:05</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1400m</span></a>
@@ -1062,7 +1082,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260131_小倉12R_4歳以上1勝クラス_芝2000m.html" data-venue="小倉" data-rnum="12" data-date="20260131"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:01"></span><span class="rtime-text">16:01</span></span></span><span class="rname">4歳以上1勝クラス</span><span class="surf-badge surf-turf">芝</span><span class="dist">2000m</span></a>
 </div>
 </div></div>
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">1/25（日）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g2">GⅡ</span> AJCC　/　京都11R <span class="hdr-badge hdr-g2">GⅡ</span> プロキオンS</span></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260125"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">1/25（日）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g2">GⅡ</span> AJCC　/　京都11R <span class="hdr-badge hdr-g2">GⅡ</span> プロキオンS</span></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>京都</h3><span class="cv-inline">CV 10.6 芝7.0% ダ1.1%</span></div><div class="weather-row"><div class="weather-slot"><span class="weather-icon">❓</span><span class="weather-label">9時</span></div><div class="weather-slot"><span class="weather-icon">❓</span><span class="weather-label">12時</span></div><div class="weather-slot"><span class="weather-icon">❓</span><span class="weather-label">15時</span></div></div></div>
 <a href="scatter_20260125_京都01R_3歳未勝利_ダ1800m.html" data-venue="京都" data-rnum="1" data-date="20260125"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="10:55"></span><span class="rtime-text">10:55</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1800m</span></a>
@@ -1106,7 +1126,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260125_中山12R_3歳未勝利_芝1600m.html" data-venue="中山" data-rnum="12" data-date="20260125"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:25"></span><span class="rtime-text">16:25</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-turf">芝</span><span class="dist">1600m</span></a>
 </div>
 </div></div>
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">1/24（土）</span><span class="graded-center"><span class="graded-in-date">小倉11R <span class="hdr-badge hdr-g3">GⅢ</span> 小倉牝馬S</span></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260124"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">1/24（土）</span><span class="graded-center"><span class="graded-in-date">小倉11R <span class="hdr-badge hdr-g3">GⅢ</span> 小倉牝馬S</span></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>京都</h3><span class="cv-inline">CV 10.5 芝9.6% ダ1.3%</span></div><div class="weather-row"><div class="weather-slot"><span class="weather-icon">❓</span><span class="weather-label">9時</span></div><div class="weather-slot"><span class="weather-icon">❓</span><span class="weather-label">12時</span></div><div class="weather-slot"><span class="weather-icon">❓</span><span class="weather-label">15時</span></div></div></div>
 <a href="scatter_20260124_京都01R_3歳未勝利_ダ1800m.html" data-venue="京都" data-rnum="1" data-date="20260124"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="09:45"></span><span class="rtime-text">09:45</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1800m</span></a>
@@ -1149,7 +1169,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260124_中山12R_4歳以上1勝クラス_芝1600m.html" data-venue="中山" data-rnum="12" data-date="20260124"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:10"></span><span class="rtime-text">16:10</span></span></span><span class="rname">4歳以上1勝クラス</span><span class="surf-badge surf-turf">芝</span><span class="dist">1600m</span></a>
 </div>
 </div></div>
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">1/18（日）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g3">GⅢ</span> 京成杯　/　京都11R <span class="hdr-badge hdr-g2">GⅡ</span> 日経新春杯</span></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260118"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">1/18（日）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g3">GⅢ</span> 京成杯　/　京都11R <span class="hdr-badge hdr-g2">GⅡ</span> 日経新春杯</span></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>京都</h3><span class="cv-inline">CV 10.5 芝7.4% ダ0.9%</span></div></div>
 <a href="scatter_20260118_京都01R_3歳未勝利_ダ1200m.html" data-venue="京都" data-rnum="1" data-date="20260118"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="09:50"></span><span class="rtime-text">09:50</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1200m</span></a>
@@ -1179,7 +1199,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260118_中山12R_3歳未勝利_芝1600m.html" data-venue="中山" data-rnum="12" data-date="20260118"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:25"></span><span class="rtime-text">16:25</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-turf">芝</span><span class="dist">1600m</span></a>
 </div>
 </div></div>
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">1/17（土）</span><span class="graded-center"></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260117"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">1/17（土）</span><span class="graded-center"></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>京都</h3><span class="cv-inline">CV 10.4 芝7.9% ダ1.1%</span></div></div>
 <a href="scatter_20260117_京都01R_3歳未勝利_ダ1800m.html" data-venue="京都" data-rnum="1" data-date="20260117"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="09:50"></span><span class="rtime-text">09:50</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1800m</span></a>
@@ -1209,7 +1229,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260117_中山12R_4歳以上2勝クラス_芝1200m.html" data-venue="中山" data-rnum="12" data-date="20260117"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:25"></span><span class="rtime-text">16:25</span></span></span><span class="rname">4歳以上2勝クラス</span><span class="surf-badge surf-turf">芝</span><span class="dist">1200m</span></a>
 </div>
 </div></div>
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">1/11（日）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g3">GⅢ</span> フェアリーS</span></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260111"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">1/11（日）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g3">GⅢ</span> フェアリーS</span></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>京都</h3><span class="cv-inline">CV 10.4 芝8.1% ダ1.0%</span></div></div>
 <a href="scatter_20260111_京都01R_3歳未勝利_ダ1800m.html" data-venue="京都" data-rnum="1" data-date="20260111"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="09:50"></span><span class="rtime-text">09:50</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1800m</span></a>
@@ -1239,7 +1259,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260111_中山12R_4歳以上2勝クラス_ダ1200m.html" data-venue="中山" data-rnum="12" data-date="20260111"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:25"></span><span class="rtime-text">16:25</span></span></span><span class="rname">4歳以上2勝クラス</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1200m</span></a>
 </div>
 </div></div>
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">1/10（土）</span><span class="graded-center"></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260110"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">1/10（土）</span><span class="graded-center"></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>京都</h3><span class="cv-inline">CV 10.4 芝9.7% ダ1.1%</span></div></div>
 <a href="scatter_20260110_京都01R_3歳未勝利_ダ1800m.html" data-venue="京都" data-rnum="1" data-date="20260110"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="09:50"></span><span class="rtime-text">09:50</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1800m</span></a>
@@ -1269,7 +1289,7 @@ a:hover, a:active { background:rgba(255,255,255,0.08); }
 <a href="scatter_20260110_中山12R_4歳以上1勝クラス_ダ1200m.html" data-venue="中山" data-rnum="12" data-date="20260110"><span class="rinfo"><span class="rnum">12R</span><span class="rtime"><span class="lamp" data-time="16:25"></span><span class="rtime-text">16:25</span></span></span><span class="rname">4歳以上1勝クラス</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1200m</span></a>
 </div>
 </div></div>
-<div class="date-section"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">1/4（日）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g3">GⅢ</span> 中山金杯　/　京都11R <span class="hdr-badge hdr-g3">GⅢ</span> 京都金杯</span></span><span class="toggle">▼</span></div>
+<div class="date-section" id="d20260104"><div class="date-header" onclick="toggleDate(this)"><span class="date-left">1/4（日）</span><span class="graded-center"><span class="graded-in-date">中山11R <span class="hdr-badge hdr-g3">GⅢ</span> 中山金杯　/　京都11R <span class="hdr-badge hdr-g3">GⅢ</span> 京都金杯</span></span><span class="toggle">▼</span></div>
 <div class="race-list">
 <div class="venue-col"><div class="venue-head"><div class="venue-title"><h3>京都</h3><span class="cv-inline">CV 10.7 芝8.6% ダ3.8%</span></div></div>
 <a href="scatter_20260104_京都01R_3歳未勝利_ダ1200m.html" data-venue="京都" data-rnum="1" data-date="20260104"><span class="rinfo"><span class="rnum">1R</span><span class="rtime"><span class="lamp" data-time="09:50"></span><span class="rtime-text">09:50</span></span></span><span class="rname">3歳未勝利</span><span class="surf-badge surf-dirt">ダ</span><span class="dist">1200m</span></a>
@@ -1310,6 +1330,23 @@ function toggleMonth(el){
   el.classList.toggle('open');
   el.nextElementSibling.classList.toggle('open');
 }
+
+// ハッシュで指定された日付セクションを開いてスクロール
+function openByHash(){
+  var hash = window.location.hash;
+  if(!hash) return;
+  var id = hash.replace('#','');
+  var sec = document.getElementById(id);
+  if(!sec) return;
+  var hdr = sec.querySelector('.date-header');
+  var lst = sec.querySelector('.race-list');
+  if(hdr && lst && !hdr.classList.contains('open')){
+    hdr.classList.add('open');
+    lst.classList.add('open');
+  }
+  setTimeout(function(){ sec.scrollIntoView({behavior:'smooth',block:'start'}); }, 80);
+}
+window.addEventListener('load', openByHash);
 
 function todayStr(){
   var d = new Date();
