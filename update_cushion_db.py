@@ -267,12 +267,17 @@ def fetch_jra_live_history():
     except Exception as e:
         print(f"  ※ 含水率ライブ取得エラー: {e}")
 
+    today_str = datetime.now().strftime('%Y/%m/%d')
+
     # クッション値と含水率を結合
     for (venue, date_str), cushion in cushion_data.items():
         if cushion == 0.0:
             continue
+        # 未来日のデータは保存しない（JRAが先行公開する可能性があるが不正確な場合あり）
+        if date_str > today_str:
+            print(f"  ※ 未来日のためスキップ: {date_str} {venue}")
+            continue
         turf_goal, dirt_goal = moist_data.get((venue, date_str), (None, None))
-        # 金曜日（前日計測）はスキップ（開催日のデータのみ使用）
         records.append({
             'date': date_str,
             'venue': venue,

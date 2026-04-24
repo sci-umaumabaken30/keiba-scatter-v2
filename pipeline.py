@@ -651,7 +651,7 @@ body {{
 @media (min-width: 768px) {{ .chart-area {{ flex: 1; height: 100%; }} }}
 canvas {{ display: block; width: 100% !important; height: 100% !important; touch-action: pan-y; }}
 .panel {{
-  border-top: 1px solid rgba(255,255,255,0.12); overflow-y: auto; padding: 8px 8px 130px 8px; background: linear-gradient(180deg,rgba(255,255,255,0.04) 0%,rgba(0,0,0,0.05) 100%),#2d4a68;
+  border-top: 1px solid rgba(255,255,255,0.12); overflow-y: auto; padding: 8px 8px 200px 8px; background: linear-gradient(180deg,rgba(255,255,255,0.04) 0%,rgba(0,0,0,0.05) 100%),#2d4a68;
   flex: 1;
 }}
 @media (min-width: 768px) {{
