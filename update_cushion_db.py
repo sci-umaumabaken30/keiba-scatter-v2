@@ -305,21 +305,27 @@ def update_db(years=None, db_path=None):
 
     print(f"既存DB: {len(cushion_db)}件")
     total_added = 0
+    today_date_str = datetime.now().strftime('%Y/%m/%d')
 
     # ソース1: JRAライブページ（現在開催中の全会場・全計測日）
     print(f"\n=== JRAライブページから取得 ===")
     live_records = fetch_jra_live_history()
     live_added = 0
+    live_updated = 0
     for rec in live_records:
         key = f"{rec['date']}_{rec['venue']}"
         if key not in cushion_db:
             cushion_db[key] = rec
             live_added += 1
-    if live_added > 0:
-        print(f"  {live_added}件追加")
+        elif rec['date'] == today_date_str:
+            # 当日分はJRAが日中に更新する可能性があるため上書き
+            cushion_db[key] = rec
+            live_updated += 1
+    if live_added > 0 or live_updated > 0:
+        print(f"  {live_added}件追加, {live_updated}件上書き更新")
     else:
         print(f"  追加なし（既に最新）")
-    total_added += live_added
+    total_added += live_added + live_updated
 
     # ソース2: JRA公式PDF（開催終了後のアーカイブ）
     for year in years:
