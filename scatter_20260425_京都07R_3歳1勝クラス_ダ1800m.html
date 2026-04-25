@@ -1306,7 +1306,7 @@ function updateRatingSummary(){
   });
   const parts=RANKS.filter(r=>grouped[r]&&grouped[r].length>0).map(r=>
     '<span class="rs-item"><span class="rs-label" style="color:'+RANK_COLORS[r]+'">'+r+'</span>'
-    +'<span class="rs-nums">'+grouped[r].join('.')+'</span></span>'
+    +'<span class="rs-nums" style="color:'+RANK_COLORS[r]+'">'+grouped[r].join('.')+'</span></span>'
   );
   const el=document.getElementById('rating-summary');
   if(!el)return;
