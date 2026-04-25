@@ -711,19 +711,30 @@ function updateRaceMarks(){
 }
 function updateRatingSummary(){
   const RANKS=['S','A','B','C','D'];
-  const RANK_COLORS={S:'#dc2626',A:'#f59e0b',B:'#3b82f6',C:'#22c55e',D:'#94a3b8'};
+  const RANK_BG={S:'#dc2626',A:'#f59e0b',B:'#3b82f6',C:'#22c55e',D:'#3a6d9a'};
   const grouped={};
   HORSES.forEach(h=>{
     const rank=ratings[h.name];
     if(rank){
       if(!grouped[rank])grouped[rank]=[];
-      grouped[rank].push(h.horse_num||'?');
+      grouped[rank].push(h);
     }
   });
-  const parts=RANKS.filter(r=>grouped[r]&&grouped[r].length>0).map(r=>
-    '<span class="rs-item"><span class="rs-label" style="color:'+RANK_COLORS[r]+'">'+r+'</span>'
-    +'<span class="rs-nums" style="color:'+RANK_COLORS[r]+'">'+grouped[r].join('.')+'</span></span>'
-  );
+  const parts=RANKS.filter(r=>grouped[r]&&grouped[r].length>0).map(r=>{
+    const bg=RANK_BG[r];
+    const rankBadge='<span style="background:'+bg+';color:#fff;font-size:10px;font-weight:900;'
+      +'border-radius:4px;padding:2px 6px;border:1px solid rgba(255,255,255,0.25);'
+      +'box-shadow:inset 0 1px 0 rgba(255,255,255,0.3),0 0 6px '+bg+'80">'+r+'</span>';
+    const numBadges=grouped[r].map(h=>{
+      const umaRaw=parseInt(h.horse_num);const umaValid=umaRaw>0;
+      const wc=umaValid?getWakuColor(HORSES.length,umaRaw):{bg:'#4a5568',tc:'#94a3b8'};
+      return '<span style="background:'+wc.bg+';color:'+wc.tc+';font-size:11px;font-weight:800;'
+        +'border-radius:4px;padding:1px 6px;min-width:20px;text-align:center;display:inline-block;'
+        +'border:1px solid rgba(0,0,0,0.18);box-shadow:0 1px 3px rgba(0,0,0,0.25),inset 0 1px 0 rgba(255,255,255,0.35)">'
+        +(h.horse_num||'?')+'</span>';
+    }).join('');
+    return '<span class="rs-item">'+rankBadge+numBadges+'</span>';
+  });
   const el=document.getElementById('rating-summary');
   if(!el)return;
   if(parts.length>0){el.innerHTML=parts.join('');el.style.display='flex';}
