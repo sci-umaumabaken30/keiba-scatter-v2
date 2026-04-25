@@ -1379,7 +1379,7 @@ function updateLamps(){
 }
 
 updateLamps();
-setInterval(updateLamps, 30000);
+setInterval(updateLamps, 60000);
 
 var RACE_CHECK_KEY = 'sci_race_checks';
 function loadChecks(){ try{ return JSON.parse(localStorage.getItem(RACE_CHECK_KEY))||{}; }catch(e){ return {}; } }
