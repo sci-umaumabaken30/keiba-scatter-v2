@@ -76,6 +76,7 @@ def _run_job_fn(job_id, date_str, with_db, no_scrape, retry_count=0):
     _save_sched_state()
 
     success = True
+    db_has_new = False
     try:
         if with_db:
             db_cmd = [sys.executable, '-u', '-X', 'utf8',
@@ -85,6 +86,10 @@ def _run_job_fn(job_id, date_str, with_db, no_scrape, retry_count=0):
             if proc.returncode != 0:
                 logging.error(f'[sched] update_cushion_db failed rc={proc.returncode}')
                 success = False
+            else:
+                out = (proc.stdout or '') + (proc.stderr or '')
+                db_has_new = '件追加' in out or '件上書き更新' in out
+                logging.info(f'[sched] db update result: has_new={db_has_new}')
 
         if success:
             pip_cmd = [sys.executable, '-u', '-X', 'utf8',
@@ -101,6 +106,29 @@ def _run_job_fn(job_id, date_str, with_db, no_scrape, retry_count=0):
         success = False
 
     if success:
+        # with_dbジョブで新データなし → 11:00まで5分おきにリトライ
+        if with_db and not db_has_new:
+            import datetime as _dmod2
+            now_jst = _dmod2.datetime.now(tz=_JST)
+            cutoff = now_jst.replace(hour=11, minute=0, second=0, microsecond=0)
+            if now_jst < cutoff:
+                pending_num = retry_count + 1
+                from datetime import timezone as _tz_p
+                retry_at = datetime.now(tz=_tz_p.utc) + timedelta(minutes=5)
+                logging.info(f'[sched] no new cushion data, pending retry {pending_num}: {job_id}')
+                with _sched_lock:
+                    if job_id in _sched_jobs:
+                        _sched_jobs[job_id]['status'] = f'pending_{pending_num}'
+                _scheduler.add_job(
+                    _run_job_fn,
+                    trigger='date',
+                    run_date=retry_at,
+                    args=[job_id, date_str, with_db, no_scrape, pending_num],
+                    id=f'{job_id}_p{pending_num}',
+                    replace_existing=True,
+                )
+                _save_sched_state()
+                return
         logging.info(f'[sched] done: {job_id}')
         with _sched_lock:
             if job_id in _sched_jobs:
@@ -142,9 +170,9 @@ def _register_weekend_schedule(sat_date_str, sun_date_str):
     job_specs = [
         ('fri_scrape_sat', fri, 10,  0, sat_date_str, False, False, '金曜 土曜馬番取得'),
         ('fri_update_sat', fri, 14,  0, sat_date_str, True,  True,  '金曜 土曜クッション値更新'),
-        ('sat_update_sat', sat,  9,  0, sat_date_str, True,  True,  '土曜 土曜クッション値更新'),
-        ('sat_scrape_sun', sat, 10,  0, sun_date_str, False, False, '土曜 日曜馬番取得'),
-        ('sun_update_sun', sun,  9,  0, sun_date_str, True,  True,  '日曜 日曜クッション値更新'),
+        ('sat_update_sat', sat,  9, 20, sat_date_str, True,  True,  '土曜 土曜クッション値更新'),
+        ('sat_scrape_sun', sat, 11,  0, sun_date_str, False, False, '土曜 日曜馬番取得'),
+        ('sun_update_sun', sun,  9, 20, sun_date_str, True,  True,  '日曜 日曜クッション値更新'),
     ]
 
     with _sched_lock:
@@ -935,6 +963,9 @@ function renderScheduleJobs(jobs){
     let s = statusMap[j.status];
     if(!s && j.status && j.status.startsWith('retry_')){
       s = {dot:'running', label:'リトライ待機', color:'#f59e0b'};
+    }
+    if(!s && j.status && j.status.startsWith('pending_')){
+      s = {dot:'running', label:'JRA未更新・5分後再試行', color:'#a78bfa'};
     }
     s = s || {dot:'', label:j.status, color:'#7aa8c8'};
     return '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:12px">'

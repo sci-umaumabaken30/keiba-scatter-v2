@@ -1737,15 +1737,18 @@ function updateLamps(){
     var race = new Date(now); race.setHours(+parts[0], +parts[1], 0, 0);
     var venue = a.getAttribute('data-venue');
     if(!venueGroups[venue]) venueGroups[venue] = [];
-    venueGroups[venue].push({lamp:lamp, race:race, diff:Math.abs(race-now)});
+    venueGroups[venue].push({lamp:lamp, race:race});
   });
 
   Object.keys(venueGroups).forEach(function(venue){
     var items = venueGroups[venue];
-    var minDiff = Math.min.apply(null, items.map(function(x){return x.diff;}));
+    var futureItems = items.filter(function(x){ return x.race > now; });
+    var nextItem = futureItems.length > 0
+      ? futureItems.reduce(function(a,b){ return a.race < b.race ? a : b; })
+      : null;
     items.forEach(function(item){
       item.lamp.className = 'lamp';
-      if(item.diff === minDiff){
+      if(nextItem && item === nextItem){
         item.lamp.classList.add('lamp-red');
       } else if(item.race > now){
         item.lamp.classList.add('lamp-green');
@@ -1757,7 +1760,7 @@ function updateLamps(){
 }
 
 updateLamps();
-setInterval(updateLamps, 30000);
+setInterval(updateLamps, 60000);
 
 var RACE_CHECK_KEY = 'sci_race_checks';
 function loadChecks(){ try{ return JSON.parse(localStorage.getItem(RACE_CHECK_KEY))||{}; }catch(e){ return {}; } }
