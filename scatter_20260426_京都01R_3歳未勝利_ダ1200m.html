@@ -157,7 +157,11 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
   <div class="hdr-row">
     <div>
       <h1>京都1R 3歳未勝利 ダ1200m</h1>
-      <div class="sub">出走馬 クッション値×含水率 解析</div>
+      <div class="target" style="margin-top:3px;">
+        <span>CV: <b style="color:#94a3b8">10.3</b></span>
+        <span>含水率: <b style="color:#94a3b8">7.5%</b></span>
+        <span style="color:#94a3b8">4/26（日） 京都</span>
+      </div>
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
       <nav class="race-nav">
@@ -170,11 +174,6 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
         <button id="predict-btn" class="hdr-ind" title="予想済みにする">✓</button>
       </div>
     </div>
-  </div>
-  <div class="target">
-    <span>CV: <b style="color:#94a3b8">10.3</b></span>
-    <span>含水率: <b style="color:#94a3b8">7.5%</b></span>
-    <span style="color:#94a3b8">4/26（日） 京都</span>
   </div>
   <div class="rating-summary" id="rating-summary"></div>
 </div>
@@ -954,7 +953,7 @@ canvas.addEventListener('touchend',()=>{if(touchTimer)clearTimeout(touchTimer);t
 canvas.addEventListener('click',(e)=>{const rect=canvas.getBoundingClientRect();showTooltipAt(e.clientX-rect.left,e.clientY-rect.top,e.clientX,e.clientY);});
 window.addEventListener('resize',resize); buildPanel(); updateRatings(); updateRatingSummary(); updateRaceMarks(); resize();
 (function(){
-  var pageFile=window.location.pathname.split('/').pop();
+  var pageFile=decodeURIComponent(window.location.pathname.split('/').pop());
   var checks={};try{checks=JSON.parse(localStorage.getItem('sci_race_checks')||'{}');}catch(e){}
   var cl=document.getElementById('check-lamp');
   if(checks[pageFile])cl.classList.add('on');
