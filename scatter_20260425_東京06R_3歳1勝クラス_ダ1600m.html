@@ -1234,7 +1234,7 @@ function draw() {
       const isHL=highlightedPoints.has(hi+'-'+ri);
       if(isHL){hlDeferred.push({h,hi,r,ri,isSel,dimmed,alpha});return;}
       const px=toCanvasX(r.cushion),py=toCanvasY(r.moisture),color=COLORS[r.cat];
-      const sz=10;
+      const sz=isSel?12:10;
       ctx.globalAlpha=alpha;
       if(r.good){ ctx.beginPath();ctx.arc(px,py,sz,0,Math.PI*2);ctx.fillStyle='#162d58';ctx.fill();ctx.strokeStyle=color;ctx.lineWidth=2;ctx.stroke(); }
       else{ ctx.strokeStyle=color;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(px-sz,py-sz);ctx.lineTo(px+sz,py+sz);ctx.stroke();ctx.beginPath();ctx.moveTo(px+sz,py-sz);ctx.lineTo(px-sz,py+sz);ctx.stroke(); }
