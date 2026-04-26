@@ -55,7 +55,8 @@ body {
 .hdr-ind { width:26px; height:26px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:12px; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.18); flex-shrink:0; transition:all 0.15s; }
 button.hdr-ind { cursor:pointer; -webkit-tap-highlight-color:transparent; }
 button.hdr-ind:active { transform:scale(0.93); }
-#check-lamp.on { background:rgba(234,179,8,0.25); border-color:#eab308; color:#fbbf24; }
+#check-lamp.on { background:rgba(34,211,238,0.25); border-color:#22d3ee; color:#67e8f9; }
+#check-lamp { cursor:pointer; -webkit-tap-highlight-color:transparent; }
 #predict-btn.on { background:rgba(99,102,241,0.25); border-color:#6366f1; color:#a5b4fc; }
 .main { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
 @media (min-width: 768px) { .main { flex-direction: row; } }
@@ -1107,7 +1108,14 @@ window.addEventListener('resize',resize); buildPanel(); updateRatings(); updateR
 (function(){
   var pageFile=window.location.pathname.split('/').pop();
   var checks={};try{checks=JSON.parse(localStorage.getItem('sci_race_checks')||'{}');}catch(e){}
-  if(checks[pageFile])document.getElementById('check-lamp').classList.add('on');
+  var cl=document.getElementById('check-lamp');
+  if(checks[pageFile])cl.classList.add('on');
+  cl.addEventListener('click',function(){
+    var on=cl.classList.toggle('on');
+    var d={};try{d=JSON.parse(localStorage.getItem('sci_race_checks')||'{}');}catch(e){}
+    if(on)d[pageFile]=1;else delete d[pageFile];
+    localStorage.setItem('sci_race_checks',JSON.stringify(d));
+  });
   var predicted={};try{predicted=JSON.parse(localStorage.getItem('sci_race_predicted')||'{}');}catch(e){}
   var pb=document.getElementById('predict-btn');
   if(predicted[pageFile])pb.classList.add('on');
