@@ -1,0 +1,20 @@
+{
+  "name": "競馬散布図",
+  "short_name": "競馬散布図",
+  "start_url": "/keiba-scatter-v2/",
+  "display": "standalone",
+  "background_color": "#0e1f3d",
+  "theme_color": "#0e1f3d",
+  "icons": [
+    {
+      "src": "/keiba-scatter-v2/icon_192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/keiba-scatter-v2/icon_512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
