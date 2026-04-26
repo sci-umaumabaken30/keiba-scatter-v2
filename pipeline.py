@@ -646,37 +646,48 @@ body {{
   padding: 12px 16px; z-index: 100;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.2),0 4px 20px rgba(0,0,0,0.5); flex-shrink: 0;
 }}
-.hdr-row {{ display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }}
+.hdr-row {{ display:flex; align-items:center; justify-content:space-between; gap:8px; }}
 .header h1 {{ font-size: 16px; font-weight: 900; letter-spacing: -0.5px; color: #fff; }}
-.header .sub {{ font-size: 11px; color: #a8c8e8; margin-top: 2px; }}
 .header .target {{
-  display: inline-flex; gap: 12px; margin-top: 4px;
-  font-size: 11px; font-weight: 700; font-family: monospace;
+  display: flex; gap: 4px; margin-top: 4px; flex-wrap: nowrap;
+  font-size: 10px; font-weight: 700; font-family: monospace;
 }}
 .header .target span {{
   background: linear-gradient(180deg,rgba(255,255,255,0.12) 0%,rgba(255,255,255,0.03) 100%),#1a5276;
   border: 1px solid rgba(255,255,255,0.2); border-top: 1px solid rgba(255,255,255,0.35);
-  padding: 2px 8px; border-radius: 4px; color: #c8e4ff;
+  padding: 2px 5px; border-radius: 4px; color: #c8e4ff; white-space: nowrap;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.15);
 }}
 .rating-summary {{ display:none; flex-wrap:wrap; gap:8px; margin-top:5px; font-size:11px; font-weight:700; font-family:monospace; }}
 .rs-item {{ display:inline-flex; align-items:center; gap:3px; }}
 .rs-label {{ font-size:10px; font-weight:900; }}
 .rs-nums {{ color:#ddeeff; letter-spacing:0.02em; }}
-.race-nav {{ display:flex; gap:4px; flex-shrink:0; margin-top:2px; }}
+.race-nav {{ display:flex; gap:4px; flex-shrink:0; }}
 .nav-btn {{
   display:flex; align-items:center; justify-content:center;
-  width:32px; height:32px; border-radius:8px;
+  width:28px; height:26px; border-radius:7px;
   background:linear-gradient(180deg,rgba(255,255,255,0.12) 0%,rgba(255,255,255,0.03) 100%),#1a5276;
   border:1px solid rgba(255,255,255,0.2); border-top:1px solid rgba(255,255,255,0.35);
-  color:#c8e4ff; font-size:16px; font-weight:900; text-decoration:none;
+  color:#c8e4ff; font-size:14px; font-weight:900; text-decoration:none;
   box-shadow:inset 0 1px 0 rgba(255,255,255,0.15),0 2px 6px rgba(0,0,0,0.3);
   transition:all 0.15s; -webkit-tap-highlight-color:transparent; cursor:pointer;
 }}
 .nav-btn:hover {{ background:linear-gradient(180deg,rgba(255,255,255,0.18) 0%,rgba(255,255,255,0.06) 100%),#1a5276; }}
 .nav-btn:active {{ transform:scale(0.93); }}
 .nav-btn.disabled {{ opacity:0.25; pointer-events:none; }}
-.nav-btn.nav-index {{ font-size:11px; font-weight:800; }}
+.nav-btn.nav-index {{ font-size:10px; font-weight:800; width:32px; }}
+.hdr-ind {{
+  display:inline-flex; align-items:center; justify-content:center;
+  padding:2px 7px; border-radius:4px; font-size:12px; font-weight:700; flex-shrink:0;
+  background:linear-gradient(180deg,rgba(255,255,255,0.08) 0%,rgba(255,255,255,0.02) 100%),#1a5276;
+  border:1px solid rgba(255,255,255,0.15); border-top:1px solid rgba(255,255,255,0.28);
+  color:rgba(255,255,255,0.25); box-shadow:inset 0 1px 0 rgba(255,255,255,0.1);
+  transition:all 0.15s;
+}}
+.hdr-ind {{ cursor:pointer; -webkit-tap-highlight-color:transparent; }}
+.hdr-ind:active {{ transform:scale(0.93); }}
+#check-lamp.on {{ background:rgba(34,211,238,0.25); border-color:#22d3ee; color:#67e8f9; }}
+#predict-btn.on {{ background:rgba(99,102,241,0.25); border-color:#6366f1; color:#a5b4fc; }}
 .main {{ display: flex; flex-direction: column; flex: 1; overflow: hidden; }}
 @media (min-width: 768px) {{ .main {{ flex-direction: row; }} }}
 .chart-area {{ position: relative; width: 100%; height: 40vh; min-height: 250px; flex-shrink: 0; }}
@@ -774,10 +785,7 @@ canvas {{ display: block; width: 100% !important; height: 100% !important; touch
 <body style="display:flex;flex-direction:column;">
 <div class="header">
   <div class="hdr-row">
-    <div>
-      <h1>{venue}{race_num}R {race_name} {surface}{distance}m</h1>
-      <div class="sub">出走馬 クッション値×含水率 解析</div>
-    </div>
+    <h1>{venue}{race_num}R {race_name} {surface}{distance}m</h1>
     <nav class="race-nav">
       {prev_btn}
       <a class="nav-btn nav-index" href="index.html#d{race_date}" title="一覧">一覧</a>
@@ -788,6 +796,8 @@ canvas {{ display: block; width: 100% !important; height: 100% !important; touch
     <span>CV: <b style="color:#94a3b8">{target_cushion}</b></span>
     <span>含水率: <b style="color:#94a3b8">{target_moisture}%</b></span>
     <span style="color:#94a3b8">{date_label} {venue}</span>
+    <span id="check-lamp" class="hdr-ind" title="チェック済みレース">★</span>
+    <button id="predict-btn" class="hdr-ind" title="予想済みにする">✓</button>
   </div>
   <div class="rating-summary" id="rating-summary"></div>
 </div>
@@ -1025,6 +1035,27 @@ canvas.addEventListener('touchmove',(e)=>{{const t=e.touches[0];const rect=canva
 canvas.addEventListener('touchend',()=>{{if(touchTimer)clearTimeout(touchTimer);touchTimer=setTimeout(()=>tooltipEl.classList.remove('show'),2000);}});
 canvas.addEventListener('click',(e)=>{{const rect=canvas.getBoundingClientRect();showTooltipAt(e.clientX-rect.left,e.clientY-rect.top,e.clientX,e.clientY);}});
 window.addEventListener('resize',resize); buildPanel(); updateRatings(); updateRatingSummary(); updateRaceMarks(); resize();
+(function(){{
+  var pageFile=decodeURIComponent(window.location.pathname.split('/').pop());
+  var checks={{}};try{{checks=JSON.parse(localStorage.getItem('sci_race_checks')||'{{}}');}}catch(e){{}}
+  var cl=document.getElementById('check-lamp');
+  if(checks[pageFile])cl.classList.add('on');
+  cl.addEventListener('click',function(){{
+    var on=cl.classList.toggle('on');
+    var d={{}};try{{d=JSON.parse(localStorage.getItem('sci_race_checks')||'{{}}');}}catch(e){{}}
+    if(on)d[pageFile]=1;else delete d[pageFile];
+    localStorage.setItem('sci_race_checks',JSON.stringify(d));
+  }});
+  var predicted={{}};try{{predicted=JSON.parse(localStorage.getItem('sci_race_predicted')||'{{}}');}}catch(e){{}}
+  var pb=document.getElementById('predict-btn');
+  if(predicted[pageFile])pb.classList.add('on');
+  pb.addEventListener('click',function(){{
+    var on=pb.classList.toggle('on');
+    var d={{}};try{{d=JSON.parse(localStorage.getItem('sci_race_predicted')||'{{}}');}}catch(e){{}}
+    if(on)d[pageFile]=1;else delete d[pageFile];
+    localStorage.setItem('sci_race_predicted',JSON.stringify(d));
+  }});
+}})();
 </script>
 </body></html>"""
 
@@ -1461,8 +1492,8 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif; b
 .admin-btn:hover { background:linear-gradient(180deg,rgba(255,255,255,0.22) 0%,rgba(255,255,255,0.08) 100%),#3a6d9a; border-color:rgba(255,255,255,0.5); }
 .race-check { width:18px; height:18px; border:2px solid rgba(255,255,255,0.25); border-radius:4px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:12px; color:transparent; background:rgba(0,0,0,0.25); transition:all 0.15s; cursor:pointer; margin-right:6px; }
 @media (hover: hover) { .race-check:hover { border-color:rgba(255,255,255,0.55); background:rgba(255,255,255,0.1); } }
-a.race-checked .race-check { background:rgba(34,197,94,0.28); border-color:#22c55e; color:#4ade80; }
-a.race-checked { background:rgba(34,197,94,0.07) !important; border-left:3px solid #22c55e; }
+a.race-checked .race-check { background:rgba(34,211,238,0.25); border-color:#22d3ee; color:#67e8f9; }
+a.race-checked { background:rgba(34,211,238,0.06) !important; border-left:3px solid #22d3ee; }
 .date-section { margin-bottom:8px; padding:0 10px; }
 .date-header { font-size:15px; font-weight:800; padding:14px 18px; background:linear-gradient(180deg,rgba(255,255,255,0.12) 0%,rgba(255,255,255,0.03) 60%,rgba(0,0,0,0.08) 100%),#1a5276; color:#ddeeff; cursor:pointer; display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:12px; border:1px solid rgba(255,255,255,0.15); border-top:1px solid rgba(255,255,255,0.30); border-radius:12px; box-shadow:inset 0 1px 0 rgba(255,255,255,0.22),0 6px 20px rgba(0,0,0,0.45); transition:all 0.2s; }
 .date-header:hover,.date-header:active { background:linear-gradient(180deg,rgba(255,255,255,0.18) 0%,rgba(255,255,255,0.06) 100%),#1a5276; border-color:rgba(255,255,255,0.35); box-shadow:inset 0 1px 0 rgba(255,255,255,0.3),0 8px 28px rgba(0,0,0,0.5); }
@@ -1810,13 +1841,18 @@ function initCheckboxes(){
     box.textContent = '✓';
     box.title = 'チェック';
     if(checks[key]) a.classList.add('race-checked');
-    box.addEventListener('click', function(e){
-      e.preventDefault();
-      e.stopPropagation();
+    var _touched = false;
+    box.addEventListener('touchstart', function(e){ e.stopPropagation(); }, {passive: true});
+    box.addEventListener('touchend', function(e){
+      _touched = true;
+      e.preventDefault(); e.stopPropagation();
       var on = a.classList.toggle('race-checked');
-      var d = loadChecks();
-      if(on) d[key] = 1; else delete d[key];
-      saveChecks(d);
+      var d = loadChecks(); if(on) d[key] = 1; else delete d[key]; saveChecks(d);
+      setTimeout(function(){ _touched = false; }, 500);
+    });
+    box.addEventListener('click', function(e){
+      e.preventDefault(); e.stopPropagation();
+      if(!_touched){ var on = a.classList.toggle('race-checked'); var d = loadChecks(); if(on) d[key] = 1; else delete d[key]; saveChecks(d); }
     });
     a.insertBefore(box, a.firstChild);
   });
