@@ -1397,13 +1397,18 @@ function initCheckboxes(){
     box.textContent = '✓';
     box.title = 'チェック';
     if(checks[key]) a.classList.add('race-checked');
-    box.addEventListener('click', function(e){
-      e.preventDefault();
-      e.stopPropagation();
+    var _touched = false;
+    box.addEventListener('touchstart', function(e){ e.stopPropagation(); }, {passive: true});
+    box.addEventListener('touchend', function(e){
+      _touched = true;
+      e.preventDefault(); e.stopPropagation();
       var on = a.classList.toggle('race-checked');
-      var d = loadChecks();
-      if(on) d[key] = 1; else delete d[key];
-      saveChecks(d);
+      var d = loadChecks(); if(on) d[key] = 1; else delete d[key]; saveChecks(d);
+      setTimeout(function(){ _touched = false; }, 500);
+    });
+    box.addEventListener('click', function(e){
+      e.preventDefault(); e.stopPropagation();
+      if(!_touched){ var on = a.classList.toggle('race-checked'); var d = loadChecks(); if(on) d[key] = 1; else delete d[key]; saveChecks(d); }
     });
     a.insertBefore(box, a.firstChild);
   });
