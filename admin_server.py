@@ -227,6 +227,21 @@ def _load_sched_state():
     now_jst = _dmod.datetime.now(tz=_JST)
     with _sched_lock:
         _sched_jobs = saved
+        # 起動時に「running」のままのジョブはサーバー再起動で中断されたため1分後に自動再実行
+        for jid, info in _sched_jobs.items():
+            if info.get('status') == 'running':
+                logging.warning(f'[sched] interrupted job detected, scheduling re-run in 1min: {jid}')
+                info['status'] = 'scheduled'
+                from datetime import timezone as _tz_r
+                rerun_at = datetime.now(tz=_tz_r.utc) + timedelta(minutes=1)
+                _scheduler.add_job(
+                    _run_job_fn,
+                    trigger='date',
+                    run_date=rerun_at,
+                    args=[jid, info['date_str'], info['with_db'], info['no_scrape'], 0],
+                    id=f'{jid}_rerun',
+                    replace_existing=True,
+                )
 
     for jid, info in saved.items():
         if info.get('status') == 'scheduled':
