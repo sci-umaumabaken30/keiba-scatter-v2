@@ -749,8 +749,8 @@ function resize() {
   canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0); draw();
 }
-function toCanvasX(v) { const p=50; const w=canvas.width/(window.devicePixelRatio||1)-p*2; return p+(v-X_MIN)/(X_MAX-X_MIN)*w; }
-function toCanvasY(v) { const pt=20,pb=40; const h=canvas.height/(window.devicePixelRatio||1)-pt-pb; return pt+(1-(v-Y_MIN)/(Y_MAX-Y_MIN))*h; }
+function toCanvasX(v) { const pl=36,pr=10; const w=canvas.width/(window.devicePixelRatio||1)-pl-pr; return pl+(v-X_MIN)/(X_MAX-X_MIN)*w; }
+function toCanvasY(v) { const pt=12,pb=22; const h=canvas.height/(window.devicePixelRatio||1)-pt-pb; return pt+(1-(v-Y_MIN)/(Y_MAX-Y_MIN))*h; }
 
 function draw() {
   const W=canvas.width/(window.devicePixelRatio||1), H=canvas.height/(window.devicePixelRatio||1);
@@ -761,17 +761,14 @@ function draw() {
   bg.addColorStop(1,'#0e1f3d');
   ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
   ctx.strokeStyle='rgba(60,100,200,0.18)'; ctx.lineWidth=1;
-  for(let x=Math.ceil(X_MIN);x<=X_MAX;x+=0.5){ const px=toCanvasX(x); ctx.beginPath();ctx.moveTo(px,20);ctx.lineTo(px,H-40);ctx.stroke(); ctx.fillStyle='#3a5880';ctx.font='10px monospace';ctx.textAlign='center';ctx.fillText(x.toFixed(1),px,H-25); }
-  for(let y=0;y<=Y_MAX;y+=2){ const py=toCanvasY(y); ctx.beginPath();ctx.moveTo(50,py);ctx.lineTo(W-50,py);ctx.stroke(); ctx.fillStyle='#3a5880';ctx.font='10px monospace';ctx.textAlign='right';ctx.fillText(y+'%',45,py+4); }
-  ctx.fillStyle='#2a4060';ctx.font='bold 11px sans-serif';ctx.textAlign='center';
-  ctx.fillText('クッション値',W/2,H-5);
-  ctx.save();ctx.translate(12,H/2);ctx.rotate(-Math.PI/2);ctx.fillText('含水率（ゴール前）%',0,0);ctx.restore();
+  for(let x=Math.ceil(X_MIN);x<=X_MAX;x+=0.5){ const px=toCanvasX(x); ctx.beginPath();ctx.moveTo(px,12);ctx.lineTo(px,H-22);ctx.stroke(); ctx.fillStyle='#3a5880';ctx.font='10px monospace';ctx.textAlign='center';ctx.fillText(x.toFixed(1),px,H-10); }
+  for(let y=0;y<=Y_MAX;y+=2){ const py=toCanvasY(y); ctx.beginPath();ctx.moveTo(36,py);ctx.lineTo(W-10,py);ctx.stroke(); ctx.fillStyle='#3a5880';ctx.font='10px monospace';ctx.textAlign='right';ctx.fillText(y+'%',34,py+4); }
   ctx.setLineDash([6,3]);ctx.strokeStyle='rgba(100,150,255,0.45)';ctx.lineWidth=2;
   if(SURFACE==='芝'){
-    ctx.beginPath();ctx.moveTo(toCanvasX(LINE_X),20);ctx.lineTo(toCanvasX(LINE_X),H-40);ctx.stroke();
-    ctx.beginPath();ctx.moveTo(50,toCanvasY(LINE_Y));ctx.lineTo(W-50,toCanvasY(LINE_Y));ctx.stroke();
+    ctx.beginPath();ctx.moveTo(toCanvasX(LINE_X),12);ctx.lineTo(toCanvasX(LINE_X),H-22);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(36,toCanvasY(LINE_Y));ctx.lineTo(W-10,toCanvasY(LINE_Y));ctx.stroke();
   }else{
-    [5,10,15].forEach(pct=>{ctx.beginPath();ctx.moveTo(50,toCanvasY(pct));ctx.lineTo(W-50,toCanvasY(pct));ctx.stroke();});
+    [5,10,15].forEach(pct=>{ctx.beginPath();ctx.moveTo(36,toCanvasY(pct));ctx.lineTo(W-10,toCanvasY(pct));ctx.stroke();});
   }
   ctx.setLineDash([]);
   const tx=toCanvasX(TX),ty=toCanvasY(TY);
