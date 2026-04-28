@@ -3239,13 +3239,11 @@ canvas.addEventListener('mousemove',(e)=>{const rect=canvas.getBoundingClientRec
 canvas.addEventListener('mouseleave',()=>tooltipEl.classList.remove('show'));
 let touchTimer=null;
 function showTooltipAt(cx,cy,tx,ty){const pt=getPointAt(cx,cy);if(pt){tooltipEl.innerHTML=`<b>${pt.horse}</b><br>${pt.date} ${pt.venue} ${pt.surface}${pt.distance}m<br>${pt.race_name}<br><b>${pt.result!==null?pt.result+'着':'取消'}</b><br>CV: ${pt.cushion} / 含水率: ${pt.moisture}%`;const left=Math.min(tx+15,window.innerWidth-260);const top=Math.max(ty-40,10);tooltipEl.style.left=left+'px';tooltipEl.style.top=top+'px';tooltipEl.classList.add('show');}else{tooltipEl.classList.remove('show');}}
-canvas.addEventListener('touchstart',(e)=>{const t=e.touches[0];const rect=canvas.getBoundingClientRect();showTooltipAt(t.clientX-rect.left,t.clientY-rect.top,t.clientX,t.clientY);},{passive:true});
-canvas.addEventListener('touchmove',(e)=>{const t=e.touches[0];const rect=canvas.getBoundingClientRect();showTooltipAt(t.clientX-rect.left,t.clientY-rect.top,t.clientX,t.clientY);},{passive:true});
-canvas.addEventListener('touchend',()=>{if(touchTimer)clearTimeout(touchTimer);touchTimer=setTimeout(()=>tooltipEl.classList.remove('show'),2000);});
+canvas.addEventListener('touchend',()=>{tooltipEl.classList.remove('show');});
 canvas.addEventListener('click',(e)=>{
   const rect=canvas.getBoundingClientRect();
   const cx=e.clientX-rect.left,cy=e.clientY-rect.top;
-  showTooltipAt(cx,cy,e.clientX,e.clientY);
+  if(!isMobile)showTooltipAt(cx,cy,e.clientX,e.clientY);
   const pt=getPointAt(cx,cy);
   if(!pt)return;
   const hi=HORSES.findIndex(h=>h.name===pt.horse);
