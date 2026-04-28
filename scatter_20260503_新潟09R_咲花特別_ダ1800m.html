@@ -2709,10 +2709,7 @@ function getPointAt(cx,cy){
   HORSES.forEach(h=>{if(selectedHorses.size>0&&!selectedHorses.has(h.name))return;h.races.forEach(r=>{const px=toCanvasX(r.cushion),py=toCanvasY(r.moisture),d=Math.sqrt((cx-px)**2+(cy-py)**2);if(d<minDist){minDist=d;closest={...r,horse:h.name};}});});
   return closest;
 }
-canvas.addEventListener('mousemove',(e)=>{const rect=canvas.getBoundingClientRect();const x=e.clientX-rect.left,y=e.clientY-rect.top;const pt=getPointAt(x,y);if(pt){tooltipEl.innerHTML=`<b>${pt.horse}</b><br>${pt.date} ${pt.venue} ${pt.surface}${pt.distance}m<br>${pt.race_name}<br><b>${pt.result}着</b><br>CV: ${pt.cushion} / 含水率: ${pt.moisture}%`;tooltipEl.style.left=(e.clientX+15)+'px';tooltipEl.style.top=(e.clientY-10)+'px';tooltipEl.classList.add('show');}else{tooltipEl.classList.remove('show');}});
-canvas.addEventListener('mouseleave',()=>tooltipEl.classList.remove('show'));
 let touchTimer=null;
-function showTooltipAt(cx,cy,tx,ty){const pt=getPointAt(cx,cy);if(pt){tooltipEl.innerHTML=`<b>${pt.horse}</b><br>${pt.date} ${pt.venue} ${pt.surface}${pt.distance}m<br>${pt.race_name}<br><b>${pt.result!==null?pt.result+'着':'取消'}</b><br>CV: ${pt.cushion} / 含水率: ${pt.moisture}%`;const left=Math.min(tx+15,window.innerWidth-260);const top=Math.max(ty-40,10);tooltipEl.style.left=left+'px';tooltipEl.style.top=top+'px';tooltipEl.classList.add('show');}else{tooltipEl.classList.remove('show');}}
 canvas.addEventListener('touchend',()=>{tooltipEl.classList.remove('show');});
 canvas.addEventListener('click',(e)=>{
   const rect=canvas.getBoundingClientRect();
