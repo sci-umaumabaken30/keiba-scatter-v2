@@ -133,7 +133,7 @@ canvas { display: block; width: 100% !important; height: 100% !important; touch-
   background: linear-gradient(180deg,rgba(255,255,255,0.08) 0%,rgba(255,255,255,0.01) 100%),#1a5276; font-size: 10px; cursor: pointer;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.15),0 2px 8px rgba(0,0,0,0.25);
 }
-.race-item.highlighted { border-color: #f59e0b !important; border-top-color: #f59e0b !important; box-shadow: 0 0 0 2px rgba(245,158,11,0.3) !important; }
+.race-item.highlighted { border-color: #f59e0b !important; border-top-color: #f59e0b !important; box-shadow: 0 0 0 3px rgba(245,158,11,0.6), 0 0 16px rgba(245,158,11,0.35) !important; background: linear-gradient(180deg,rgba(245,158,11,0.18) 0%,rgba(245,158,11,0.06) 100%),#1a5276 !important; }
 .race-item .date { color: #c8e4ff; font-weight: 600; font-family: monospace; }
 .race-item .rname { color: #ffffff; font-weight: 700; font-size: 10px; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
 .race-item .result { font-size: 13px; font-weight: 900; text-shadow: 0 1px 4px rgba(0,0,0,0.6); }
@@ -3182,7 +3182,23 @@ function showTooltipAt(cx,cy,tx,ty){const pt=getPointAt(cx,cy);if(pt){tooltipEl.
 canvas.addEventListener('touchstart',(e)=>{const t=e.touches[0];const rect=canvas.getBoundingClientRect();showTooltipAt(t.clientX-rect.left,t.clientY-rect.top,t.clientX,t.clientY);},{passive:true});
 canvas.addEventListener('touchmove',(e)=>{const t=e.touches[0];const rect=canvas.getBoundingClientRect();showTooltipAt(t.clientX-rect.left,t.clientY-rect.top,t.clientX,t.clientY);},{passive:true});
 canvas.addEventListener('touchend',()=>{if(touchTimer)clearTimeout(touchTimer);touchTimer=setTimeout(()=>tooltipEl.classList.remove('show'),2000);});
-canvas.addEventListener('click',(e)=>{const rect=canvas.getBoundingClientRect();showTooltipAt(e.clientX-rect.left,e.clientY-rect.top,e.clientX,e.clientY);});
+canvas.addEventListener('click',(e)=>{
+  const rect=canvas.getBoundingClientRect();
+  const cx=e.clientX-rect.left,cy=e.clientY-rect.top;
+  showTooltipAt(cx,cy,e.clientX,e.clientY);
+  const pt=getPointAt(cx,cy);
+  if(!pt)return;
+  const hi=HORSES.findIndex(h=>h.name===pt.horse);
+  if(hi<0)return;
+  const ri=HORSES[hi].races.findIndex(r=>r.date===pt.date&&r.venue===pt.venue&&r.race_name===pt.race_name);
+  if(ri<0)return;
+  const detail=document.getElementById('detail-'+hi);
+  if(detail&&!detail.classList.contains('show')){const btn=document.getElementById('btn-'+hi);if(btn)btn.click();}
+  document.querySelectorAll('.race-item.highlighted').forEach(el=>el.classList.remove('highlighted'));
+  highlightedPoints.clear();
+  const item=document.querySelector('.race-item[data-horse="'+hi+'"][data-ri="'+ri+'"]');
+  if(item){item.classList.add('highlighted');highlightedPoints.add(hi+'-'+ri);requestAnimationFrame(()=>{draw();});setTimeout(()=>{item.scrollIntoView({behavior:'smooth',block:'center'});},150);}
+});
 window.addEventListener('resize',resize); buildPanel(); updateRatings(); updateRatingSummary(); updateRaceMarks(); resize();
 (function(){
   var pageFile=decodeURIComponent(window.location.pathname.split('/').pop());
