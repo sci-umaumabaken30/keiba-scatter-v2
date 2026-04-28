@@ -1034,7 +1034,6 @@ canvas.addEventListener('touchend',()=>{{tooltipEl.classList.remove('show');}});
 canvas.addEventListener('click',(e)=>{{
   const rect=canvas.getBoundingClientRect();
   const cx=e.clientX-rect.left,cy=e.clientY-rect.top;
-  if(!isMobile)showTooltipAt(cx,cy,e.clientX,e.clientY);
   const pt=getPointAt(cx,cy);
   if(!pt)return;
   const hi=HORSES.findIndex(h=>h.name===pt.horse);
